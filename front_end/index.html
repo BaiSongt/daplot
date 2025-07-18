@@ -33,6 +33,40 @@
             padding: 15px;
             display: flex;
             flex-direction: column;
+            position: relative;
+        }
+        
+        .sidebar.collapsed {
+            width: 60px;
+        }
+        
+        .sidebar.collapsed .sidebar-content {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            top: 15px;
+            right: -15px;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .sidebar-toggle:hover {
+            background: #f0f0f0;
+            transform: scale(1.1);
         }
 
         .sidebar-header {
@@ -292,28 +326,31 @@
 </head>
 <body>
     <div class="page-wrapper">
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h1>DaPlot</h1>
+        <div class="sidebar" id="sidebar">
+            <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起侧边栏">◀</button>
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h1>DaPlot</h1>
+                </div>
+                <nav class="nav-bar">
+                    <a href="index.html" class="nav-btn active">
+                        <i>🏠</i>
+                        <span>首页</span>
+                    </a>
+                    <a href="data_integrated.html" class="nav-btn">
+                        <i>📊</i>
+                        <span>数据操作</span>
+                    </a>
+                    <a href="visualization.html" class="nav-btn">
+                        <i>📈</i>
+                        <span>可视化绘图</span>
+                    </a>
+                    <a href="donate.html" class="nav-btn">
+                        <i>❤️</i>
+                        <span>捐赠支持</span>
+                    </a>
+                </nav>
             </div>
-            <nav class="nav-bar">
-                <a href="index.html" class="nav-btn active">
-                    <i>🏠</i>
-                    <span>首页</span>
-                </a>
-                <a href="data_integrated.html" class="nav-btn">
-                    <i>📊</i>
-                    <span>数据操作</span>
-                </a>
-                <a href="visualization.html" class="nav-btn">
-                    <i>📈</i>
-                    <span>可视化绘图</span>
-                </a>
-                <a href="donate.html" class="nav-btn">
-                    <i>❤️</i>
-                    <span>捐赠支持</span>
-                </a>
-            </nav>
         </div>
 
         <div class="content-area">
@@ -396,6 +433,23 @@
                 ctaButton.innerHTML = `继续分析 "${fileName}" →`;
                 ctaButton.href = 'visualization.html';
             }
+        });
+        
+        // 侧边栏收起/展开功能
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.sidebar-toggle');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                toggleBtn.textContent = '▶';
+                toggleBtn.title = '展开侧边栏';
+            } else {
+                toggleBtn.textContent = '◀';
+                toggleBtn.title = '收起侧边栏';
+            }
+        }
 
             // 添加特性卡片的悬停效果
             const featureCards = document.querySelectorAll('.feature-card');

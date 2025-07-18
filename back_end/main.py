@@ -155,22 +155,79 @@ async def filter_data(payload: FilterPayload):
     """
     Filters the dataframe based on the provided criteria.
     """
+    logger.info(f"🔍 [后端] 开始数据筛选，文件ID: {payload.file_id}")
+    logger.info(f"🔍 [后端] 筛选条件: {payload.filters}")
+    
     df = data_storage.get(payload.file_id)
     if df is None:
         raise HTTPException(status_code=404, detail="File ID not found.")
 
+    logger.info(f"📊 [后端] 原始数据形状: {df.shape}")
+    logger.info(f"📊 [后端] 数据列名: {df.columns.tolist()}")
+    
     filtered_df = df.copy()
 
     for column, values in payload.filters.items():
         if column in filtered_df.columns:
             if values: # Ensure there are values to filter by
-                filtered_df = filtered_df[filtered_df[column].isin(values)]
+                logger.info(f"🔍 [后端] 筛选列 '{column}', 筛选值: {values} (类型: {[type(v).__name__ for v in values]})")
+                
+                # 检查数据列的实际数据类型
+                sample_data = filtered_df[column].dropna().head(5).tolist()
+                logger.info(f"📊 [后端] 列 '{column}' 样本数据: {sample_data} (类型: {[type(v).__name__ for v in sample_data]})")
+                
+                # 尝试数据类型转换匹配
+                original_count = len(filtered_df)
+                
+                # 方法1: 直接匹配
+                mask1 = filtered_df[column].isin(values)
+                count1 = mask1.sum()
+                
+                # 方法2: 转换为字符串后匹配
+                str_values = [str(v) for v in values]
+                mask2 = filtered_df[column].astype(str).isin(str_values)
+                count2 = mask2.sum()
+                
+                # 方法3: 尝试将数据列转换为数字后匹配
+                try:
+                    numeric_column = pd.to_numeric(filtered_df[column], errors='coerce')
+                    numeric_values = []
+                    for v in values:
+                        try:
+                            numeric_values.append(float(v))
+                        except (ValueError, TypeError):
+                            numeric_values.append(v)
+                    mask3 = numeric_column.isin(numeric_values)
+                    count3 = mask3.sum()
+                except:
+                    count3 = 0
+                    mask3 = pd.Series([False] * len(filtered_df))
+                
+                logger.info(f"🔍 [后端] 匹配结果 - 直接匹配: {count1}, 字符串匹配: {count2}, 数字匹配: {count3}")
+                
+                # 选择匹配数量最多的方法
+                if count3 > 0 and count3 >= max(count1, count2):
+                    filtered_df = filtered_df[mask3]
+                    logger.info(f"✅ [后端] 使用数字匹配，筛选后数据行数: {len(filtered_df)}")
+                elif count2 > 0 and count2 >= count1:
+                    filtered_df = filtered_df[mask2]
+                    logger.info(f"✅ [后端] 使用字符串匹配，筛选后数据行数: {len(filtered_df)}")
+                else:
+                    filtered_df = filtered_df[mask1]
+                    logger.info(f"✅ [后端] 使用直接匹配，筛选后数据行数: {len(filtered_df)}")
+                    
         else:
             # Optionally, raise an error if the column doesn't exist
+            logger.error(f"❌ [后端] 筛选列 '{column}' 在数据中不存在")
             raise HTTPException(status_code=400, detail=f"Filter column '{column}' not found in data.")
 
+    logger.info(f"✅ [后端] 数据筛选完成，最终数据行数: {len(filtered_df)}")
+    
     # Convert NaN to None for JSON compatibility and return as records
-    return filtered_df.where(pd.notnull(filtered_df), None).to_dict(orient='records')
+    result = filtered_df.where(pd.notnull(filtered_df), None).to_dict(orient='records')
+    logger.info(f"📤 [后端] 返回筛选结果: {len(result)} 行数据")
+    
+    return result
 
 @app.get("/api/file/{file_id}")
 async def get_file_data(file_id: str):
