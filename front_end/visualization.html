@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 可视化绘图</title>
-    <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.26.0/plotly.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.26.0/plotly.min.js" defer></script>
     <style>
         * {
             margin: 0;
@@ -24,14 +24,15 @@
         }
 
         .sidebar {
-            width: 220px;
+            width: 280px;
             flex-shrink: 0;
-            background: white;
-            border-right: 1px solid #e9ecef;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
             transition: width 0.3s ease;
             padding: 15px;
             display: flex;
             flex-direction: column;
+            font-size: 12px;
         }
 
         .sidebar-header {
@@ -50,16 +51,34 @@
             font-weight: 600;
         }
 
-        .content-area {
+        .content {
             flex: 1;
-            padding: 0;
-            overflow-y: auto;
-            width: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
+        .navbar {
+            background: #343a40;
+            color: white;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 14px;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 11px;
+        }
+        
         .main-content {
             width: 100%;
-            padding: 20px;
+            padding: 15px;
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 15px;
@@ -120,6 +139,7 @@
         }
 
         .chart-area {
+            flex: 1;
             background: white;
             border-radius: 6px;
             padding: 15px;
@@ -144,23 +164,23 @@
         }
 
         .form-group {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             color: #495057;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 11px;
         }
 
         .form-control {
             width: 100%;
-            padding: 8px 12px;
+            padding: 5px 8px;
             border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 0.9rem;
+            border-radius: 3px;
+            font-size: 11px;
             background: white;
         }
 
@@ -202,10 +222,10 @@
             background: #4a90e2;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            padding: 5px 10px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 11px;
             transition: background 0.3s ease;
             width: 100%;
         }
@@ -319,7 +339,18 @@
                     <div class="status-message" id="statusMessage"></div>
 
                     <div class="section">
-                        <h3>🎯 项目选择</h3>
+                        <h3 style="font-size: 13px; margin-bottom: 8px;">📁 文件选择</h3>
+                        <div class="form-group">
+                            <label for="fileSelector">选择数据文件:</label>
+                            <select id="fileSelector" class="form-control" onchange="switchFile()">
+                                <option value="">请选择数据文件</option>
+                            </select>
+                        </div>
+                        <div id="currentFileInfo" style="font-size: 10px; color: #666; margin-top: 3px; padding: 3px; background: #f8f9fa; border-radius: 2px;"></div>
+                    </div>
+
+                    <div class="section">
+                        <h3 style="font-size: 13px; margin-bottom: 8px;">🎯 项目选择</h3>
                         <div id="projectTags" class="tag-container">
                             <!-- 项目标签将在这里动态生成 -->
                         </div>
@@ -327,8 +358,14 @@
 
                     <div class="section">
                         <h3>⚙️ 状态变量选择</h3>
+                        <div class="form-group">
+                            <label for="statusColumn">状态量列:</label>
+                            <select id="statusColumn" class="form-control">
+                                <option value="">请选择状态量列</option>
+                            </select>
+                        </div>
                         <div id="statusTags" class="tag-container">
-                            <!-- 状态变量标签将在这里动态生成 -->
+                            <!-- 状态值标签将在这里动态生成 -->
                         </div>
                     </div>
 
@@ -361,7 +398,7 @@
                     </div>
                     <div id="plotDiv">
                         <div class="no-data-message">
-                            <h3>📈 图表区域</h3>
+                            <h3 style="font-size: 13px; margin-bottom: 8px;">📈 图表区域</h3>
                             <p>请先选择项目、状态变量和坐标轴，然后点击"生成图表"</p>
                         </div>
                     </div>
@@ -376,28 +413,182 @@
         let headers = [];
         let selectedProjects = [];
         let selectedStatus = [];
+        let selectedStatusColumn = '';
         let allData = [];
         let currentPlot = null;
 
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
-            loadDataFromStorage();
-            if (fileId) {
-                initializeVisualization();
-            } else {
-                showMessage('请先上传数据文件', 'error');
-                setTimeout(() => {
-                    window.location.href = 'data_integrated.html';
-                }, 2000);
-            }
+            // 显示加载指示器
+            showMessage('正在初始化页面...', 'info');
+            
+            // 延迟执行以确保页面完全加载
+            setTimeout(() => {
+                loadFileList();
+                loadDataFromStorage();
+                if (fileId) {
+                    initializeVisualization();
+                } else {
+                    showMessage('请选择数据文件或先上传数据', 'info');
+                }
+            }, 100);
         });
+
+        async function loadFileList() {
+             try {
+                 const response = await fetch('http://localhost:8001/api/files');
+                 if (!response.ok) {
+                     throw new Error('获取文件列表失败');
+                 }
+                 
+                 const data = await response.json();
+                 const fileSelector = document.getElementById('fileSelector');
+                 
+                 console.log('加载文件列表:', data);
+                 
+                 // 清空现有选项
+                 fileSelector.innerHTML = '<option value="">请选择数据文件</option>';
+                 
+                 // 添加文件选项
+                 if (data.files && data.files.length > 0) {
+                     data.files.forEach(file => {
+                         const option = document.createElement('option');
+                         option.value = file.file_id;
+                         const displayName = file.filename || file.original_filename || `文件 ${file.file_id.substring(0, 8)}...`;
+                         option.textContent = `${displayName} (${file.rows}行×${file.columns}列)`;
+                         fileSelector.appendChild(option);
+                     });
+                 } else {
+                     const option = document.createElement('option');
+                     option.value = '';
+                     option.textContent = '暂无可用文件';
+                     option.disabled = true;
+                     fileSelector.appendChild(option);
+                 }
+                 
+                 // 如果有当前文件ID，选中它
+                 if (fileId) {
+                     fileSelector.value = fileId;
+                     updateCurrentFileInfo();
+                 }
+                 
+             } catch (error) {
+                 console.error('加载文件列表失败:', error);
+                 showMessage('加载文件列表失败: ' + error.message, 'error');
+             }
+         }
+
+        async function switchFile() {
+            const fileSelector = document.getElementById('fileSelector');
+            const selectedFileId = fileSelector.value;
+            
+            if (!selectedFileId) {
+                fileId = null;
+                headers = [];
+                clearVisualization();
+                return;
+            }
+            
+            try {
+                showMessage('正在切换文件...', 'info');
+                
+                // 获取文件数据
+                const response = await fetch(`http://localhost:8001/api/file/${selectedFileId}`);
+                if (!response.ok) {
+                    throw new Error('获取文件数据失败');
+                }
+                
+                const fileData = await response.json();
+                
+                // 更新全局变量
+                fileId = selectedFileId;
+                headers = fileData.headers || [];
+                
+                // 保存到localStorage
+                localStorage.setItem('fileId', fileId);
+                localStorage.setItem('headers', JSON.stringify(headers));
+                
+                // 更新界面
+                updateCurrentFileInfo();
+                populateAxisSelectors();
+                populateStatusColumnSelector();
+                clearVisualization();
+                
+                // 重新初始化可视化
+                if (fileId) {
+                    await initializeVisualization();
+                }
+                
+                showMessage('文件切换成功', 'success');
+                
+            } catch (error) {
+                console.error('切换文件失败:', error);
+                showMessage('切换文件失败: ' + error.message, 'error');
+            }
+        }
+
+        function updateCurrentFileInfo() {
+            const fileSelector = document.getElementById('fileSelector');
+            const currentFileInfo = document.getElementById('currentFileInfo');
+            
+            if (fileSelector.value && headers.length > 0) {
+                const selectedOption = fileSelector.options[fileSelector.selectedIndex];
+                currentFileInfo.textContent = `已选择: ${selectedOption.textContent}`;
+                currentFileInfo.style.color = '#28a745';
+            } else {
+                currentFileInfo.textContent = '未选择文件';
+                currentFileInfo.style.color = '#6c757d';
+            }
+        }
+
+        function clearVisualization() {
+            // 清空项目和状态选择
+            selectedProjects = [];
+            selectedStatus = [];
+            selectedStatusColumn = '';
+            allData = [];
+            
+            // 清空界面
+            document.getElementById('projectTags').innerHTML = '';
+            document.getElementById('statusTags').innerHTML = '';
+            document.getElementById('statusColumn').value = '';
+            document.getElementById('xAxis').value = '';
+            document.getElementById('yAxis').value = '';
+            
+            // 清空图表
+            const plotDiv = document.getElementById('plotDiv');
+            plotDiv.innerHTML = `
+                <div class="no-data-message">
+                    <h3>📈 图表区域</h3>
+                    <p>请先选择项目、状态变量和坐标轴，然后点击"生成图表"</p>
+                </div>
+            `;
+            
+            document.getElementById('chartToolbar').style.display = 'none';
+            document.getElementById('generateChart').disabled = true;
+        }
 
         function loadDataFromStorage() {
             fileId = localStorage.getItem('fileId');
             const headersStr = localStorage.getItem('headers');
+            
+            console.log('Loading data from storage:');
+            console.log('fileId:', fileId);
+            console.log('headersStr:', headersStr);
+            
             if (headersStr) {
-                headers = JSON.parse(headersStr);
-                populateAxisSelectors();
+                try {
+                    headers = JSON.parse(headersStr);
+                    console.log('Parsed headers:', headers);
+                    populateAxisSelectors();
+                    populateStatusColumnSelector();
+                } catch (error) {
+                    console.error('Error parsing headers:', error);
+                    showMessage('解析表头数据失败', 'error');
+                }
+            } else {
+                console.warn('No headers found in localStorage');
+                showMessage('未找到表头数据，请重新选择文件', 'error');
             }
         }
 
@@ -425,6 +616,38 @@
             // 添加变化监听器
             xAxisSelect.addEventListener('change', checkFormValidity);
             yAxisSelect.addEventListener('change', checkFormValidity);
+        }
+
+        function populateStatusColumnSelector() {
+            const statusColumnSelect = document.getElementById('statusColumn');
+            
+            // 清空现有选项
+            statusColumnSelect.innerHTML = '<option value="">请选择状态量列</option>';
+            
+            // 添加列选项
+            headers.forEach(header => {
+                const option = document.createElement('option');
+                option.value = header;
+                option.textContent = header;
+                statusColumnSelect.appendChild(option);
+            });
+            
+            // 添加变化监听器
+            statusColumnSelect.addEventListener('change', onStatusColumnChange);
+        }
+
+        function onStatusColumnChange() {
+            const statusColumnSelect = document.getElementById('statusColumn');
+            selectedStatusColumn = statusColumnSelect.value;
+            selectedStatus = []; // 重置状态值选择
+            
+            if (selectedStatusColumn) {
+                updateStatusTags();
+            } else {
+                document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择状态量列</p>';
+            }
+            
+            checkFormValidity();
         }
 
         async function initializeVisualization() {
@@ -492,6 +715,11 @@
                 document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择项目</p>';
                 return;
             }
+            
+            if (!selectedStatusColumn) {
+                document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择状态量列</p>';
+                return;
+            }
 
             try {
                 // 根据选中的项目获取筛选后的数据
@@ -514,13 +742,16 @@
 
                 const filteredData = await response.json();
 
-                // 假设状态变量是某个特定列，这里需要根据实际数据结构调整
-                // 为了演示，我们使用 'Ma' 列作为状态变量
-                const statusColumn = 'Ma';
-                const uniqueStatus = [...new Set(filteredData.map(row => row[statusColumn]).filter(s => s !== null && s !== undefined))];
+                // 使用用户选择的状态量列
+                const uniqueStatus = [...new Set(filteredData.map(row => row[selectedStatusColumn]).filter(s => s !== null && s !== undefined))];
 
                 const statusTagsContainer = document.getElementById('statusTags');
                 statusTagsContainer.innerHTML = '';
+
+                if (uniqueStatus.length === 0) {
+                    statusTagsContainer.innerHTML = '<p style="color: #6c757d; font-style: italic;">该状态量列没有可用的值</p>';
+                    return;
+                }
 
                 uniqueStatus.forEach(status => {
                     const tag = document.createElement('div');
@@ -555,6 +786,7 @@
             const generateBtn = document.getElementById('generateChart');
 
             const isValid = selectedProjects.length > 0 &&
+                           selectedStatusColumn &&
                            selectedStatus.length > 0 &&
                            xAxis && yAxis;
 
@@ -565,7 +797,7 @@
             const xAxis = document.getElementById('xAxis').value;
             const yAxis = document.getElementById('yAxis').value;
 
-            if (!xAxis || !yAxis || selectedProjects.length === 0 || selectedStatus.length === 0) {
+            if (!xAxis || !yAxis || selectedProjects.length === 0 || !selectedStatusColumn || selectedStatus.length === 0) {
                 showMessage('请完成所有选择', 'error');
                 return;
             }
@@ -582,7 +814,7 @@
                         file_id: fileId,
                         filters: {
                             'Project': selectedProjects,
-                            'Ma': selectedStatus
+                            [selectedStatusColumn]: selectedStatus
                         },
                         x_axis: xAxis,
                         y_axis: yAxis
@@ -603,63 +835,117 @@
             }
         }
 
-        function renderChart(plotData) {
-            const trace = {
-                x: plotData.x_values,
-                y: plotData.y_values,
-                mode: 'lines+markers',
-                type: 'scatter',
-                name: '数据曲线',
-                line: {
-                    color: '#4a90e2',
-                    width: 2
-                },
-                marker: {
-                    color: '#4a90e2',
-                    size: 6
-                }
-            };
-
-            const layout = {
-                title: {
-                    text: `${plotData.y_label} vs ${plotData.x_label}`,
-                    font: { size: 16 }
-                },
-                xaxis: {
-                    title: plotData.x_label,
-                    showgrid: true,
-                    gridcolor: '#e9ecef'
-                },
-                yaxis: {
-                    title: plotData.y_label,
-                    showgrid: true,
-                    gridcolor: '#e9ecef'
-                },
-                plot_bgcolor: 'white',
-                paper_bgcolor: 'white',
-                margin: { t: 50, r: 50, b: 50, l: 50 }
-            };
-
-            const config = {
-                responsive: true,
-                displayModeBar: true,
-                modeBarButtonsToAdd: [
-                    {
-                        name: 'Download PNG',
-                        icon: Plotly.Icons.camera,
-                        click: function(gd) {
-                            Plotly.downloadImage(gd, {format: 'png', width: 800, height: 600, filename: 'chart'});
+        async function renderChart(plotData) {
+            // 获取详细数据以生成多条曲线
+            try {
+                const response = await fetch('http://localhost:8001/api/filter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_id: fileId,
+                        filters: {
+                            'Project': selectedProjects,
+                            [selectedStatusColumn]: selectedStatus
                         }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const filteredData = await response.json();
+                const traces = [];
+                const colors = ['#4a90e2', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+                let colorIndex = 0;
+
+                // 为每个项目和状态值组合创建一条曲线
+                selectedProjects.forEach(project => {
+                    selectedStatus.forEach(statusValue => {
+                        const projectStatusData = filteredData.filter(row => 
+                            row['Project'] === project && row[selectedStatusColumn] === statusValue
+                        );
+
+                        if (projectStatusData.length > 0) {
+                            const xValues = projectStatusData.map(row => row[plotData.x_label]).filter(v => v !== null && v !== undefined);
+                            const yValues = projectStatusData.map(row => row[plotData.y_label]).filter(v => v !== null && v !== undefined);
+
+                            if (xValues.length > 0 && yValues.length > 0) {
+                                const trace = {
+                                    x: xValues,
+                                    y: yValues,
+                                    mode: 'lines+markers',
+                                    type: 'scatter',
+                                    name: `${project}-${selectedStatusColumn}-${statusValue}`,
+                                    line: {
+                                        color: colors[colorIndex % colors.length],
+                                        width: 2
+                                    },
+                                    marker: {
+                                        color: colors[colorIndex % colors.length],
+                                        size: 6
+                                    }
+                                };
+                                traces.push(trace);
+                                colorIndex++;
+                            }
+                        }
+                    });
+                });
+
+                const layout = {
+                    title: {
+                        text: `${plotData.x_label}-${plotData.y_label} 曲线图`,
+                        font: { size: 16 }
+                    },
+                    xaxis: {
+                        title: plotData.x_label,
+                        showgrid: true,
+                        gridcolor: '#e9ecef'
+                    },
+                    yaxis: {
+                        title: plotData.y_label,
+                        showgrid: true,
+                        gridcolor: '#e9ecef'
+                    },
+                    plot_bgcolor: 'white',
+                    paper_bgcolor: 'white',
+                    margin: { t: 50, r: 50, b: 50, l: 50 },
+                    legend: {
+                        x: 1,
+                        y: 1,
+                        xanchor: 'left',
+                        yanchor: 'top'
                     }
-                ],
-                modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
-            };
+                };
 
-            Plotly.newPlot('plotDiv', [trace], layout, config);
-            currentPlot = { trace, layout, config };
+                const config = {
+                    responsive: true,
+                    displayModeBar: true,
+                    modeBarButtonsToAdd: [
+                        {
+                            name: 'Download PNG',
+                            icon: Plotly.Icons.camera,
+                            click: function(gd) {
+                                Plotly.downloadImage(gd, {format: 'png', width: 800, height: 600, filename: 'chart'});
+                            }
+                        }
+                    ],
+                    modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
+                };
 
-            // 显示工具栏
-            document.getElementById('chartToolbar').style.display = 'flex';
+                Plotly.newPlot('plotDiv', traces, layout, config);
+                currentPlot = { traces, layout, config };
+
+                // 显示工具栏
+                document.getElementById('chartToolbar').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error rendering chart:', error);
+                showMessage('图表渲染失败: ' + error.message, 'error');
+            }
         }
 
         function resetZoom() {

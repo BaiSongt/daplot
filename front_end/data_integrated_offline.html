@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot - 数据操作 (离线版本)</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background: white;
+            border-right: 1px solid #e9ecef;
+            transition: width 0.3s ease;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #333;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        .section {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e9ecef;
+        }
+
+        .section h3 {
+            margin-bottom: 12px;
+            color: #495057;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .file-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            background: #f8f9fa;
+            border-color: #4a90e2;
+        }
+
+        .file-item.active {
+            background: #e3f2fd;
+            border-color: #4a90e2;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .file-meta {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #357abd;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #28a745;
+        }
+
+        .status-message.error {
+            background: #dc3545;
+        }
+
+        .table-container {
+            max-height: 600px;
+            overflow: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="statusMessage" class="status-message"></div>
+    
+    <div class="page-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>📊 DaPlot</h1>
+            </div>
+            
+            <div class="section">
+                <h3>📁 文件管理</h3>
+                <button class="btn" onclick="document.getElementById('fileInput').click()">
+                    <span>📤</span> 导入Excel文件
+                </button>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                
+                <div style="margin: 10px 0;">
+                    <button class="btn btn-sm btn-warning" onclick="refreshFileList()">
+                        <span>🔄</span> 刷新列表
+                    </button>
+                </div>
+                
+                <div class="file-list" id="fileList" style="margin-top: 15px;">
+                    <!-- 文件列表将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">文件:</span>
+                    <button class="btn btn-sm" onclick="saveToBackend()">
+                        <span>💾</span> 保存到服务器
+                    </button>
+                    <button class="btn btn-sm" onclick="exportToExcel()">
+                        <span>📥</span> 导出Excel
+                    </button>
+                    <button class="btn btn-sm" onclick="exportToCSV()">
+                        <span>📄</span> 导出CSV
+                    </button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <span class="toolbar-label">数据:</span>
+                    <button class="btn btn-sm btn-success" onclick="goToVisualization()">
+                        <span>📈</span> 前往可视化
+                    </button>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="section">
+                    <h3 id="currentFileName">请选择或导入Excel文件</h3>
+                    <div id="dataInfo"></div>
+                    
+                    <div id="dataContainer">
+                        <div class="empty-state">
+                            <span>📊</span>
+                            <h3>暂无数据</h3>
+                            <p>请从左侧导入Excel文件或选择已有文件开始编辑</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentFileId = null;
+        let currentData = null;
+        let currentHeaders = [];
+        let hasUnsavedChanges = false;
+        
+        // API配置
+        const API_BASE_URL = 'http://localhost:8001';
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            
+            // 文件选择事件
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // 加载文件列表
+            refreshFileList();
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        }
+
+        async function uploadFile(file) {
+            // 验证文件类型
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                showMessage('请选择Excel文件 (.xlsx 或 .xls)', 'error');
+                return;
+            }
+
+            showMessage('正在上传文件...', 'success');
+            console.log('🔄 开始上传文件:', file.name, '大小:', file.size, 'bytes');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.file_id) {
+                    throw new Error('服务器响应中缺少文件ID');
+                }
+
+                showMessage('文件上传成功！', 'success');
+                refreshFileList();
+                
+                // 加载文件
+                await loadFile(data.file_id);
+
+            } catch (error) {
+                console.error('❌ 上传错误详情:', error);
+                showMessage('文件上传失败: ' + error.message, 'error');
+            }
+        }
+
+        async function refreshFileList() {
+            try {
+                showMessage('正在刷新文件列表...', 'success');
+                
+                const response = await fetch(`${API_BASE_URL}/api/files`);
+                if (!response.ok) {
+                    throw new Error('获取文件列表失败');
+                }
+                
+                const data = await response.json();
+                displayFileList(data.files);
+                
+            } catch (error) {
+                console.error('刷新文件列表失败:', error);
+                showMessage('刷新文件列表失败: ' + error.message, 'error');
+            }
+        }
+
+        function displayFileList(files) {
+            const fileList = document.getElementById('fileList');
+            
+            if (!files || files.length === 0) {
+                fileList.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无文件</div>';
+                return;
+            }
+            
+            fileList.innerHTML = files.map(file => `
+                <div class="file-item ${file.file_id === currentFileId ? 'active' : ''}" onclick="loadFile('${file.file_id}')">
+                    <div class="file-info">
+                        <div class="file-name">文件 ${file.file_id.substring(0, 8)}...</div>
+                        <div class="file-meta">${file.rows}行 × ${file.columns}列</div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteFileFromBackend('${file.file_id}')">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadFile(fileId) {
+            try {
+                showMessage('正在加载文件...', 'success');
+                
+                // 从后端获取完整数据
+                const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`);
+                if (!response.ok) {
+                    throw new Error('文件不存在或已过期');
+                }
+                
+                const data = await response.json();
+                displayFileData(data, fileId);
+                
+                currentFileId = fileId;
+                currentData = data;
+                currentHeaders = data.headers || [];
+                refreshFileList(); // 刷新文件列表以更新active状态
+                
+            } catch (error) {
+                console.error('加载文件失败:', error);
+                showMessage('加载文件失败: ' + error.message, 'error');
+            }
+        }
+
+        function displayFileData(fileInfo, fileId) {
+            const currentFileName = document.getElementById('currentFileName');
+            const dataInfo = document.getElementById('dataInfo');
+            const dataContainer = document.getElementById('dataContainer');
+            
+            // 更新文件信息显示
+            currentFileName.textContent = fileInfo.filename || `文件 ${fileId.substring(0, 8)}...`;
+            dataInfo.textContent = `${fileInfo.headers.length}列 × ${fileInfo.preview_data ? fileInfo.preview_data.length : 0}行`;
+            
+            // 创建表格
+            let tableHTML = '<div class="table-container"><table class="data-table">';
+            
+            // 添加表头
+            if (fileInfo.headers && fileInfo.headers.length > 0) {
+                tableHTML += '<thead><tr>';
+                fileInfo.headers.forEach(header => {
+                    tableHTML += `<th contenteditable="true" onblur="markAsChanged()">${header}</th>`;
+                });
+                tableHTML += '</tr></thead>';
+            }
+            
+            // 添加数据行
+            tableHTML += '<tbody>';
+            if (fileInfo.preview_data && fileInfo.preview_data.length > 0) {
+                fileInfo.preview_data.forEach((row, rowIndex) => {
+                    tableHTML += '<tr>';
+                    fileInfo.headers.forEach(header => {
+                        const cellValue = row[header] || '';
+                        tableHTML += `<td contenteditable="true" onblur="markAsChanged()">${cellValue}</td>`;
+                    });
+                    tableHTML += '</tr>';
+                });
+            }
+            
+            // 添加几个空行供编辑
+            for (let i = 0; i < 5; i++) {
+                tableHTML += '<tr>';
+                fileInfo.headers.forEach(() => {
+                    tableHTML += '<td contenteditable="true" onblur="markAsChanged()"></td>';
+                });
+                tableHTML += '</tr>';
+            }
+            
+            tableHTML += '</tbody></table></div>';
+            
+            dataContainer.innerHTML = tableHTML;
+            hasUnsavedChanges = false;
+            
+            showMessage('文件加载成功！', 'success');
+        }
+
+        async function deleteFileFromBackend(fileId) {
+            if (confirm('确定要删除这个文件吗？此操作将从服务器永久删除文件。')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('删除文件失败');
+                    }
+                    
+                    if (currentFileId === fileId) {
+                        currentFileId = null;
+                        currentData = null;
+                        currentHeaders = [];
+                        
+                        const dataContainer = document.getElementById('dataContainer');
+                        dataContainer.innerHTML = `
+                            <div class="empty-state">
+                                <span>📊</span>
+                                <h3>暂无数据</h3>
+                                <p>请从左侧导入Excel文件或选择已有文件开始编辑</p>
+                            </div>
+                        `;
+                        document.getElementById('currentFileName').textContent = '请选择或导入Excel文件';
+                        document.getElementById('dataInfo').textContent = '';
+                    }
+                    
+                    refreshFileList();
+                    showMessage('文件已删除', 'success');
+                    
+                } catch (error) {
+                    console.error('删除文件失败:', error);
+                    showMessage('删除文件失败: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function saveToBackend() {
+            if (!currentFileId) {
+                showMessage('没有可保存的文件', 'error');
+                return;
+            }
+            
+            try {
+                showMessage('正在保存到服务器...', 'success');
+                
+                // 从表格中提取数据
+                const table = document.querySelector('.data-table');
+                if (!table) {
+                    throw new Error('没有找到数据表格');
+                }
+                
+                const headers = [];
+                const dataRows = [];
+                
+                // 提取表头
+                const headerCells = table.querySelectorAll('thead th');
+                headerCells.forEach(cell => {
+                    headers.push(cell.textContent.trim());
+                });
+                
+                // 提取数据行
+                const bodyRows = table.querySelectorAll('tbody tr');
+                bodyRows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    const rowData = [];
+                    let hasData = false;
+                    
+                    cells.forEach(cell => {
+                        const value = cell.textContent.trim();
+                        rowData.push(value);
+                        if (value !== '') hasData = true;
+                    });
+                    
+                    if (hasData) {
+                        dataRows.push(rowData);
+                    }
+                });
+                
+                // 发送到后端
+                const savePayload = {
+                    file_id: currentFileId,
+                    headers: headers,
+                    data: dataRows
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/api/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(savePayload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('保存失败');
+                }
+                
+                const result = await response.json();
+                
+                hasUnsavedChanges = false;
+                showMessage('文件已保存到服务器', 'success');
+                
+            } catch (error) {
+                console.error('保存失败:', error);
+                showMessage('保存失败: ' + error.message, 'error');
+            }
+        }
+
+        function exportToExcel() {
+            showMessage('Excel导出功能需要在线版本支持', 'error');
+        }
+
+        function exportToCSV() {
+            if (!currentFileId) {
+                showMessage('没有可导出的数据', 'error');
+                return;
+            }
+            
+            try {
+                // 从表格中提取数据
+                const table = document.querySelector('.data-table');
+                if (!table) {
+                    throw new Error('没有找到数据表格');
+                }
+                
+                const csvData = [];
+                
+                // 提取表头
+                const headerCells = table.querySelectorAll('thead th');
+                const headers = [];
+                headerCells.forEach(cell => {
+                    headers.push(cell.textContent.trim());
+                });
+                csvData.push(headers.join(','));
+                
+                // 提取数据行
+                const bodyRows = table.querySelectorAll('tbody tr');
+                bodyRows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    const rowData = [];
+                    let hasData = false;
+                    
+                    cells.forEach(cell => {
+                        const value = cell.textContent.trim();
+                        // 处理包含逗号或引号的值
+                        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                            rowData.push('"' + value.replace(/"/g, '""') + '"');
+                        } else {
+                            rowData.push(value);
+                        }
+                        if (value !== '') hasData = true;
+                    });
+                    
+                    if (hasData) {
+                        csvData.push(rowData.join(','));
+                    }
+                });
+                
+                // 创建下载链接
+                const csvContent = csvData.join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                
+                const fileName = currentFileId ? `file_${currentFileId.substring(0, 8)}.csv` : 'export.csv';
+                link.setAttribute('download', fileName);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showMessage('CSV文件导出成功', 'success');
+            } catch (error) {
+                console.error('导出失败:', error);
+                showMessage('导出失败: ' + error.message, 'error');
+            }
+        }
+
+        function goToVisualization() {
+            if (currentFileId) {
+                // 如果有未保存的更改，提示用户
+                if (hasUnsavedChanges) {
+                    if (confirm('您有未保存的更改，是否先保存再跳转？')) {
+                        saveToBackend().then(() => {
+                            // 保存数据到localStorage供可视化页面使用
+                            localStorage.setItem('fileId', currentFileId);
+                            if (currentHeaders && currentHeaders.length > 0) {
+                                localStorage.setItem('headers', JSON.stringify(currentHeaders));
+                            }
+                            window.location.href = 'visualization.html';
+                        });
+                        return;
+                    }
+                }
+                // 保存数据到localStorage供可视化页面使用
+                localStorage.setItem('fileId', currentFileId);
+                if (currentHeaders && currentHeaders.length > 0) {
+                    localStorage.setItem('headers', JSON.stringify(currentHeaders));
+                }
+                window.location.href = 'visualization.html';
+            } else {
+                showMessage('请先选择文件', 'error');
+            }
+        }
+
+        function markAsChanged() {
+            hasUnsavedChanges = true;
+        }
+
+        function showMessage(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // 页面卸载时提示未保存的更改
+        window.addEventListener('beforeunload', function(e) {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '您有未保存的更改，确定要离开吗？';
+            }
+        });
+    </script>
+</body>
+</html>

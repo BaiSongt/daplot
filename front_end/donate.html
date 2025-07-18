@@ -331,7 +331,6 @@
 
                     <div class="qr-codes-container">
                         <div class="qr-code-card wechat-card">
-                            <h3 class="qr-code-title">💚 微信支付</h3>
                             <img src="wx.jpg" alt="微信支付二维码" class="qr-code-image">
                             <p class="qr-code-description">
                                 使用微信扫描上方二维码<br>
@@ -340,7 +339,6 @@
                         </div>
 
                         <div class="qr-code-card alipay-card">
-                            <h3 class="qr-code-title">💙 支付宝</h3>
                             <img src="ali.jpg" alt="支付宝二维码" class="qr-code-image">
                             <p class="qr-code-description">
                                 使用支付宝扫描上方二维码<br>
@@ -398,7 +396,7 @@
                         z-index: 1000;
                         cursor: pointer;
                     `;
-                    
+
                     const largeImg = document.createElement('img');
                     largeImg.src = this.src;
                     largeImg.alt = this.alt;
@@ -408,10 +406,10 @@
                         border-radius: 10px;
                         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
                     `;
-                    
+
                     modal.appendChild(largeImg);
                     document.body.appendChild(modal);
-                    
+
                     // 点击模态框关闭
                     modal.addEventListener('click', function() {
                         document.body.removeChild(modal);

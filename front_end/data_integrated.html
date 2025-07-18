@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 数据操作 (SheetJS + Luckysheet + 后端集成)</title>
     
-    <!-- Luckysheet CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/css/pluginsCss.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/plugins.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/css/luckysheet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/assets/iconfont/iconfont.css" />
+    <!-- Luckysheet CSS - 使用更稳定的CDN源 -->
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/plugins/css/pluginsCss.css" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/plugins/plugins.css" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/css/luckysheet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/assets/iconfont/iconfont.css" />
     
     <style>
         * {
@@ -394,14 +394,13 @@
             <div class="section">
                 <h3>📁 文件管理</h3>
                 <div class="status-message" id="statusMessage"></div>
-                <button class="btn" onclick="document.getElementById('fileInput').click()">
-                    <i>📤</i> 导入Excel文件
-                </button>
-                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
-                
-                <div style="margin: 10px 0;">
-                    <button class="btn btn-sm btn-warning" onclick="refreshFileList()">
-                        <i>🔄</i> 刷新列表
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleFileUpload(event)">
+                    <button onclick="document.getElementById('fileInput').click()" class="btn" style="background: #28a745; flex: 1; padding: 6px 10px; font-size: 11px;">
+                        📁 导入Excel
+                    </button>
+                    <button onclick="refreshFileList()" class="btn" style="background: #17a2b8; flex: 0 0 auto; padding: 6px 8px; font-size: 11px;">
+                        🔄
                     </button>
                 </div>
                 
@@ -458,17 +457,18 @@
         </div>
     </div>
 
-    <!-- SheetJS -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- SheetJS - 使用更稳定的CDN源 -->
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
-    <!-- Luckysheet JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/js/plugin.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/luckysheet.umd.js"></script>
+    <!-- Luckysheet JavaScript - 使用更稳定的CDN源 -->
+    <script src="https://unpkg.com/luckysheet@latest/dist/plugins/js/plugin.js"></script>
+    <script src="https://unpkg.com/luckysheet@latest/dist/luckysheet.umd.js"></script>
 
     <script>
         // 全局变量
         let currentFileId = null;
         let currentWorkbook = null;
+        let currentHeaders = [];
         let isLuckysheetInitialized = false;
         let hasUnsavedChanges = false;
         let autoSaveInterval = null;
@@ -523,15 +523,27 @@
 
                 const data = await response.json();
                 
-                if (!data.file_id) {
-                    throw new Error('服务器响应中缺少文件ID');
-                }
+                // 处理多sheet文件响应
+                if (data.multiple_sheets) {
+                    showMessage(`文件上传成功！发现 ${data.total_sheets} 个工作表`, 'success');
+                    refreshFileList();
+                    
+                    // 加载第一个sheet
+                    if (data.files && data.files.length > 0) {
+                        await loadFile(data.files[0].file_id);
+                    }
+                } else {
+                    // 单sheet文件处理
+                    if (!data.file_id) {
+                        throw new Error('服务器响应中缺少文件ID');
+                    }
 
-                showMessage('文件上传成功！', 'success');
-                refreshFileList();
-                
-                // 加载文件到Luckysheet
-                await loadFile(data.file_id);
+                    showMessage('文件上传成功！', 'success');
+                    refreshFileList();
+                    
+                    // 加载文件到Luckysheet
+                    await loadFile(data.file_id);
+                }
 
             } catch (error) {
                 console.error('❌ 上传错误详情:', error);
@@ -566,15 +578,17 @@
             }
             
             fileList.innerHTML = files.map(file => `
-                <div class="file-item ${file.file_id === currentFileId ? 'active' : ''}" onclick="loadFile('${file.file_id}')">
-                    <div class="file-info">
-                        <div class="file-name">文件 ${file.file_id.substring(0, 8)}...</div>
-                        <div class="file-meta">${file.rows}行 × ${file.columns}列</div>
-                    </div>
-                    <div class="file-actions">
-                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteFileFromBackend('${file.file_id}')">
-                            🗑️
-                        </button>
+                <div class="file-item ${file.file_id === currentFileId ? 'active' : ''}" onclick="loadFile('${file.file_id}')" style="cursor: pointer; padding: 8px 12px; margin: 2px 0; border: 1px solid #e0e0e0; border-radius: 4px; background: ${file.file_id === currentFileId ? '#e3f2fd' : '#fafafa'}; transition: all 0.2s ease; font-size: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 500; color: #333; font-size: 13px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.filename || file.original_filename || `文件 ${file.file_id.substring(0, 8)}...`}</div>
+                            <div style="color: #666; font-size: 11px;">${file.rows}行×${file.columns}列${file.sheet_name ? ` (${file.sheet_name})` : ''}</div>
+                        </div>
+                        <div style="margin-left: 8px;">
+                            <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteFileFromBackend('${file.file_id}')" style="padding: 2px 6px; font-size: 10px; line-height: 1.2;">
+                                🗑️
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -606,6 +620,9 @@
         function loadFileToLuckysheet(fileInfo, fileId) {
             const currentFileName = document.getElementById('currentFileName');
             const dataInfo = document.getElementById('dataInfo');
+            
+            // 保存表头信息
+            currentHeaders = fileInfo.headers || [];
             
             // 更新文件信息显示
             currentFileName.textContent = fileInfo.filename || `文件 ${fileId.substring(0, 8)}...`;
@@ -735,13 +752,21 @@
         async function deleteFileFromBackend(fileId) {
             if (confirm('确定要删除这个文件吗？此操作将从服务器永久删除文件。')) {
                 try {
+                    console.log('正在删除文件:', fileId);
                     const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`, {
                         method: 'DELETE'
                     });
                     
+                    console.log('删除响应状态:', response.status);
+                    
                     if (!response.ok) {
-                        throw new Error('删除文件失败');
+                        const errorText = await response.text();
+                        console.error('删除失败响应:', errorText);
+                        throw new Error(`删除文件失败: ${response.status} ${errorText}`);
                     }
+                    
+                    const result = await response.json();
+                    console.log('删除成功:', result);
                     
                     if (currentFileId === fileId) {
                         currentFileId = null;
@@ -965,19 +990,33 @@
                     if (confirm('您有未保存的更改，是否先保存再跳转？')) {
                         saveToBackend().then(() => {
                             // 保存数据到localStorage供可视化页面使用
-                            localStorage.setItem('fileId', currentFileId);
-                            if (currentHeaders && currentHeaders.length > 0) {
-                                localStorage.setItem('headers', JSON.stringify(currentHeaders));
-                            }
-                            window.location.href = 'visualization.html';
+                        console.log('Saving to localStorage (after save):');
+                        console.log('currentFileId:', currentFileId);
+                        console.log('currentHeaders:', currentHeaders);
+                        
+                        localStorage.setItem('fileId', currentFileId);
+                        if (currentHeaders && currentHeaders.length > 0) {
+                            localStorage.setItem('headers', JSON.stringify(currentHeaders));
+                            console.log('Headers saved to localStorage (after save)');
+                        } else {
+                            console.warn('No headers to save or headers array is empty (after save)');
+                        }
+                        window.location.href = 'visualization.html';
                         });
                         return;
                     }
                 }
                 // 保存数据到localStorage供可视化页面使用
+                console.log('Saving to localStorage:');
+                console.log('currentFileId:', currentFileId);
+                console.log('currentHeaders:', currentHeaders);
+                
                 localStorage.setItem('fileId', currentFileId);
                 if (currentHeaders && currentHeaders.length > 0) {
                     localStorage.setItem('headers', JSON.stringify(currentHeaders));
+                    console.log('Headers saved to localStorage');
+                } else {
+                    console.warn('No headers to save or headers array is empty');
                 }
                 window.location.href = 'visualization.html';
             } else {
