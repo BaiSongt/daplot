@@ -385,3 +385,34 @@ async def delete_file_data(file_id: str):
         "message": "File deleted successfully",
         "file_id": file_id
     }
+
+@app.get("/api/unique_values/{file_id}/{column_name}")
+async def get_unique_values(file_id: str, column_name: str):
+    """
+    Returns unique values for a specific column in a file.
+    """
+    logger.info(f"🔍 请求获取唯一值: 文件ID={file_id}, 列名={column_name}")
+    
+    df = data_storage.get(file_id)
+    if df is None:
+        logger.error(f"❌ 文件ID未找到: {file_id}")
+        raise HTTPException(status_code=404, detail="File ID not found.")
+    
+    if column_name not in df.columns:
+        logger.error(f"❌ 列名未找到: {column_name}")
+        raise HTTPException(status_code=404, detail=f"Column '{column_name}' not found in data.")
+    
+    try:
+        # 获取唯一值，排除NaN
+        unique_values = df[column_name].dropna().unique().tolist()
+        logger.info(f"✅ 获取到 {len(unique_values)} 个唯一值")
+        
+        return {
+            "values": unique_values,
+            "count": len(unique_values),
+            "column": column_name
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 获取唯一值失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting unique values: {e}")
