@@ -360,6 +360,35 @@
             color: #495057;
             font-size: 0.9rem;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .curve-control-panel h4:hover {
+            color: #007bff;
+        }
+
+        .curve-control-toggle {
+            font-size: 0.8rem;
+            transition: transform 0.2s ease;
+        }
+
+        .curve-control-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .curve-control-content {
+            max-height: 300px;
+            overflow-y: auto;
+            transition: max-height 0.3s ease;
+        }
+
+        .curve-control-content.collapsed {
+            max-height: 0;
+            overflow: hidden;
         }
 
         .curve-item {
@@ -371,6 +400,11 @@
             border: 1px solid #dee2e6;
             border-radius: 4px;
             margin-bottom: 8px;
+            transition: background-color 0.2s ease;
+        }
+
+        .curve-item:hover {
+            background: #f8f9fa;
         }
 
         .curve-name {
@@ -378,6 +412,7 @@
             font-size: 0.8rem;
             color: #495057;
             font-weight: 500;
+            min-width: 120px;
         }
 
         .curve-color-picker {
@@ -387,20 +422,45 @@
             border-radius: 3px;
             cursor: pointer;
             padding: 0;
+            transition: border-color 0.2s ease;
+        }
+
+        .curve-color-picker:hover {
+            border-color: #007bff;
         }
 
         .curve-marker-select {
-            width: 80px;
+            width: 100px;
             padding: 3px 6px;
             border: 1px solid #ced4da;
             border-radius: 3px;
             font-size: 0.75rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .curve-marker-select:hover,
+        .curve-marker-select:focus {
+            border-color: #007bff;
+            outline: none;
         }
 
         .curve-controls {
             display: flex;
             gap: 8px;
             align-items: center;
+        }
+
+        .curve-control-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .curve-control-buttons .btn {
+            font-size: 0.8rem;
+            padding: 4px 8px;
         }
 
         /* 图表上方控制区域样式 */
@@ -571,6 +631,22 @@
                     <!-- 图表控制区域 -->
                     <div id="chartControls" class="chart-controls" style="display: none;">
                         <div class="style-controls">
+                            <!-- 标题和轴标签设置 -->
+                            <div class="style-group">
+                                <label for="chartTitle">图表标题:</label>
+                                <input type="text" id="chartTitle" placeholder="请输入图表标题" style="min-width: 150px;">
+                            </div>
+                            
+                            <div class="style-group">
+                                <label for="xAxisTitle">X轴标题:</label>
+                                <input type="text" id="xAxisTitle" placeholder="请输入X轴标题" style="min-width: 120px;">
+                            </div>
+                            
+                            <div class="style-group">
+                                <label for="yAxisTitle">Y轴标题:</label>
+                                <input type="text" id="yAxisTitle" placeholder="请输入Y轴标题" style="min-width: 120px;">
+                            </div>
+                            
                             <div class="style-group">
                                 <label for="legendPosition">图例:</label>
                                 <select id="legendPosition">
@@ -629,14 +705,22 @@
                     
                     <!-- 曲线控制面板 -->
                     <div id="curveControlPanel" class="curve-control-panel">
-                        <h4>🎨 曲线样式控制</h4>
-                        <div id="curveControlList">
-                            <!-- 动态生成的曲线控制项 -->
-                        </div>
-                        <div style="margin-top: 10px;">
-                            <button class="btn" onclick="applyCurveStyles()" style="background-color: #28a745; border-color: #28a745; font-size: 0.8rem; padding: 4px 8px;">
-                                应用曲线样式
-                            </button>
+                        <h4 onclick="toggleCurveControlPanel()">
+                            🎨 曲线样式控制
+                            <span class="curve-control-toggle" id="curveControlToggle">▼</span>
+                        </h4>
+                        <div id="curveControlContent" class="curve-control-content">
+                            <div id="curveControlList">
+                                <!-- 动态生成的曲线控制项 -->
+                            </div>
+                            <div class="curve-control-buttons">
+                                <button class="btn" onclick="applyCurveStyles()" style="background-color: #28a745; border-color: #28a745;">
+                                    应用曲线样式
+                                </button>
+                                <button class="btn" onclick="resetAllCurveStyles()" style="background-color: #6c757d; border-color: #6c757d;">
+                                    重置样式
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -1327,18 +1411,23 @@
                     margins.b = 100; // 为底部图例留出更多空间
                 }
 
+                // 获取用户自定义的标题
+                const chartTitle = document.getElementById('chartTitle').value || `${xAxis}-${yAxis} 曲线图`;
+                const xAxisTitle = document.getElementById('xAxisTitle').value || xAxis;
+                const yAxisTitle = document.getElementById('yAxisTitle').value || yAxis;
+                
                 const layout = {
                     title: {
-                        text: `${xAxis}-${yAxis} 曲线图`,
+                        text: chartTitle,
                         font: { size: 16 }
                     },
                     xaxis: {
-                        title: xAxis,
+                        title: xAxisTitle,
                         showgrid: true,
                         gridcolor: '#e9ecef'
                     },
                     yaxis: {
-                        title: yAxis,
+                        title: yAxisTitle,
                         showgrid: true,
                         gridcolor: '#e9ecef'
                     },
@@ -1403,11 +1492,16 @@
             const controlList = document.getElementById('curveControlList');
             controlList.innerHTML = '';
             
+            if (traces.length === 0) {
+                controlList.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px; font-style: italic;">暂无曲线数据</div>';
+                return;
+            }
+            
             traces.forEach((trace, index) => {
                 const curveItem = document.createElement('div');
                 curveItem.className = 'curve-item';
                 curveItem.innerHTML = `
-                    <div class="curve-name">${trace.name}</div>
+                    <div class="curve-name" title="${trace.name}">${trace.name}</div>
                     <div class="curve-controls">
                         <input type="color" 
                                class="curve-color-picker" 
@@ -1429,6 +1523,73 @@
                 `;
                 controlList.appendChild(curveItem);
             });
+            
+            // 默认展开曲线控制面板（如果之前是折叠状态）
+            const content = document.getElementById('curveControlContent');
+            const toggle = document.getElementById('curveControlToggle');
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                toggle.textContent = '▼';
+                toggle.classList.remove('collapsed');
+            }
+        }
+        
+        /**
+         * 切换曲线控制面板的展开/折叠状态
+         */
+        function toggleCurveControlPanel() {
+            const content = document.getElementById('curveControlContent');
+            const toggle = document.getElementById('curveControlToggle');
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                toggle.textContent = '▼';
+                toggle.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                toggle.textContent = '▶';
+                toggle.classList.add('collapsed');
+            }
+        }
+        
+        /**
+         * 重置所有曲线样式为默认值
+         */
+        async function resetAllCurveStyles() {
+            try {
+                if (!currentPlot || !currentPlot.traces) {
+                    showMessage('请先生成图表', 'error');
+                    return;
+                }
+                
+                showMessage('正在重置曲线样式...', 'info');
+                
+                // 获取默认配色方案
+                const colorScheme = document.getElementById('colorScheme').value;
+                const colors = getColorScheme(colorScheme);
+                const markerStyle = document.getElementById('markerStyle').value;
+                
+                // 重置所有曲线控制项
+                const colorPickers = document.querySelectorAll('.curve-color-picker');
+                const markerSelects = document.querySelectorAll('.curve-marker-select');
+                
+                colorPickers.forEach((picker, index) => {
+                    picker.value = colors[index % colors.length];
+                });
+                
+                markerSelects.forEach(select => {
+                    select.value = markerStyle;
+                });
+                
+                // 应用重置后的样式
+                await applyCurveStyles();
+                
+                showMessage('曲线样式重置成功', 'success');
+                
+            } catch (error) {
+                console.error('重置曲线样式失败:', error);
+                showMessage('重置曲线样式失败: ' + error.message, 'error');
+            }
         }
         
         /**
