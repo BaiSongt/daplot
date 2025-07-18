@@ -1263,20 +1263,28 @@
                             });
 
                             if (xValues.length > 0 && yValues.length > 0) {
+                                const traceName = `${project}-${selectedStatusColumn}-${statusValue}`;
+                                
+                                // 检查是否已有该曲线的个性化设置
+                                let existingTrace = null;
+                                if (currentPlot && currentPlot.traces) {
+                                    existingTrace = currentPlot.traces.find(t => t.name === traceName);
+                                }
+                                
                                 const trace = {
                                     x: xValues,
                                     y: yValues,
                                     mode: 'lines+markers',
                                     type: 'scatter',
-                                    name: `${project}-${selectedStatusColumn}-${statusValue}`,
+                                    name: traceName,
                                     line: {
-                                        color: colors[colorIndex % colors.length],
+                                        color: existingTrace ? existingTrace.line.color : colors[colorIndex % colors.length],
                                         width: lineWidth
                                     },
                                     marker: {
-                                        color: colors[colorIndex % colors.length],
+                                        color: existingTrace ? existingTrace.marker.color : colors[colorIndex % colors.length],
                                         size: markerSize,
-                                        symbol: markerStyle
+                                        symbol: existingTrace ? existingTrace.marker.symbol : markerStyle
                                     }
                                 };
                                 traces.push(trace);
@@ -1428,10 +1436,47 @@
          */
         async function applyCurveStyles() {
             try {
-                showMessage('正在应用曲线样式并重新生成图表...', 'info');
+                showMessage('正在应用曲线样式...', 'info');
                 
-                // 直接调用生成图表函数，它会重新生成图表并应用当前设置
-                await generateChart();
+                if (!currentPlot || !currentPlot.traces) {
+                    showMessage('请先生成图表', 'error');
+                    return;
+                }
+                
+                // 获取曲线控制面板中的设置
+                const colorPickers = document.querySelectorAll('.curve-color-picker');
+                const markerSelects = document.querySelectorAll('.curve-marker-select');
+                
+                // 更新traces数据
+                const updatedTraces = currentPlot.traces.map((trace, index) => {
+                    const newTrace = { ...trace };
+                    
+                    // 应用颜色设置
+                    if (colorPickers[index]) {
+                        const newColor = colorPickers[index].value;
+                        newTrace.line = { ...newTrace.line, color: newColor };
+                        newTrace.marker = { ...newTrace.marker, color: newColor };
+                    }
+                    
+                    // 应用标记样式设置
+                    if (markerSelects[index]) {
+                        const newMarker = markerSelects[index].value;
+                        newTrace.marker = { ...newTrace.marker, symbol: newMarker };
+                    }
+                    
+                    return newTrace;
+                });
+                
+                // 重新绘制图表
+                await Plotly.redraw('plotDiv');
+                await Plotly.restyle('plotDiv', {
+                    'line.color': updatedTraces.map(t => t.line.color),
+                    'marker.color': updatedTraces.map(t => t.marker.color),
+                    'marker.symbol': updatedTraces.map(t => t.marker.symbol)
+                });
+                
+                // 更新currentPlot
+                currentPlot.traces = updatedTraces;
                 
                 showMessage('曲线样式应用成功', 'success');
                 
