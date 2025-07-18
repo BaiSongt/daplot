@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot - 可视化绘图</title>
+    <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.26.0/plotly.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            background: white;
+            border-right: 1px solid #e9ecef;
+            transition: width 0.3s ease;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #333;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 0;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .main-content {
+            width: 100%;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 15px;
+        }
+
+        .nav-bar {
+            background: none;
+            border-radius: 0;
+            padding: 0;
+            margin-bottom: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #666;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(74, 144, 226, 0.1);
+            color: #4a90e2;
+            transform: translateX(3px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .nav-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .controls-panel {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            height: fit-content;
+            border: 1px solid #e9ecef;
+        }
+
+        .chart-area {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e9ecef;
+            min-height: 600px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .section h3 {
+            margin-bottom: 12px;
+            color: #495057;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            color: #495057;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .tag {
+            background: #e9ecef;
+            color: #495057;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .tag:hover {
+            background: #dee2e6;
+        }
+
+        .tag.selected {
+            background: #4a90e2;
+            color: white;
+            border-color: #357abd;
+        }
+
+        .btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: #357abd;
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .chart-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .toolbar-btn {
+            background: white;
+            border: 1px solid #ced4da;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .toolbar-btn:hover {
+            background: #e9ecef;
+        }
+
+        .toolbar-btn.active {
+            background: #4a90e2;
+            color: white;
+            border-color: #357abd;
+        }
+
+        #plotDiv {
+            width: 100%;
+            height: 500px;
+        }
+
+        .no-data-message {
+            text-align: center;
+            color: #6c757d;
+            padding: 50px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>DaPlot</h1>
+            </div>
+            <nav class="nav-bar">
+                <a href="index.html" class="nav-btn">
+                    <i>🏠</i>
+                    <span>首页</span>
+                </a>
+                <a href="data_integrated.html" class="nav-btn">
+                    <i>📊</i>
+                    <span>数据操作</span>
+                </a>
+                <a href="visualization.html" class="nav-btn active">
+                    <i>📈</i>
+                    <span>可视化绘图</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="content-area">
+            <div class="main-content">
+                <div class="controls-panel">
+                    <div class="status-message" id="statusMessage"></div>
+
+                    <div class="section">
+                        <h3>🎯 项目选择</h3>
+                        <div id="projectTags" class="tag-container">
+                            <!-- 项目标签将在这里动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>⚙️ 状态变量选择</h3>
+                        <div id="statusTags" class="tag-container">
+                            <!-- 状态变量标签将在这里动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>📊 坐标轴设置</h3>
+                        <div class="form-group">
+                            <label for="xAxis">X轴:</label>
+                            <select id="xAxis" class="form-control">
+                                <option value="">请选择X轴变量</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="yAxis">Y轴:</label>
+                            <select id="yAxis" class="form-control">
+                                <option value="">请选择Y轴变量</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn" id="generateChart" onclick="generateChart()" disabled>
+                        生成图表
+                    </button>
+                </div>
+
+                <div class="chart-area">
+                    <div class="chart-toolbar" id="chartToolbar" style="display: none;">
+                        <button class="toolbar-btn" onclick="resetZoom()">🔍 重置缩放</button>
+                        <button class="toolbar-btn" onclick="downloadPNG()">📷 保存PNG</button>
+                        <button class="toolbar-btn" onclick="downloadSVG()">🎨 保存SVG</button>
+                    </div>
+                    <div id="plotDiv">
+                        <div class="no-data-message">
+                            <h3>📈 图表区域</h3>
+                            <p>请先选择项目、状态变量和坐标轴，然后点击"生成图表"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let fileId = null;
+        let headers = [];
+        let selectedProjects = [];
+        let selectedStatus = [];
+        let allData = [];
+        let currentPlot = null;
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDataFromStorage();
+            if (fileId) {
+                initializeVisualization();
+            } else {
+                showMessage('请先上传数据文件', 'error');
+                setTimeout(() => {
+                    window.location.href = 'data_integrated.html';
+                }, 2000);
+            }
+        });
+
+        function loadDataFromStorage() {
+            fileId = localStorage.getItem('fileId');
+            const headersStr = localStorage.getItem('headers');
+            if (headersStr) {
+                headers = JSON.parse(headersStr);
+                populateAxisSelectors();
+            }
+        }
+
+        function populateAxisSelectors() {
+            const xAxisSelect = document.getElementById('xAxis');
+            const yAxisSelect = document.getElementById('yAxis');
+
+            // 清空现有选项
+            xAxisSelect.innerHTML = '<option value="">请选择X轴变量</option>';
+            yAxisSelect.innerHTML = '<option value="">请选择Y轴变量</option>';
+
+            // 添加列选项
+            headers.forEach(header => {
+                const xOption = document.createElement('option');
+                xOption.value = header;
+                xOption.textContent = header;
+                xAxisSelect.appendChild(xOption);
+
+                const yOption = document.createElement('option');
+                yOption.value = header;
+                yOption.textContent = header;
+                yAxisSelect.appendChild(yOption);
+            });
+
+            // 添加变化监听器
+            xAxisSelect.addEventListener('change', checkFormValidity);
+            yAxisSelect.addEventListener('change', checkFormValidity);
+        }
+
+        async function initializeVisualization() {
+            try {
+                showMessage('正在加载数据...', 'info');
+
+                // 获取所有数据以提取唯一项目
+                const response = await fetch('http://localhost:8001/api/filter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_id: fileId,
+                        filters: {} // 不应用任何过滤器以获取所有数据
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                allData = await response.json();
+                generateProjectTags();
+                showMessage('数据加载完成', 'success');
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showMessage('数据加载失败: ' + error.message, 'error');
+            }
+        }
+
+        function generateProjectTags() {
+            const projectColumn = 'Project'; // 根据实际数据调整
+            const uniqueProjects = [...new Set(allData.map(row => row[projectColumn]).filter(p => p !== null && p !== undefined))];
+
+            const projectTagsContainer = document.getElementById('projectTags');
+            projectTagsContainer.innerHTML = '';
+
+            uniqueProjects.forEach(project => {
+                const tag = document.createElement('div');
+                tag.className = 'tag';
+                tag.textContent = project;
+                tag.onclick = () => toggleProjectSelection(project, tag);
+                projectTagsContainer.appendChild(tag);
+            });
+        }
+
+        function toggleProjectSelection(project, tagElement) {
+            const index = selectedProjects.indexOf(project);
+            if (index > -1) {
+                selectedProjects.splice(index, 1);
+                tagElement.classList.remove('selected');
+            } else {
+                selectedProjects.push(project);
+                tagElement.classList.add('selected');
+            }
+
+            updateStatusTags();
+            checkFormValidity();
+        }
+
+        async function updateStatusTags() {
+            if (selectedProjects.length === 0) {
+                document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择项目</p>';
+                return;
+            }
+
+            try {
+                // 根据选中的项目获取筛选后的数据
+                const response = await fetch('http://localhost:8001/api/filter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_id: fileId,
+                        filters: {
+                            'Project': selectedProjects
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const filteredData = await response.json();
+
+                // 假设状态变量是某个特定列，这里需要根据实际数据结构调整
+                // 为了演示，我们使用 'Ma' 列作为状态变量
+                const statusColumn = 'Ma';
+                const uniqueStatus = [...new Set(filteredData.map(row => row[statusColumn]).filter(s => s !== null && s !== undefined))];
+
+                const statusTagsContainer = document.getElementById('statusTags');
+                statusTagsContainer.innerHTML = '';
+
+                uniqueStatus.forEach(status => {
+                    const tag = document.createElement('div');
+                    tag.className = 'tag';
+                    tag.textContent = status;
+                    tag.onclick = () => toggleStatusSelection(status, tag);
+                    statusTagsContainer.appendChild(tag);
+                });
+
+            } catch (error) {
+                console.error('Error updating status tags:', error);
+                showMessage('更新状态变量失败: ' + error.message, 'error');
+            }
+        }
+
+        function toggleStatusSelection(status, tagElement) {
+            const index = selectedStatus.indexOf(status);
+            if (index > -1) {
+                selectedStatus.splice(index, 1);
+                tagElement.classList.remove('selected');
+            } else {
+                selectedStatus.push(status);
+                tagElement.classList.add('selected');
+            }
+
+            checkFormValidity();
+        }
+
+        function checkFormValidity() {
+            const xAxis = document.getElementById('xAxis').value;
+            const yAxis = document.getElementById('yAxis').value;
+            const generateBtn = document.getElementById('generateChart');
+
+            const isValid = selectedProjects.length > 0 &&
+                           selectedStatus.length > 0 &&
+                           xAxis && yAxis;
+
+            generateBtn.disabled = !isValid;
+        }
+
+        async function generateChart() {
+            const xAxis = document.getElementById('xAxis').value;
+            const yAxis = document.getElementById('yAxis').value;
+
+            if (!xAxis || !yAxis || selectedProjects.length === 0 || selectedStatus.length === 0) {
+                showMessage('请完成所有选择', 'error');
+                return;
+            }
+
+            try {
+                showMessage('正在生成图表...', 'info');
+
+                const response = await fetch('http://localhost:8001/api/plot_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_id: fileId,
+                        filters: {
+                            'Project': selectedProjects,
+                            'Ma': selectedStatus
+                        },
+                        x_axis: xAxis,
+                        y_axis: yAxis
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const plotData = await response.json();
+                renderChart(plotData);
+                showMessage('图表生成成功', 'success');
+
+            } catch (error) {
+                console.error('Error generating chart:', error);
+                showMessage('图表生成失败: ' + error.message, 'error');
+            }
+        }
+
+        function renderChart(plotData) {
+            const trace = {
+                x: plotData.x_values,
+                y: plotData.y_values,
+                mode: 'lines+markers',
+                type: 'scatter',
+                name: '数据曲线',
+                line: {
+                    color: '#4a90e2',
+                    width: 2
+                },
+                marker: {
+                    color: '#4a90e2',
+                    size: 6
+                }
+            };
+
+            const layout = {
+                title: {
+                    text: `${plotData.y_label} vs ${plotData.x_label}`,
+                    font: { size: 16 }
+                },
+                xaxis: {
+                    title: plotData.x_label,
+                    showgrid: true,
+                    gridcolor: '#e9ecef'
+                },
+                yaxis: {
+                    title: plotData.y_label,
+                    showgrid: true,
+                    gridcolor: '#e9ecef'
+                },
+                plot_bgcolor: 'white',
+                paper_bgcolor: 'white',
+                margin: { t: 50, r: 50, b: 50, l: 50 }
+            };
+
+            const config = {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToAdd: [
+                    {
+                        name: 'Download PNG',
+                        icon: Plotly.Icons.camera,
+                        click: function(gd) {
+                            Plotly.downloadImage(gd, {format: 'png', width: 800, height: 600, filename: 'chart'});
+                        }
+                    }
+                ],
+                modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
+            };
+
+            Plotly.newPlot('plotDiv', [trace], layout, config);
+            currentPlot = { trace, layout, config };
+
+            // 显示工具栏
+            document.getElementById('chartToolbar').style.display = 'flex';
+        }
+
+        function resetZoom() {
+            if (currentPlot) {
+                Plotly.relayout('plotDiv', {
+                    'xaxis.autorange': true,
+                    'yaxis.autorange': true
+                });
+            }
+        }
+
+        function downloadPNG() {
+            if (currentPlot) {
+                Plotly.downloadImage('plotDiv', {
+                    format: 'png',
+                    width: 1200,
+                    height: 800,
+                    filename: 'daplot_chart'
+                });
+            }
+        }
+
+        function downloadSVG() {
+            if (currentPlot) {
+                Plotly.downloadImage('plotDiv', {
+                    format: 'svg',
+                    width: 1200,
+                    height: 800,
+                    filename: 'daplot_chart'
+                });
+            }
+        }
+
+        function showMessage(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>

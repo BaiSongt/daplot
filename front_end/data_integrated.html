@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot - 数据操作 (SheetJS + Luckysheet + 后端集成)</title>
+    
+    <!-- Luckysheet CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/css/pluginsCss.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/plugins.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/css/luckysheet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/assets/iconfont/iconfont.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background: white;
+            border-right: 1px solid #e9ecef;
+            transition: width 0.3s ease;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #333;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-bar {
+            background: none;
+            border-radius: 0;
+            padding: 0;
+            margin-bottom: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #666;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(74, 144, 226, 0.1);
+            color: #4a90e2;
+            transform: translateX(3px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .nav-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .section {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e9ecef;
+        }
+
+        .section h3 {
+            margin-bottom: 12px;
+            color: #495057;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .file-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            background: #f8f9fa;
+            border-color: #4a90e2;
+        }
+
+        .file-item.active {
+            background: #e3f2fd;
+            border-color: #4a90e2;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .file-meta {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn:hover {
+            background: #357abd;
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 20px;
+        }
+
+        .toolbar-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-right: 5px;
+        }
+
+        .status-message {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .spreadsheet-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .spreadsheet-header {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .spreadsheet-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .spreadsheet-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #luckysheet {
+            width: 100%;
+            height: 100%;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #666;
+        }
+
+        .empty-state div {
+            max-width: 300px;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .sync-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .sync-indicator.synced {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sync-indicator.syncing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .sync-indicator.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>DaPlot</h1>
+            </div>
+            <nav class="nav-bar">
+                <a href="index.html" class="nav-btn">
+                    <i>🏠</i>
+                    <span>首页</span>
+                </a>
+                <a href="data_integrated.html" class="nav-btn active">
+                    <i>📊</i>
+                    <span>数据操作</span>
+                </a>
+                <a href="visualization.html" class="nav-btn">
+                    <i>📈</i>
+                    <span>可视化绘图</span>
+                </a>
+                <a href="donate.html" class="nav-btn">
+                    <i>❤️</i>
+                    <span>捐赠支持</span>
+                </a>
+            </nav>
+
+            <div class="section">
+                <h3>📁 文件管理</h3>
+                <div class="status-message" id="statusMessage"></div>
+                <button class="btn" onclick="document.getElementById('fileInput').click()">
+                    <i>📤</i> 导入Excel文件
+                </button>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                
+                <div style="margin: 10px 0;">
+                    <button class="btn btn-sm btn-warning" onclick="refreshFileList()">
+                        <i>🔄</i> 刷新列表
+                    </button>
+                </div>
+                
+                <div class="file-list" id="fileList" style="margin-top: 15px;">
+                    <!-- 文件列表将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">文件:</span>
+                    <button class="btn btn-sm" onclick="saveToBackend()">
+                        <i>💾</i> 保存到服务器
+                    </button>
+                    <button class="btn btn-sm" onclick="exportToExcel()">
+                        <i>📥</i> 导出Excel
+                    </button>
+                    <button class="btn btn-sm" onclick="exportToCSV()">
+                        <i>📄</i> 导出CSV
+                    </button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <span class="toolbar-label">数据:</span>
+                    <button class="btn btn-sm btn-success" onclick="goToVisualization()">
+                        <i>📈</i> 前往可视化
+                    </button>
+                </div>
+                
+                <div class="sync-indicator" id="syncIndicator" style="display: none;">
+                    <span id="syncStatus">已同步</span>
+                </div>
+            </div>
+
+            <div class="spreadsheet-container">
+                <div class="spreadsheet-header">
+                    <h3 id="currentFileName">请选择或导入Excel文件</h3>
+                    <div>
+                        <span id="dataInfo"></span>
+                    </div>
+                </div>
+                <div class="spreadsheet-content">
+                    <div id="luckysheet" class="empty-state">
+                        <div>
+                            <i>📊</i>
+                            <h3>暂无数据</h3>
+                            <p>请从左侧导入Excel文件或选择已有文件开始编辑</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SheetJS -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Luckysheet JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/js/plugin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/luckysheet.umd.js"></script>
+
+    <script>
+        // 全局变量
+        let currentFileId = null;
+        let currentWorkbook = null;
+        let isLuckysheetInitialized = false;
+        let hasUnsavedChanges = false;
+        let autoSaveInterval = null;
+        
+        // API配置
+        const API_BASE_URL = 'http://localhost:8001';
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            
+            // 文件选择事件
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // 加载文件列表
+            refreshFileList();
+            
+            // 设置自动保存
+            setupAutoSave();
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        }
+
+        async function uploadFile(file) {
+            // 验证文件类型
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                showMessage('请选择Excel文件 (.xlsx 或 .xls)', 'error');
+                return;
+            }
+
+            showMessage('正在上传文件...', 'success');
+            console.log('🔄 开始上传文件:', file.name, '大小:', file.size, 'bytes');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.file_id) {
+                    throw new Error('服务器响应中缺少文件ID');
+                }
+
+                showMessage('文件上传成功！', 'success');
+                refreshFileList();
+                
+                // 加载文件到Luckysheet
+                await loadFile(data.file_id);
+
+            } catch (error) {
+                console.error('❌ 上传错误详情:', error);
+                showMessage('文件上传失败: ' + error.message, 'error');
+            }
+        }
+
+        async function refreshFileList() {
+            try {
+                showMessage('正在刷新文件列表...', 'success');
+                
+                const response = await fetch(`${API_BASE_URL}/api/files`);
+                if (!response.ok) {
+                    throw new Error('获取文件列表失败');
+                }
+                
+                const data = await response.json();
+                displayFileList(data.files);
+                
+            } catch (error) {
+                console.error('刷新文件列表失败:', error);
+                showMessage('刷新文件列表失败: ' + error.message, 'error');
+            }
+        }
+
+        function displayFileList(files) {
+            const fileList = document.getElementById('fileList');
+            
+            if (!files || files.length === 0) {
+                fileList.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无文件</div>';
+                return;
+            }
+            
+            fileList.innerHTML = files.map(file => `
+                <div class="file-item ${file.file_id === currentFileId ? 'active' : ''}" onclick="loadFile('${file.file_id}')">
+                    <div class="file-info">
+                        <div class="file-name">文件 ${file.file_id.substring(0, 8)}...</div>
+                        <div class="file-meta">${file.rows}行 × ${file.columns}列</div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteFileFromBackend('${file.file_id}')">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadFile(fileId) {
+            try {
+                showMessage('正在加载文件...', 'success');
+                
+                // 从后端获取完整数据
+                const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`);
+                if (!response.ok) {
+                    throw new Error('文件不存在或已过期');
+                }
+                
+                const data = await response.json();
+                loadFileToLuckysheet(data, fileId);
+                
+                currentFileId = fileId;
+                refreshFileList(); // 刷新文件列表以更新active状态
+                updateSyncIndicator('synced');
+                
+            } catch (error) {
+                console.error('加载文件失败:', error);
+                showMessage('加载文件失败: ' + error.message, 'error');
+            }
+        }
+
+        function loadFileToLuckysheet(fileInfo, fileId) {
+            const currentFileName = document.getElementById('currentFileName');
+            const dataInfo = document.getElementById('dataInfo');
+            
+            // 更新文件信息显示
+            currentFileName.textContent = fileInfo.filename || `文件 ${fileId.substring(0, 8)}...`;
+            dataInfo.textContent = `${fileInfo.headers.length}列 × ${fileInfo.preview_data ? fileInfo.preview_data.length : 0}行`;
+            
+            // 准备Luckysheet数据格式
+            const luckysheetData = [];
+            
+            // 添加表头行
+            if (fileInfo.headers && fileInfo.headers.length > 0) {
+                const headerRow = [];
+                fileInfo.headers.forEach((header, colIndex) => {
+                    luckysheetData.push({
+                        r: 0,
+                        c: colIndex,
+                        v: {
+                            v: header,
+                            ct: { fa: 'General', t: 'g' },
+                            m: header,
+                            bg: '#f8f9fa',
+                            bl: 1 // 粗体
+                        }
+                    });
+                });
+            }
+            
+            // 添加数据行
+            if (fileInfo.preview_data && fileInfo.preview_data.length > 0) {
+                fileInfo.preview_data.forEach((row, rowIndex) => {
+                    fileInfo.headers.forEach((header, colIndex) => {
+                        const cellValue = row[header];
+                        if (cellValue !== undefined && cellValue !== null && cellValue !== '') {
+                            luckysheetData.push({
+                                r: rowIndex + 1, // +1 因为第0行是表头
+                                c: colIndex,
+                                v: {
+                                    v: cellValue,
+                                    ct: { fa: 'General', t: 'g' },
+                                    m: cellValue.toString()
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+            
+            // 销毁现有的Luckysheet实例
+            if (isLuckysheetInitialized) {
+                luckysheet.destroy();
+            }
+            
+            // 清空容器
+            const container = document.getElementById('luckysheet');
+            container.innerHTML = '';
+            container.className = '';
+            
+            // 初始化Luckysheet
+            const options = {
+                container: 'luckysheet',
+                title: fileInfo.filename || 'Untitled',
+                lang: 'zh',
+                data: [{
+                    name: 'Sheet1',
+                    color: '',
+                    index: 0,
+                    status: 1,
+                    order: 0,
+                    hide: 0,
+                    row: Math.max(50, (fileInfo.preview_data ? fileInfo.preview_data.length : 0) + 10),
+                    column: Math.max(26, fileInfo.headers.length + 5),
+                    defaultRowHeight: 19,
+                    defaultColWidth: 73,
+                    celldata: luckysheetData,
+                    config: {},
+                    scrollLeft: 0,
+                    scrollTop: 0,
+                    luckysheet_select_save: [],
+                    calcChain: [],
+                    isPivotTable: false,
+                    pivotTable: {},
+                    filter_select: {},
+                    filter: null,
+                    luckysheet_alternateformat_save: [],
+                    luckysheet_alternateformat_save_modelCustom: [],
+                    luckysheet_conditionformat_save: {},
+                    frozen: {},
+                    chart: [],
+                    zoomRatio: 1,
+                    image: [],
+                    showGridLines: 1,
+                    dataVerification: {}
+                }],
+                allowCopy: true,
+                allowEdit: true,
+                allowUpdate: true,
+                functionButton: '',
+                updateUrl: '', // 禁用自动保存
+                updateImageUrl: '',
+                allowEditBackColor: true,
+                enableAddRow: true,
+                enableAddCol: true,
+                userInfo: false,
+                myFolderUrl: '',
+                devicePixelRatio: window.devicePixelRatio,
+                hook: {
+                    cellEditBefore: function(range) {
+                        console.log('开始编辑单元格:', range);
+                    },
+                    cellUpdateBefore: function(r, c, value, isRefresh) {
+                        console.log('单元格更新:', { r, c, value, isRefresh });
+                        markAsChanged();
+                        return true;
+                    },
+                    sheetActivate: function(index, isPivotInitial, isNewSheet) {
+                        console.log('工作表激活:', { index, isPivotInitial, isNewSheet });
+                    }
+                }
+            };
+            
+            luckysheet.create(options);
+            isLuckysheetInitialized = true;
+            hasUnsavedChanges = false;
+            
+            showMessage('文件加载成功！', 'success');
+        }
+
+        async function deleteFileFromBackend(fileId) {
+            if (confirm('确定要删除这个文件吗？此操作将从服务器永久删除文件。')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('删除文件失败');
+                    }
+                    
+                    if (currentFileId === fileId) {
+                        currentFileId = null;
+                        
+                        // 销毁Luckysheet实例
+                        if (isLuckysheetInitialized) {
+                            luckysheet.destroy();
+                            isLuckysheetInitialized = false;
+                        }
+                        
+                        const container = document.getElementById('luckysheet');
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div>
+                                    <i>📊</i>
+                                    <h3>暂无数据</h3>
+                                    <p>请从左侧导入Excel文件或选择已有文件开始编辑</p>
+                                </div>
+                            </div>
+                        `;
+                        document.getElementById('currentFileName').textContent = '请选择或导入Excel文件';
+                        document.getElementById('dataInfo').textContent = '';
+                        updateSyncIndicator('synced');
+                    }
+                    
+                    refreshFileList();
+                    showMessage('文件已删除', 'success');
+                    
+                } catch (error) {
+                    console.error('删除文件失败:', error);
+                    showMessage('删除文件失败: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function saveToBackend() {
+            if (!isLuckysheetInitialized || !currentFileId) {
+                showMessage('没有可保存的文件', 'error');
+                return;
+            }
+            
+            try {
+                updateSyncIndicator('syncing');
+                showMessage('正在保存到服务器...', 'success');
+                
+                // 获取当前Luckysheet数据
+                const sheetData = luckysheet.getSheetData();
+                
+                // 转换数据格式
+                const headers = [];
+                const dataRows = [];
+                
+                // 提取数据
+                if (sheetData && sheetData.length > 0) {
+                    // 获取最大行列数
+                    let maxRow = 0;
+                    let maxCol = 0;
+                    sheetData.forEach(row => {
+                        if (row) {
+                            maxRow = Math.max(maxRow, row.length);
+                            row.forEach((cell, colIndex) => {
+                                if (cell && cell.v !== undefined && cell.v !== null && cell.v !== '') {
+                                    maxCol = Math.max(maxCol, colIndex + 1);
+                                }
+                            });
+                        }
+                    });
+                    
+                    // 提取表头（第一行）
+                    if (sheetData[0]) {
+                        for (let c = 0; c < maxCol; c++) {
+                            const cell = sheetData[0][c];
+                            headers.push(cell && cell.v ? cell.v.toString() : `列${c + 1}`);
+                        }
+                    }
+                    
+                    // 提取数据行（从第二行开始）
+                    for (let r = 1; r < sheetData.length; r++) {
+                        const row = sheetData[r];
+                        if (row) {
+                            const dataRow = [];
+                            for (let c = 0; c < maxCol; c++) {
+                                const cell = row[c];
+                                dataRow.push(cell && cell.v !== undefined ? cell.v : '');
+                            }
+                            // 只添加非空行
+                            if (dataRow.some(cell => cell !== '')) {
+                                dataRows.push(dataRow);
+                            }
+                        }
+                    }
+                }
+                
+                // 发送到后端
+                const savePayload = {
+                    file_id: currentFileId,
+                    headers: headers,
+                    data: dataRows
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/api/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(savePayload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('保存失败');
+                }
+                
+                const result = await response.json();
+                
+                hasUnsavedChanges = false;
+                updateSyncIndicator('synced');
+                showMessage('文件已保存到服务器', 'success');
+                
+            } catch (error) {
+                console.error('保存失败:', error);
+                updateSyncIndicator('error');
+                showMessage('保存失败: ' + error.message, 'error');
+            }
+        }
+
+        function exportToExcel() {
+            if (!isLuckysheetInitialized) {
+                showMessage('没有可导出的数据', 'error');
+                return;
+            }
+            
+            try {
+                // 获取当前Luckysheet数据
+                const sheetData = luckysheet.getSheetData();
+                
+                // 转换为SheetJS格式
+                const wsData = [];
+                if (sheetData && sheetData.length > 0) {
+                    sheetData.forEach(row => {
+                        if (row) {
+                            const rowData = [];
+                            row.forEach(cell => {
+                                rowData.push(cell && cell.v !== undefined ? cell.v : '');
+                            });
+                            wsData.push(rowData);
+                        }
+                    });
+                }
+                
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+                
+                // 导出文件
+                const fileName = currentFileId ? `file_${currentFileId.substring(0, 8)}.xlsx` : 'export.xlsx';
+                XLSX.writeFile(wb, fileName);
+                
+                showMessage('Excel文件导出成功', 'success');
+            } catch (error) {
+                console.error('导出失败:', error);
+                showMessage('导出失败: ' + error.message, 'error');
+            }
+        }
+
+        function exportToCSV() {
+            if (!isLuckysheetInitialized) {
+                showMessage('没有可导出的数据', 'error');
+                return;
+            }
+            
+            try {
+                // 获取当前Luckysheet数据
+                const sheetData = luckysheet.getSheetData();
+                
+                // 转换为CSV格式
+                const csvData = [];
+                if (sheetData && sheetData.length > 0) {
+                    sheetData.forEach(row => {
+                        if (row) {
+                            const rowData = [];
+                            row.forEach(cell => {
+                                const value = cell && cell.v !== undefined ? cell.v.toString() : '';
+                                // 处理包含逗号或引号的值
+                                if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                                    rowData.push('"' + value.replace(/"/g, '""') + '"');
+                                } else {
+                                    rowData.push(value);
+                                }
+                            });
+                            csvData.push(rowData.join(','));
+                        }
+                    });
+                }
+                
+                // 创建下载链接
+                const csvContent = csvData.join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                
+                const fileName = currentFileId ? `file_${currentFileId.substring(0, 8)}.csv` : 'export.csv';
+                link.setAttribute('download', fileName);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showMessage('CSV文件导出成功', 'success');
+            } catch (error) {
+                console.error('导出失败:', error);
+                showMessage('导出失败: ' + error.message, 'error');
+            }
+        }
+
+        function goToVisualization() {
+            if (currentFileId) {
+                // 如果有未保存的更改，提示用户
+                if (hasUnsavedChanges) {
+                    if (confirm('您有未保存的更改，是否先保存再跳转？')) {
+                        saveToBackend().then(() => {
+                            // 保存数据到localStorage供可视化页面使用
+                            localStorage.setItem('fileId', currentFileId);
+                            if (currentHeaders && currentHeaders.length > 0) {
+                                localStorage.setItem('headers', JSON.stringify(currentHeaders));
+                            }
+                            window.location.href = 'visualization.html';
+                        });
+                        return;
+                    }
+                }
+                // 保存数据到localStorage供可视化页面使用
+                localStorage.setItem('fileId', currentFileId);
+                if (currentHeaders && currentHeaders.length > 0) {
+                    localStorage.setItem('headers', JSON.stringify(currentHeaders));
+                }
+                window.location.href = 'visualization.html';
+            } else {
+                showMessage('请先选择文件', 'error');
+            }
+        }
+
+        function markAsChanged() {
+            hasUnsavedChanges = true;
+            updateSyncIndicator('unsaved');
+        }
+
+        function updateSyncIndicator(status) {
+            const indicator = document.getElementById('syncIndicator');
+            const statusText = document.getElementById('syncStatus');
+            
+            indicator.style.display = 'inline-flex';
+            indicator.className = `sync-indicator ${status}`;
+            
+            switch (status) {
+                case 'synced':
+                    statusText.textContent = '已同步';
+                    break;
+                case 'syncing':
+                    statusText.textContent = '同步中...';
+                    break;
+                case 'unsaved':
+                    statusText.textContent = '有未保存更改';
+                    indicator.className = 'sync-indicator error';
+                    break;
+                case 'error':
+                    statusText.textContent = '同步失败';
+                    break;
+                default:
+                    indicator.style.display = 'none';
+            }
+        }
+
+        function setupAutoSave() {
+            // 每30秒自动保存一次（如果有更改）
+            autoSaveInterval = setInterval(() => {
+                if (hasUnsavedChanges && currentFileId) {
+                    console.log('自动保存...');
+                    saveToBackend();
+                }
+            }, 30000);
+        }
+
+        function showMessage(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', function(e) {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '您有未保存的更改，确定要离开吗？';
+            }
+            
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot - 数据可视化平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            transition: width 0.3s ease;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #333;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            margin: 0;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 0;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .main-content {
+            width: 100%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .nav-bar {
+            background: none;
+            border-radius: 0;
+            padding: 0;
+            margin-bottom: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #666;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(74, 144, 226, 0.1);
+            color: #4a90e2;
+            transform: translateX(3px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .nav-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .hero-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 30px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .feature-description {
+            color: #666;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .cta-section {
+            margin-top: 50px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(74, 144, 226, 0.4);
+            background: linear-gradient(135deg, #357abd, #2c5aa0);
+        }
+
+        .stats-section {
+            display: flex;
+            justify-content: space-around;
+            margin: 40px 0;
+            padding: 30px 0;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4a90e2;
+            display: block;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .footer-info {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .page-wrapper {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .nav-bar {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .hero-section {
+                padding: 40px 20px;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .stats-section {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>DaPlot</h1>
+            </div>
+            <nav class="nav-bar">
+                <a href="index.html" class="nav-btn active">
+                    <i>🏠</i>
+                    <span>首页</span>
+                </a>
+                <a href="data_integrated.html" class="nav-btn">
+                    <i>📊</i>
+                    <span>数据操作</span>
+                </a>
+                <a href="visualization.html" class="nav-btn">
+                    <i>📈</i>
+                    <span>可视化绘图</span>
+                </a>
+                <a href="donate.html" class="nav-btn">
+                    <i>❤️</i>
+                    <span>捐赠支持</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="content-area">
+            <div class="main-content">
+                <div class="hero-section">
+                    <h1 class="hero-title">DaPlot</h1>
+                    <p class="hero-subtitle">
+                        强大而直观的数据可视化平台<br>
+                        让您的数据分析更加高效和美观
+                    </p>
+
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <span class="feature-icon">📁</span>
+                            <h3 class="feature-title">简单上传</h3>
+                            <p class="feature-description">
+                                支持Excel文件拖拽上传，自动解析数据结构，快速开始分析工作
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">🔍</span>
+                            <h3 class="feature-title">智能筛选</h3>
+                            <p class="feature-description">
+                                灵活的数据筛选功能，支持多条件组合，精确定位您需要的数据
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">📊</span>
+                            <h3 class="feature-title">交互式图表</h3>
+                            <p class="feature-description">
+                                基于Plotly.js的高质量图表，支持缩放、平移和多种导出格式
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="stats-section">
+                        <div class="stat-item">
+                            <span class="stat-number">3</span>
+                            <span class="stat-label">核心功能</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">∞</span>
+                            <span class="stat-label">数据支持</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">100%</span>
+                            <span class="stat-label">开源免费</span>
+                        </div>
+                    </div>
+
+                    <div class="cta-section">
+                        <a href="data_integrated.html" class="cta-button">
+                            开始使用 →
+                        </a>
+                    </div>
+
+                    <div class="footer-info">
+                        <p>
+                            <strong>使用流程：</strong><br>
+                            1. 📊 上传您的Excel数据文件<br>
+                            2. 🎯 选择项目和状态变量进行筛选<br>
+                            3. 📈 设置坐标轴并生成可视化图表
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 简单的页面交互
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否有已上传的数据
+            const fileId = localStorage.getItem('fileId');
+            const fileName = localStorage.getItem('fileName');
+
+            if (fileId && fileName) {
+                // 如果有数据，更新CTA按钮
+                const ctaButton = document.querySelector('.cta-button');
+                ctaButton.innerHTML = `继续分析 "${fileName}" →`;
+                ctaButton.href = 'visualization.html';
+            }
+
+            // 添加特性卡片的悬停效果
+            const featureCards = document.querySelectorAll('.feature-card');
+            featureCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.02)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // 统计数字动画
+            const statNumbers = document.querySelectorAll('.stat-number');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const target = entry.target;
+                        const finalValue = target.textContent;
+
+                        if (finalValue !== '∞' && finalValue !== '100%') {
+                            animateNumber(target, 0, parseInt(finalValue), 1000);
+                        }
+                    }
+                });
+            });
+
+            statNumbers.forEach(num => observer.observe(num));
+        });
+
+        function animateNumber(element, start, end, duration) {
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                const current = Math.floor(start + (end - start) * progress);
+                element.textContent = current;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+    </script>
+</body>
+</html>

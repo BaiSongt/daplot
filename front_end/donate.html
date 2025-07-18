@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot - 捐赠支持</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            transition: width 0.3s ease;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #333;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            margin: 0;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 0;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .main-content {
+            width: 100%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .nav-bar {
+            background: none;
+            border-radius: 0;
+            padding: 0;
+            margin-bottom: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #666;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(74, 144, 226, 0.1);
+            color: #4a90e2;
+            transform: translateX(3px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .nav-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .donate-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .donate-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .donate-subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .donate-description {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 40px;
+            line-height: 1.8;
+            text-align: left;
+            background: rgba(74, 144, 226, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #4a90e2;
+        }
+
+        .qr-codes-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+            margin: 40px 0;
+        }
+
+        .qr-code-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .qr-code-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .qr-code-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .qr-code-image {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .qr-code-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .qr-code-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .wechat-card {
+            border-top: 3px solid #07c160;
+        }
+
+        .alipay-card {
+            border-top: 3px solid #1677ff;
+        }
+
+        .thank-you-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(53, 122, 189, 0.1));
+            border-radius: 15px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+
+        .thank-you-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #4a90e2;
+        }
+
+        .thank-you-text {
+            color: #555;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .contact-info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .page-wrapper {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .nav-bar {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .donate-section {
+                padding: 40px 20px;
+            }
+
+            .donate-title {
+                font-size: 2.2rem;
+            }
+
+            .qr-codes-container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .qr-code-image {
+                width: 180px;
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>DaPlot</h1>
+            </div>
+            <nav class="nav-bar">
+                <a href="index.html" class="nav-btn">
+                    <i>🏠</i>
+                    <span>首页</span>
+                </a>
+                <a href="data_integrated.html" class="nav-btn">
+                    <i>📊</i>
+                    <span>数据操作</span>
+                </a>
+                <a href="visualization.html" class="nav-btn">
+                    <i>📈</i>
+                    <span>可视化绘图</span>
+                </a>
+                <a href="donate.html" class="nav-btn active">
+                    <i>❤️</i>
+                    <span>捐赠支持</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="content-area">
+            <div class="main-content">
+                <div class="donate-section">
+                    <h1 class="donate-title">支持 DaPlot</h1>
+                    <p class="donate-subtitle">
+                        您的支持是我们持续改进的动力
+                    </p>
+
+                    <div class="donate-description">
+                        <p><strong>为什么需要您的支持？</strong></p>
+                        <ul style="text-align: left; margin-top: 15px; padding-left: 20px;">
+                            <li>🚀 持续开发新功能和改进用户体验</li>
+                            <li>🔧 维护服务器和基础设施运行</li>
+                            <li>📚 提供更好的文档和技术支持</li>
+                            <li>🌟 保持项目的开源和免费使用</li>
+                        </ul>
+                    </div>
+
+                    <div class="qr-codes-container">
+                        <div class="qr-code-card wechat-card">
+                            <h3 class="qr-code-title">💚 微信支付</h3>
+                            <img src="wx.jpg" alt="微信支付二维码" class="qr-code-image">
+                            <p class="qr-code-description">
+                                使用微信扫描上方二维码<br>
+                                支持项目发展
+                            </p>
+                        </div>
+
+                        <div class="qr-code-card alipay-card">
+                            <h3 class="qr-code-title">💙 支付宝</h3>
+                            <img src="ali.jpg" alt="支付宝二维码" class="qr-code-image">
+                            <p class="qr-code-description">
+                                使用支付宝扫描上方二维码<br>
+                                为开源项目贡献力量
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="thank-you-section">
+                        <h3 class="thank-you-title">🙏 感谢您的支持</h3>
+                        <p class="thank-you-text">
+                            无论金额大小，您的每一份支持都对我们意义重大。您的捐赠将直接用于：
+                            <br><br>
+                            • 改进软件功能和性能优化<br>
+                            • 增加新的数据可视化图表类型<br>
+                            • 提升用户界面和交互体验<br>
+                            • 维护项目的长期可持续发展
+                            <br><br>
+                            <strong>DaPlot 将始终保持开源免费，让更多人受益于数据可视化的便利。</strong>
+                        </p>
+                    </div>
+
+                    <div class="contact-info">
+                        <p>
+                            <strong>其他支持方式：</strong><br>
+                            • 在GitHub上给项目点星⭐<br>
+                            • 向朋友推荐DaPlot<br>
+                            • 提交Bug报告和功能建议<br>
+                            • 参与代码贡献和文档完善
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加二维码图片的交互效果
+            const qrImages = document.querySelectorAll('.qr-code-image');
+            qrImages.forEach(img => {
+                img.addEventListener('click', function() {
+                    // 创建模态框显示大图
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.8);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1000;
+                        cursor: pointer;
+                    `;
+                    
+                    const largeImg = document.createElement('img');
+                    largeImg.src = this.src;
+                    largeImg.alt = this.alt;
+                    largeImg.style.cssText = `
+                        max-width: 90%;
+                        max-height: 90%;
+                        border-radius: 10px;
+                        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                    `;
+                    
+                    modal.appendChild(largeImg);
+                    document.body.appendChild(modal);
+                    
+                    // 点击模态框关闭
+                    modal.addEventListener('click', function() {
+                        document.body.removeChild(modal);
+                    });
+                });
+            });
+
+            // 添加卡片悬停效果
+            const qrCards = document.querySelectorAll('.qr-code-card');
+            qrCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
