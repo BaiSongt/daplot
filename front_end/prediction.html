@@ -143,7 +143,7 @@
         }
 
         .controls-panel {
-            width: 300px;
+            width: 400px;
             background: white;
             border-radius: 12px;
             padding: 20px;
@@ -510,6 +510,100 @@
             color: #667eea;
             font-weight: 600;
         }
+
+        /* 灵活表头选择管理样式 */
+        .flexible-header-manager {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .manager-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .manager-header span {
+            font-size: 11px;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 11px;
+            width: auto;
+        }
+
+        .flexible-header-list {
+            min-height: 20px;
+        }
+
+        .flexible-header-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .flexible-header-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .header-item-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .header-item-controls select {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .remove-header-btn {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: white;
+            padding: 4px 8px;
+            font-size: 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            border: none;
+            transition: background 0.3s ease;
+        }
+
+        .remove-header-btn:hover {
+            background: #c82333;
+        }
+
+        .header-values-container {
+            margin-top: 8px;
+        }
+
+        .header-values-label {
+            font-size: 10px;
+            color: #6c757d;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .global-indicator {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px dashed #dee2e6;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
     </style>
     <!-- DaPlot 快速修复脚本 -->
     <script src="/assets/js/lib-loader.js"></script>
@@ -566,37 +660,23 @@
                         <div id="currentFileInfo" style="font-size: 10px; color: #666; margin-top: 3px; padding: 3px; background: #f8f9fa; border-radius: 2px;"></div>
                     </div>
 
-                    <div class="section flexible-selector">
-                        <h4>🎯 灵活表头选择</h4>
-                        <div class="form-group">
-                            <label for="headerColumn">选择要分析的表头列:</label>
-                            <select id="headerColumn" class="form-control" onchange="updateHeaderValues()">
-                                <option value="">请选择表头列</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>选择表头内容:</label>
-                            <div id="headerValueTags" class="tag-container">
-                                <!-- 表头内容标签将在这里动态生成 -->
+                    <div class="section">
+                        <h3 style="font-size: 13px; margin-bottom: 8px;">🎯 灵活表头选择管理</h3>
+                        <div class="flexible-header-manager">
+                            <div class="manager-header">
+                                <span>当前筛选条件 (不选择则默认全局)</span>
+                                <button class="btn btn-small" onclick="addFlexibleHeaderSelector()" style="background-color: #28a745; border-color: #28a745; font-size: 11px; padding: 4px 8px;">+ 添加筛选</button>
                             </div>
-                        </div>
-                        <div id="groupValueTags" class="header-tags">
-                            <!-- 分组值标签将在这里动态生成 -->
+                            <div id="flexibleHeaderList" class="flexible-header-list">
+                                <!-- 动态生成的灵活表头选择器将在这里显示 -->
+                            </div>
+                            <div class="global-indicator" id="globalIndicator" style="display: block;">
+                                <span style="color: #6c757d; font-size: 11px;">📊 当前为全局模式 - 显示所有数据</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="section">
-                        <h3 style="font-size: 13px; margin-bottom: 8px;">⚙️ 状态变量选择</h3>
-                        <div class="form-group">
-                            <label for="statusColumn">状态量列:</label>
-                            <select id="statusColumn" class="form-control">
-                                <option value="">请选择状态量列</option>
-                            </select>
-                        </div>
-                        <div id="statusTags" class="tag-container">
-                            <!-- 状态值标签将在这里动态生成 -->
-                        </div>
-                    </div>
+
 
                     <div class="section">
                         <h3 style="font-size: 13px; margin-bottom: 8px;">📊 坐标轴设置</h3>
@@ -755,10 +835,9 @@
         // 全局变量
         let fileId = null;
         let headers = [];
-        let selectedHeaderColumn = '';
-        let selectedHeaderValues = [];
-        let selectedStatusColumn = '';
-        let selectedStatus = [];
+
+
+
         let allData = [];
         let currentPlot = null;
         let originalData = null;
@@ -887,14 +966,11 @@
         // 检查表单有效性
         function checkFormValidity() {
             const fileSelector = document.getElementById('fileSelector');
-            const headerColumn = document.getElementById('headerColumn');
             const xAxis = document.getElementById('xAxis');
             const yAxis = document.getElementById('yAxis');
             const generateBtn = document.getElementById('generateChart');
 
             const isValid = fileSelector.value &&
-                           headerColumn.value &&
-                           selectedHeaderValues.length > 0 &&
                            xAxis.value &&
                            yAxis.value;
 
@@ -914,9 +990,7 @@
                 fileSelector.value = fileId;
 
                 updateCurrentFileInfo();
-                populateHeaderColumnSelector();
                 populateAxisSelectors();
-                populateStatusColumnSelector();
             }
         }
 
@@ -1038,9 +1112,7 @@
                 localStorage.setItem('headers', JSON.stringify(headers));
 
                 updateCurrentFileInfo();
-                populateHeaderColumnSelector();
                 populateAxisSelectors();
-                populateStatusColumnSelector();
                 clearVisualization();
 
                 if (fileId) {
@@ -1093,154 +1165,164 @@
         }
 
         // 填充状态列选择器
-        function populateStatusColumnSelector() {
-            const statusColumnSelect = document.getElementById('statusColumn');
-            statusColumnSelect.innerHTML = '<option value="">请选择状态量列</option>';
 
-            headers.forEach(header => {
-                const option = document.createElement('option');
-                option.value = header;
-                option.textContent = header;
-                statusColumnSelect.appendChild(option);
-            });
-
-            statusColumnSelect.addEventListener('change', updateStatusValues);
-        }
 
 
         // 这些函数已被删除，现在使用headerColumn相关功能
 
-        // 更新状态值
-        async function updateStatusValues() {
-            const statusColumn = document.getElementById('statusColumn').value;
-            selectedStatusColumn = statusColumn;
 
-            if (!statusColumn || !fileId) {
-                document.getElementById('statusTags').innerHTML = '';
-                selectedStatus = [];
-                return;
-            }
 
-            try {
-                const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${statusColumn}`));
-                if (!response.ok) {
-                    throw new Error('获取状态值失败');
+
+
+        // ===== 灵活表头选择功能 =====
+        let flexibleHeaderSelectors = [];
+        let selectorIdCounter = 0;
+
+        // 添加灵活表头选择器
+        function addFlexibleHeaderSelector() {
+            const selectorId = `selector_${selectorIdCounter++}`;
+            const selector = {
+                id: selectorId,
+                column: '',
+                selectedValues: []
+            };
+            
+            flexibleHeaderSelectors.push(selector);
+            renderFlexibleHeaderSelectors();
+            updateGlobalIndicator();
+        }
+
+        // 移除灵活表头选择器
+        function removeFlexibleHeaderSelector(selectorId) {
+            flexibleHeaderSelectors = flexibleHeaderSelectors.filter(s => s.id !== selectorId);
+            renderFlexibleHeaderSelectors();
+            updateGlobalIndicator();
+        }
+
+        // 渲染灵活表头选择器
+        function renderFlexibleHeaderSelectors() {
+            const container = document.getElementById('flexibleHeaderList');
+            container.innerHTML = '';
+            
+            flexibleHeaderSelectors.forEach(selector => {
+                const selectorDiv = document.createElement('div');
+                selectorDiv.className = 'flexible-header-item';
+                selectorDiv.innerHTML = `
+                    <div class="header-item-controls">
+                        <select onchange="updateSelectorColumn('${selector.id}', this.value)">
+                            <option value="">选择列</option>
+                            ${headers.map(header => 
+                                `<option value="${header}" ${selector.column === header ? 'selected' : ''}>${header}</option>`
+                            ).join('')}
+                        </select>
+                        <button class="remove-header-btn" onclick="removeFlexibleHeaderSelector('${selector.id}')">
+                            删除
+                        </button>
+                    </div>
+                    <div class="header-values-container" id="values_${selector.id}">
+                        ${selector.column ? `<span class="header-values-label">选择 ${selector.column} 的值:</span>` : ''}
+                        <div class="header-tags" id="tags_${selector.id}"></div>
+                    </div>
+                `;
+                container.appendChild(selectorDiv);
+                
+                if (selector.column) {
+                    loadHeaderValues(selector.id, selector.column);
                 }
+            });
+        }
 
+        // 更新选择器列
+        function updateSelectorColumn(selectorId, column) {
+            const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
+            if (selector) {
+                selector.column = column;
+                selector.selectedValues = [];
+                renderFlexibleHeaderSelectors();
+            }
+        }
+
+        // 加载表头值
+        async function loadHeaderValues(selectorId, column) {
+            if (!column || !fileId) return;
+            
+            try {
+                const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${encodeURIComponent(column)}`));
+                if (!response.ok) {
+                    throw new Error('获取列值失败');
+                }
+                
                 const data = await response.json();
-                const statusTags = document.getElementById('statusTags');
-                statusTags.innerHTML = '';
-
+                const tagsContainer = document.getElementById(`tags_${selectorId}`);
+                tagsContainer.innerHTML = '';
+                
+                const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
+                
                 data.values.forEach(value => {
                     const tag = document.createElement('div');
-                    tag.className = 'tag';
+                    tag.className = 'header-tag';
                     tag.textContent = value;
-                    tag.onclick = () => toggleStatusValue(value, tag);
-                    statusTags.appendChild(tag);
+                    tag.onclick = () => toggleSelectorValue(selectorId, value, tag);
+                    
+                    if (selector && selector.selectedValues.includes(value)) {
+                        tag.classList.add('selected');
+                    }
+                    
+                    tagsContainer.appendChild(tag);
                 });
-
-                selectedStatus = [];
-
             } catch (error) {
-                console.error('获取状态值失败:', error);
-                showMessage('获取状态值失败: ' + error.message, 'error');
+                console.error('加载表头值失败:', error);
+                showMessage('加载表头值失败: ' + error.message, 'error');
             }
         }
 
-        // 切换状态值选择
-        function toggleStatusValue(value, tagElement) {
-            const index = selectedStatus.indexOf(value);
+        // 切换选择器值
+        function toggleSelectorValue(selectorId, value, tagElement) {
+            const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
+            if (!selector) return;
+            
+            const index = selector.selectedValues.indexOf(value);
             if (index > -1) {
-                selectedStatus.splice(index, 1);
+                selector.selectedValues.splice(index, 1);
                 tagElement.classList.remove('selected');
             } else {
-                selectedStatus.push(value);
+                selector.selectedValues.push(value);
                 tagElement.classList.add('selected');
             }
+            
+            updateGlobalIndicator();
         }
 
-        // 填充表头列选择器
-        function populateHeaderColumnSelector() {
-            const headerColumnSelect = document.getElementById('headerColumn');
-            headerColumnSelect.innerHTML = '<option value="">请选择表头列</option>';
-
-            if (headers && headers.length > 0) {
-                headers.forEach(header => {
-                    const option = document.createElement('option');
-                    option.value = header;
-                    option.textContent = header;
-                    headerColumnSelect.appendChild(option);
-                });
+        // 更新全局指示器
+        function updateGlobalIndicator() {
+            const globalIndicator = document.getElementById('globalIndicator');
+            const hasActiveSelectors = flexibleHeaderSelectors.some(s => s.column && s.selectedValues.length > 0);
+            
+            if (hasActiveSelectors) {
+                globalIndicator.style.display = 'none';
+            } else {
+                globalIndicator.style.display = 'block';
             }
-
-            // 移除之前的事件监听器，避免重复添加
-            headerColumnSelect.removeEventListener('change', updateHeaderValues);
-            headerColumnSelect.addEventListener('change', updateHeaderValues);
         }
 
-        // 更新表头内容值
-        async function updateHeaderValues() {
-            const headerColumn = document.getElementById('headerColumn').value;
-            selectedHeaderColumn = headerColumn;
-            const headerValueTags = document.getElementById('headerValueTags');
+        // 初始化灵活表头管理器
+        function initializeFlexibleHeaderManager() {
+            flexibleHeaderSelectors = [];
+            selectorIdCounter = 0;
+            renderFlexibleHeaderSelectors();
+            updateGlobalIndicator();
+        }
 
-            if (!headerColumn || !fileId) {
-                headerValueTags.innerHTML = '';
-                selectedHeaderValues = [];
-                selectedHeaderColumn = '';
-                checkFormValidity();
-                return;
-            }
-
-            try {
-                showMessage('正在获取表头内容...', 'info');
-
-                const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${encodeURIComponent(headerColumn)}`));
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        // 获取灵活表头筛选条件
+        function getFlexibleHeaderFilters() {
+            const filters = {};
+            flexibleHeaderSelectors.forEach(selector => {
+                if (selector.column && selector.selectedValues.length > 0) {
+                    // 将所有筛选值转换为字符串类型，以匹配后端API期望
+                    filters[selector.column] = selector.selectedValues.map(value => String(value));
                 }
-
-                const data = await response.json();
-                headerValueTags.innerHTML = '';
-
-                data.values.forEach(value => {
-                    const tag = document.createElement('div');
-                    tag.className = 'tag';
-                    tag.textContent = value;
-                    tag.onclick = () => toggleHeaderValue(value, tag);
-                    headerValueTags.appendChild(tag);
-                });
-
-                selectedHeaderValues = [];
-                checkFormValidity();
-
-            } catch (error) {
-                console.error('获取表头内容失败:', error);
-                showMessage('获取表头内容失败: ' + error.message, 'error');
-            }
-        }
-
-        // 切换表头内容值选择
-        function toggleHeaderValue(value, tagElement) {
-            const index = selectedHeaderValues.indexOf(value);
-            if (index > -1) {
-                selectedHeaderValues.splice(index, 1);
-                tagElement.classList.remove('selected');
-            } else {
-                selectedHeaderValues.push(value);
-                tagElement.classList.add('selected');
-            }
-            checkFormValidity();
-        }
-
-        // 获取选中的表头内容值
-        function getSelectedHeaderValues() {
-            return selectedHeaderValues;
-        }
-
-        // 获取选中的表头列
-        function getSelectedHeaderColumn() {
-            return document.getElementById('headerColumn').value;
+            });
+            return filters;
         }
 
         // 初始化预测页面
@@ -1263,9 +1345,9 @@
                 showMessage('正在初始化预测页面...', 'info');
                 
                 // 初始化各个选择器
-                populateHeaderColumnSelector();
                 populateAxisSelectors();
-                populateStatusColumnSelector();
+    
+                initializeFlexibleHeaderManager();
                 
                 // 检查表单有效性
                 checkFormValidity();
@@ -1282,10 +1364,8 @@
         async function generateOriginalChart() {
             console.log('=== 开始生成原始图表 ===');
             console.log('- 文件ID:', fileId);
-            console.log('- 表头列名:', selectedHeaderColumn);
-            console.log('- 选择的表头值数量:', selectedHeaderValues.length, '表头值列表:', selectedHeaderValues);
-            console.log('- 状态量列名:', selectedStatusColumn);
-            console.log('- 选择的状态值数量:', selectedStatus.length, '状态值列表:', selectedStatus);
+            console.log('- 灵活表头筛选条件:', getFlexibleHeaderFilters());
+
 
             const xAxis = document.getElementById('xAxis').value;
             const yAxis = document.getElementById('yAxis').value;
@@ -1298,10 +1378,9 @@
                 return;
             }
 
-            if (!selectedHeaderValues || selectedHeaderValues.length === 0) {
-                showMessage('请先选择表头值', 'error');
-                return;
-            }
+            // 检查是否有灵活表头筛选条件
+            const flexibleFilters = getFlexibleHeaderFilters();
+            const hasFlexibleFilters = Object.keys(flexibleFilters).length > 0;
 
             if (!xAxis) {
                 showMessage('请选择X轴变量', 'error');
@@ -1319,14 +1398,10 @@
                 // 构建筛选条件
                 const filters = {};
 
-                // 添加表头筛选条件
-                if (selectedHeaderColumn && selectedHeaderValues.length > 0) {
-                    filters[selectedHeaderColumn] = selectedHeaderValues;
-                }
+                // 添加灵活表头筛选条件
+                Object.assign(filters, flexibleFilters);
 
-                if (selectedStatus && selectedStatus.length > 0) {
-                    filters[selectedStatusColumn] = selectedStatus.map(String);
-                }
+
 
                 const response = await fetch(window.pageBridge.getApiUrl('/plot_data'), {
                     method: 'POST',
@@ -1374,14 +1449,12 @@
                 // 构建筛选条件
                 const filters = {};
 
-                // 添加表头筛选条件
-                if (selectedHeaderColumn && selectedHeaderValues.length > 0) {
-                    filters[selectedHeaderColumn] = selectedHeaderValues;
-                }
+                // 添加灵活表头筛选条件
+                const flexibleFilters = getFlexibleHeaderFilters();
+                const hasFlexibleFilters = Object.keys(flexibleFilters).length > 0;
+                Object.assign(filters, flexibleFilters);
 
-                if (selectedStatus && selectedStatus.length > 0) {
-                    filters[selectedStatusColumn] = selectedStatus.map(String);
-                }
+
 
                 const response = await fetch(window.pageBridge.getApiUrl('/filter'), {
                     method: 'POST',
@@ -1410,22 +1483,26 @@
                 const colors = getColorScheme(colorScheme);
                 let colorIndex = 0;
 
-                // 为每个表头值创建曲线
-                selectedHeaderValues.forEach(headerValue => {
-                    if (selectedStatus && selectedStatus.length > 0) {
-                        // 如果有状态值筛选，为每个状态值创建子曲线
-                        selectedStatus.forEach(statusValue => {
-                            const headerStatusData = filteredData.filter(row =>
-                                row[selectedHeaderColumn] === headerValue &&
-                                String(row[selectedStatusColumn]) === String(statusValue)
-                            );
+                // 根据筛选条件创建曲线
+                if (hasFlexibleFilters) {
+                    // 使用灵活表头筛选功能创建曲线
+                    const flexibleColumns = Object.keys(flexibleFilters);
+                    
+                    if (flexibleColumns.length === 1) {
+                        // 单列筛选
+                        const column = flexibleColumns[0];
+                        const values = flexibleFilters[column];
+                        
+                        values.forEach(value => {
+                            // 为筛选值创建曲线
+                            const data = filteredData.filter(row => row[column] === value);
 
-                            if (headerStatusData.length > 0) {
-                                const xValues = headerStatusData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
-                                const yValues = headerStatusData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
+                            if (data.length > 0) {
+                                const xValues = data.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
+                                const yValues = data.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
 
                                 if (xValues.length > 0 && yValues.length > 0) {
-                                    const traceName = `${headerValue}-${selectedStatusColumn}-${statusValue}`;
+                                    const traceName = `${value}`;
 
                                     const trace = {
                                         x: xValues,
@@ -1449,40 +1526,61 @@
                             }
                         });
                     } else {
-                        // 如果没有状态值筛选，直接为表头值创建曲线
-                        const headerData = filteredData.filter(row =>
-                            row[selectedHeaderColumn] === headerValue
-                        );
+                        // 多列筛选，创建组合曲线
+                        const xValues = filteredData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
+                        const yValues = filteredData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
 
-                        if (headerData.length > 0) {
-                            const xValues = headerData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
-                            const yValues = headerData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
+                        if (xValues.length > 0 && yValues.length > 0) {
+                            const traceName = '筛选数据';
 
-                            if (xValues.length > 0 && yValues.length > 0) {
-                                const traceName = `${headerValue}`;
-
-                                const trace = {
-                                    x: xValues,
-                                    y: yValues,
-                                    mode: 'lines+markers',
-                                    type: 'scatter',
-                                    name: traceName,
-                                    line: {
-                                        color: colors[colorIndex % colors.length],
-                                        width: lineWidth
-                                    },
-                                    marker: {
-                                        color: colors[colorIndex % colors.length],
-                                        size: markerSize,
-                                        symbol: markerStyle
-                                    }
-                                };
-                                traces.push(trace);
-                                colorIndex++;
-                            }
+                            const trace = {
+                                x: xValues,
+                                y: yValues,
+                                mode: 'lines+markers',
+                                type: 'scatter',
+                                name: traceName,
+                                line: {
+                                    color: colors[colorIndex % colors.length],
+                                    width: lineWidth
+                                },
+                                marker: {
+                                    color: colors[colorIndex % colors.length],
+                                    size: markerSize,
+                                    symbol: markerStyle
+                                }
+                            };
+                            traces.push(trace);
+                            colorIndex++;
                         }
                     }
-                });
+                } else {
+                    // 全局模式，显示所有数据
+                    const xValues = filteredData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
+                    const yValues = filteredData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
+
+                    if (xValues.length > 0 && yValues.length > 0) {
+                        const traceName = '全部数据';
+
+                        const trace = {
+                            x: xValues,
+                            y: yValues,
+                            mode: 'lines+markers',
+                            type: 'scatter',
+                            name: traceName,
+                            line: {
+                                color: colors[colorIndex % colors.length],
+                                width: lineWidth
+                            },
+                            marker: {
+                                color: colors[colorIndex % colors.length],
+                                size: markerSize,
+                                symbol: markerStyle
+                            }
+                        };
+                        traces.push(trace);
+                        colorIndex++;
+                    }
+                }
 
                 if (traces.length === 0) {
                     showMessage('没有找到匹配的数据进行绘图', 'warning');
@@ -1620,23 +1718,11 @@
             // 获取当前筛选条件
             const filters = {};
 
-            // 获取状态筛选
-            const statusColumn = document.getElementById('statusColumn').value;
-            if (statusColumn) {
-                const selectedStatusValues = getSelectedStatusValues();
-                if (selectedStatusValues.length > 0) {
-                    filters[statusColumn] = selectedStatusValues;
-                }
-            }
 
-            // 获取表头筛选
-            const headerColumn = document.getElementById('headerColumn').value;
-            if (headerColumn) {
-                const selectedHeaderValues = getSelectedHeaderValues();
-                if (selectedHeaderValues.length > 0) {
-                    filters[headerColumn] = selectedHeaderValues;
-                }
-            }
+
+            // 获取灵活表头筛选
+            const flexibleFilters = getFlexibleHeaderFilters();
+            Object.assign(filters, flexibleFilters);
 
             const payload = {
                 file_id: currentFileId,
@@ -1781,23 +1867,9 @@
             return infoDiv;
         }
 
-        // 获取选中的状态值
-        function getSelectedStatusValues() {
-            const statusTags = document.getElementById('statusValueTags');
-            if (!statusTags) return [];
 
-            const selectedTags = statusTags.querySelectorAll('.tag.selected');
-            return Array.from(selectedTags).map(tag => tag.textContent.trim());
-        }
 
-        // 获取选中的表头值
-        function getSelectedHeaderValues() {
-            const headerTags = document.getElementById('headerValueTags');
-            if (!headerTags) return [];
 
-            const selectedTags = headerTags.querySelectorAll('.tag.selected');
-            return Array.from(selectedTags).map(tag => tag.textContent.trim());
-        }
 
         // 根据方法生成预测数据
         function generatePredictionByMethod(xValues, yValues, steps, method) {
@@ -2317,7 +2389,7 @@
             // 重置到原始标签页
             switchTab('original');
 
-            selectedStatus = [];
+
             originalData = null;
             predictionData = null;
             currentPlot = null;
