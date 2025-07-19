@@ -1252,7 +1252,7 @@
                     filters[selectedStatusColumn] = selectedStatus.map(String);
                 }
 
-                const response = await fetch('http://localhost:8002/api/filter', {
+                const response = await fetch('http://localhost:8001/api/filter', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1453,7 +1453,7 @@
                 // 检查是否为机器学习算法
                 const mlMethods = ['svr', 'randomforest', 'neuralnetwork', 'xgboost', 'lstm'];
                 const isMLMethod = mlMethods.includes(method);
-                
+
                 if (isMLMethod) {
                     // 调用后端机器学习API
                     return await generateMLPrediction(originalData, steps, method);
@@ -1467,24 +1467,24 @@
                 return [];
             }
         }
-        
+
         // 调用后端机器学习预测API
         async function generateMLPrediction(originalData, steps, method) {
             const currentFileId = document.getElementById('fileSelector').value;
             if (!currentFileId) {
                 throw new Error('请先选择数据文件');
             }
-            
+
             const xAxis = document.getElementById('xAxis').value;
             const yAxis = document.getElementById('yAxis').value;
-            
+
             if (!xAxis || !yAxis) {
                 throw new Error('请选择X轴和Y轴');
             }
-            
+
             // 获取当前筛选条件
             const filters = {};
-            
+
             // 获取状态筛选
             const statusColumn = document.getElementById('statusColumn').value;
             if (statusColumn) {
@@ -1493,7 +1493,7 @@
                     filters[statusColumn] = selectedStatusValues;
                 }
             }
-            
+
             // 获取表头筛选
             const headerColumn = document.getElementById('headerColumn').value;
             if (headerColumn) {
@@ -1502,7 +1502,7 @@
                     filters[headerColumn] = selectedHeaderValues;
                 }
             }
-            
+
             const payload = {
                 file_id: currentFileId,
                 filters: filters,
@@ -1511,9 +1511,9 @@
                 method: method,
                 steps: steps
             };
-            
+
             showMessage('正在使用机器学习算法生成预测...', 'info');
-            
+
             const response = await fetch('http://localhost:8001/api/predict', {
                 method: 'POST',
                 headers: {
@@ -1521,17 +1521,17 @@
                 },
                 body: JSON.stringify(payload)
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.detail || '预测请求失败');
             }
-            
+
             const predictionResult = await response.json();
-            
+
             // 显示模型信息
             displayModelInfo(predictionResult.metrics, predictionResult.model_info);
-            
+
             // 创建预测曲线
             const predictionTrace = {
                 x: predictionResult.x_values,
@@ -1550,12 +1550,12 @@
                     symbol: 'diamond'
                 }
             };
-            
+
             showMessage(`${getMethodDisplayName(method)}预测完成！R² = ${predictionResult.metrics.r2_score.toFixed(4)}`, 'success');
-            
+
             return [predictionTrace];
         }
-        
+
         // 传统算法预测（前端计算）
         async function generateTraditionalPrediction(originalData, steps, method) {
             // 获取当前图表的traces
@@ -1570,10 +1570,10 @@
 
                 const predictionX = [];
                 const predictionY = [];
-                
+
                 // 根据不同算法生成预测
                 const predictions = generatePredictionByMethod(xValues, yValues, steps, method);
-                
+
                 predictions.forEach((pred, i) => {
                     predictionX.push(pred.x);
                     predictionY.push(pred.y);
@@ -1603,11 +1603,11 @@
 
             return predictionTraces;
         }
-        
+
         // 显示模型信息
         function displayModelInfo(metrics, modelInfo) {
             const infoDiv = document.getElementById('modelInfo') || createModelInfoDiv();
-            
+
             const infoHTML = `
                 <h4>模型信息</h4>
                 <p><strong>算法:</strong> ${modelInfo.algorithm}</p>
@@ -1615,15 +1615,15 @@
                 <p><strong>R² 得分:</strong> ${metrics.r2_score.toFixed(4)}</p>
                 <p><strong>RMSE:</strong> ${metrics.rmse.toFixed(4)}</p>
                 <p><strong>MSE:</strong> ${metrics.mse.toFixed(4)}</p>
-                ${Object.keys(modelInfo).filter(key => key !== 'algorithm').map(key => 
+                ${Object.keys(modelInfo).filter(key => key !== 'algorithm').map(key =>
                     `<p><strong>${key}:</strong> ${JSON.stringify(modelInfo[key])}</p>`
                 ).join('')}
             `;
-            
+
             infoDiv.innerHTML = infoHTML;
             infoDiv.style.display = 'block';
         }
-        
+
         // 创建模型信息显示区域
         function createModelInfoDiv() {
             const infoDiv = document.createElement('div');
@@ -1637,29 +1637,29 @@
                 font-size: 14px;
                 display: none;
             `;
-            
+
             const predictionSection = document.querySelector('.prediction-section');
             if (predictionSection) {
                 predictionSection.appendChild(infoDiv);
             }
-            
+
             return infoDiv;
         }
-        
+
         // 获取选中的状态值
         function getSelectedStatusValues() {
             const statusTags = document.getElementById('statusValueTags');
             if (!statusTags) return [];
-            
+
             const selectedTags = statusTags.querySelectorAll('.tag.selected');
             return Array.from(selectedTags).map(tag => tag.textContent.trim());
         }
-        
+
         // 获取选中的表头值
         function getSelectedHeaderValues() {
             const headerTags = document.getElementById('headerValueTags');
             if (!headerTags) return [];
-            
+
             const selectedTags = headerTags.querySelectorAll('.tag.selected');
             return Array.from(selectedTags).map(tag => tag.textContent.trim());
         }
@@ -1769,7 +1769,7 @@
              // 计算指数增长率
              const lastY = yValues[yValues.length - 1];
              const secondLastY = yValues[yValues.length - 2];
-             
+
              if (secondLastY <= 0 || lastY <= 0) {
                  return generateLinearPrediction(xValues, yValues, steps, stepSize);
              }
@@ -1841,17 +1841,17 @@
                      const localX = xValues.slice(startIdx, endIdx);
                      const localY = yValues.slice(startIdx, endIdx);
                      const localPred = generateLinearPrediction(localX, localY, 1, stepSize * i);
-                     
+
                      if (localPred.length > 0) {
                          treePredictions.push(localPred[0].y);
                      }
                  }
 
                  // 平均所有树的预测
-                 const newY = treePredictions.length > 0 ? 
-                     treePredictions.reduce((a, b) => a + b, 0) / treePredictions.length : 
+                 const newY = treePredictions.length > 0 ?
+                     treePredictions.reduce((a, b) => a + b, 0) / treePredictions.length :
                      yValues[n - 1];
-                 
+
                  predictions.push({ x: newX, y: newY });
              }
 
@@ -1914,7 +1914,7 @@
                      // 简单的梯度计算
                      const gradient = localY[localY.length - 1] - prediction;
                      const learningRate = 0.1;
-                     
+
                      // 基于趋势的简单提升
                      if (localY.length >= 2) {
                          const trend = localY[localY.length - 1] - localY[localY.length - 2];
@@ -1949,7 +1949,7 @@
                      const forgetGate = 1 / (1 + Math.exp(-input * 0.1));
                      const inputGate = 1 / (1 + Math.exp(-input * 0.1));
                      const outputGate = 1 / (1 + Math.exp(-input * 0.1));
-                     
+
                      cellState = forgetGate * cellState + inputGate * Math.tanh(input * 0.1);
                      hiddenState = outputGate * Math.tanh(cellState);
                  }
@@ -1958,18 +1958,18 @@
              // 生成预测
              for (let i = 1; i <= steps; i++) {
                  const newX = lastX + stepSize * i;
-                 
+
                  // 使用当前隐藏状态预测下一个值
                  const prediction = hiddenState * 10 + yValues[n - 1] * 0.8;
-                 
+
                  // 更新LSTM状态
                  const forgetGate = 1 / (1 + Math.exp(-prediction * 0.1));
                  const inputGate = 1 / (1 + Math.exp(-prediction * 0.1));
                  const outputGate = 1 / (1 + Math.exp(-prediction * 0.1));
-                 
+
                  cellState = forgetGate * cellState + inputGate * Math.tanh(prediction * 0.1);
                  hiddenState = outputGate * Math.tanh(cellState);
-                 
+
                  predictions.push({ x: newX, y: prediction });
              }
 
