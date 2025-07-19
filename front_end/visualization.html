@@ -12,22 +12,22 @@
         // Plotly备用加载机制
         function loadPlotlyFallback() {
             console.warn('⚠️ 主要Plotly CDN加载失败，尝试备用CDN...');
-            
+
             // 移除失败的脚本
             const failedScript = document.getElementById('plotlyMainScript');
             if (failedScript) {
                 failedScript.remove();
             }
-            
+
             // 尝试备用CDN列表
             const fallbackCDNs = [
                 'https://unpkg.com/plotly.js@2.26.0/dist/plotly.min.js',
                 'https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js',
                 'https://cdn.jsdelivr.net/npm/plotly.js@2.26.0/dist/plotly.min.js'
             ];
-            
+
             let currentIndex = 0;
-            
+
             function tryNextCDN() {
                 if (currentIndex >= fallbackCDNs.length) {
                     console.error('❌ 所有Plotly CDN都加载失败');
@@ -36,26 +36,26 @@
                     }
                     return;
                 }
-                
+
                 const script = document.createElement('script');
                 script.src = fallbackCDNs[currentIndex];
                 script.id = `plotlyFallback${currentIndex}`;
-                
+
                 script.onload = function() {
                     console.log(`✅ 备用CDN加载成功: ${fallbackCDNs[currentIndex]}`);
                 };
-                
+
                 script.onerror = function() {
                     console.warn(`⚠️ 备用CDN ${currentIndex + 1} 加载失败: ${fallbackCDNs[currentIndex]}`);
                     script.remove();
                     currentIndex++;
                     setTimeout(tryNextCDN, 1000); // 1秒后尝试下一个
                 };
-                
+
                 document.head.appendChild(script);
                 console.log(`🔄 尝试备用CDN ${currentIndex + 1}: ${fallbackCDNs[currentIndex]}`);
             }
-            
+
             // 延迟1秒后开始尝试备用CDN
             setTimeout(tryNextCDN, 1000);
         }
@@ -993,20 +993,20 @@
         function waitForPlotly() {
             return new Promise(async (resolve, reject) => {
                 console.log('🔍 开始检查Plotly加载状态...');
-                
+
                 // 如果已经加载，直接返回
                 if (typeof Plotly !== 'undefined') {
                     console.log('✅ Plotly已经加载完成');
                     resolve();
                     return;
                 }
-                
+
                 try {
                     // 使用lib-loader加载Plotly（优先本地，回退CDN）
                     if (window.libLoader) {
                         console.log('⏳ 使用lib-loader加载Plotly...');
                         await window.libLoader.loadPlotly();
-                        
+
                         // 再次检查是否加载成功
                         if (typeof Plotly !== 'undefined') {
                             console.log('✅ Plotly通过lib-loader加载成功');
@@ -1019,10 +1019,10 @@
                         console.warn('⚠️ lib-loader不可用，使用备用等待机制...');
                         let attempts = 0;
                         const maxAttempts = 200; // 10秒超时
-                        
+
                         const checkInterval = setInterval(() => {
                             attempts++;
-                            
+
                             if (typeof Plotly !== 'undefined') {
                                 clearInterval(checkInterval);
                                 console.log('✅ Plotly加载成功（备用机制）');
@@ -1063,7 +1063,7 @@
         document.addEventListener('DOMContentLoaded', async function() {
             try {
                 console.log('=== 开始初始化可视化页面 ===');
-                
+
                 // 更新加载提示
                 updateLoadingText('正在加载本地数据...');
 
@@ -1113,7 +1113,7 @@
                 console.error('页面初始化失败:', error);
                 updateLoadingText('加载失败: ' + error.message);
                 showMessage('页面初始化失败: ' + error.message, 'error');
-                
+
                 // 即使失败也要隐藏加载覆盖层
                 setTimeout(() => {
                     hideLoadingOverlay();
@@ -1157,7 +1157,7 @@
              try {
                  console.log('🔄 开始加载文件列表...');
                  console.log('📡 API端点:', window.pageBridge.getApiUrl('/files'));
-                 
+
                  const startTime = Date.now();
                  const response = await fetch(window.pageBridge.getApiUrl('/files'), {
                      method: 'GET',
@@ -1167,10 +1167,10 @@
                      },
                      cache: 'no-cache'
                  });
-                 
+
                  const requestTime = Date.now() - startTime;
                  console.log(`📡 请求完成 - 状态: ${response.status}, 耗时: ${requestTime}ms`);
-                 
+
                  if (!response.ok) {
                      const errorText = await response.text();
                      console.error('❌ 请求失败详情:', {
@@ -1183,7 +1183,7 @@
 
                  const responseText = await response.text();
                  console.log('📄 原始响应内容:', responseText);
-                 
+
                  let data;
                  try {
                      data = JSON.parse(responseText);
@@ -1191,7 +1191,7 @@
                      console.error('❌ JSON解析失败:', parseError);
                      throw new Error('服务器返回的数据格式不正确');
                  }
-                 
+
                  console.log('📋 解析后的数据:', data);
                  console.log('📊 数据结构分析:', {
                      hasFiles: 'files' in data,
@@ -1214,12 +1214,12 @@
                      console.log(`✅ 找到 ${data.files.length} 个文件`);
                      data.files.forEach((file, index) => {
                          console.log(`📁 处理文件 ${index + 1}:`, file);
-                         
+
                          if (!file.file_id) {
                              console.warn('⚠️ 文件缺少file_id:', file);
                              return;
                          }
-                         
+
                          const option = document.createElement('option');
                          option.value = file.file_id;
                          const displayName = file.filename || file.original_filename || `文件 ${file.file_id.substring(0, 8)}...`;
@@ -1234,7 +1234,7 @@
                      option.textContent = '暂无可用文件 - 请先在数据页面上传文件';
                      option.disabled = true;
                      fileSelector.appendChild(option);
-                     
+
                      if (fileId) {
                          console.log('🧹 清除无效的localStorage数据');
                          showMessage('未找到之前选择的文件，请重新上传数据', 'warning');
@@ -1268,7 +1268,7 @@
 
              } catch (error) {
                  console.error('❌ 加载文件列表失败:', error);
-                 
+
                  // 显示更详细的错误信息
                  if (error.message.includes('Failed to fetch')) {
                      console.error('🔌 网络连接问题: 无法连接到后端服务');
@@ -1280,13 +1280,13 @@
                      console.error('🚫 其他错误:', error.message);
                      showMessage('加载文件列表失败: ' + error.message, 'error');
                  }
-                 
+
                  // 在错误情况下也要设置基本的选项
                  const fileSelector = document.getElementById('fileSelector');
                  if (fileSelector) {
                      fileSelector.innerHTML = '<option value="">加载失败 - 请刷新页面重试</option>';
                  }
-                 
+
                  throw error;
              }
          }
@@ -1363,7 +1363,7 @@
             // 清空界面
             document.getElementById('xAxis').value = '';
             document.getElementById('yAxis').value = '';
-            
+
             // 重新渲染灵活表头选择器
             renderFlexibleHeaderSelectors();
             updateGlobalIndicator();
@@ -1385,7 +1385,7 @@
 
         function loadDataFromStorage() {
             console.log('开始从localStorage加载数据...');
-            
+
             fileId = localStorage.getItem('fileId');
             const headersStr = localStorage.getItem('headers');
 
@@ -1397,7 +1397,7 @@
                 try {
                     headers = JSON.parse(headersStr);
                     console.log('- 解析后的headers:', headers);
-                    
+
                     if (Array.isArray(headers) && headers.length > 0) {
                         console.log(`成功加载 ${headers.length} 个表头`);
                         populateAxisSelectors();
@@ -1416,7 +1416,7 @@
                 console.log('localStorage中没有完整的文件数据');
                 fileId = null;
                 headers = [];
-                
+
                 if (!fileId && !headersStr) {
                     console.log('这是首次访问或数据已清空');
                 } else if (!fileId) {
@@ -1427,7 +1427,7 @@
                     showMessage('表头数据丢失，请重新选择文件', 'warning');
                 }
             }
-            
+
             console.log('localStorage数据加载完成:', { fileId, headersCount: headers.length });
         }
 
@@ -1465,7 +1465,7 @@
                 column: '',
                 values: []
             };
-            
+
             flexibleHeaderSelectors.push(selector);
             renderFlexibleHeaderSelectors();
             updateGlobalIndicator();
@@ -1489,7 +1489,7 @@
                     <div class="header-item-controls">
                         <select class="form-control" onchange="updateSelectorColumn(${selector.id}, this.value)">
                             <option value="">请选择表头列</option>
-                            ${headers.map(header => 
+                            ${headers.map(header =>
                                 `<option value="${header}" ${selector.column === header ? 'selected' : ''}>${header}</option>`
                             ).join('')}
                         </select>
@@ -1516,21 +1516,21 @@
             if (selector) {
                 selector.column = column;
                 selector.values = []; // 重置选择的值
-                
+
                 if (column) {
                     await loadHeaderValues(selectorId, column);
                 } else {
                     const container = document.getElementById(`headerValues_${selectorId}`);
                     container.innerHTML = '<span style="color: #6c757d; font-size: 10px;">请先选择表头列</span>';
                 }
-                
+
                 checkFormValidity();
             }
         }
 
         async function loadHeaderValues(selectorId, column) {
             const container = document.getElementById(`headerValues_${selectorId}`);
-            
+
             if (!column || !fileId) {
                 container.innerHTML = '<span style="color: #6c757d; font-size: 10px;">请先选择表头列</span>';
                 return;
@@ -1538,7 +1538,7 @@
 
             try {
                 container.innerHTML = '<span style="color: #6c757d; font-size: 10px;">加载中...</span>';
-                
+
                 const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${encodeURIComponent(column)}`));
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1548,17 +1548,17 @@
                 container.innerHTML = '';
 
                 const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
-                
+
                 data.values.forEach(value => {
                     const tag = document.createElement('div');
                     tag.className = 'tag';
                     tag.textContent = value;
-                    
+
                     // 检查是否已选中
                     if (selector && selector.values.includes(value)) {
                         tag.classList.add('selected');
                     }
-                    
+
                     tag.onclick = () => toggleSelectorValue(selectorId, value, tag);
                     container.appendChild(tag);
                 });
@@ -1581,7 +1581,7 @@
                 selector.values.push(value);
                 tagElement.classList.add('selected');
             }
-            
+
             checkFormValidity();
         }
 
@@ -1622,10 +1622,10 @@
                 }
 
                 allData = await response.json();
-                
+
                 // 初始化灵活表头选择管理器
                 initializeFlexibleHeaderManager();
-                
+
                 showMessage('数据加载完成', 'success');
 
             } catch (error) {
@@ -1645,8 +1645,8 @@
             const applyStyleBtn = document.getElementById('applyStyle');
 
             // 检查是否有有效的灵活表头选择器（至少有一个选择器有选中的值，或者没有选择器表示全局模式）
-            const hasValidSelectors = flexibleHeaderSelectors.length === 0 || 
-                                    flexibleHeaderSelectors.some(selector => 
+            const hasValidSelectors = flexibleHeaderSelectors.length === 0 ||
+                                    flexibleHeaderSelectors.some(selector =>
                                         selector.column && selector.values.length > 0
                                     );
 
@@ -1704,8 +1704,8 @@
             }
 
             // 检查是否有有效的选择器或者是全局模式
-            const hasValidSelectors = flexibleHeaderSelectors.length === 0 || 
-                                    flexibleHeaderSelectors.some(selector => 
+            const hasValidSelectors = flexibleHeaderSelectors.length === 0 ||
+                                    flexibleHeaderSelectors.some(selector =>
                                         selector.column && selector.values.length > 0
                                     );
 
@@ -1830,10 +1830,10 @@
                 if (flexibleHeaderSelectors.length === 0) {
                     // 全局模式：创建一条包含所有数据的曲线
                     console.log('\n--- 全局模式：创建单一曲线 ---');
-                    
+
                     const xValues = filteredData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
                     const yValues = filteredData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
-                    
+
                     console.log(`全局数据:`, {
                         总行数: filteredData.length,
                         X轴有效值数量: xValues.length,
@@ -1841,16 +1841,16 @@
                         X轴样本: xValues.slice(0, 5),
                         Y轴样本: yValues.slice(0, 5)
                     });
-                    
+
                     if (xValues.length > 0 && yValues.length > 0) {
                         const traceName = '全局数据';
-                        
+
                         // 检查是否已有该曲线的个性化设置
                         let existingTrace = null;
                         if (currentPlot && currentPlot.traces) {
                             existingTrace = currentPlot.traces.find(t => t.name === traceName);
                         }
-                        
+
                         const trace = {
                             x: xValues,
                             y: yValues,
@@ -1874,45 +1874,45 @@
                 } else {
                     // 基于选择器的模式：为每个选择器的值组合创建曲线
                     console.log('\n--- 基于选择器模式：创建多条曲线 ---');
-                    
+
                     // 生成所有可能的组合
                     function generateCombinations(selectors, currentCombination = {}, index = 0) {
                         if (index >= selectors.length) {
                             return [currentCombination];
                         }
-                        
+
                         const selector = selectors[index];
                         const combinations = [];
-                        
+
                         selector.values.forEach(value => {
                             const newCombination = { ...currentCombination, [selector.column]: value };
                             combinations.push(...generateCombinations(selectors, newCombination, index + 1));
                         });
-                        
+
                         return combinations;
                     }
-                    
+
                     const validSelectors = flexibleHeaderSelectors.filter(s => s.column && s.values.length > 0);
                     const combinations = generateCombinations(validSelectors);
-                    
+
                     console.log(`生成的组合数量: ${combinations.length}`);
-                    
+
                     combinations.forEach((combination, combIndex) => {
                         console.log(`\n--- 处理组合 ${combIndex + 1}: ${JSON.stringify(combination)} ---`);
-                        
+
                         // 根据组合筛选数据
                         const combinationData = filteredData.filter(row => {
-                            return Object.keys(combination).every(column => 
+                            return Object.keys(combination).every(column =>
                                 String(row[column]) === String(combination[column])
                             );
                         });
-                        
+
                         console.log(`匹配的数据行数:`, combinationData.length);
-                        
+
                         if (combinationData.length > 0) {
                             const xValues = combinationData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
                             const yValues = combinationData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
-                            
+
                             console.log(`提取的数据:`, {
                                 原始行数: combinationData.length,
                                 X轴有效值数量: xValues.length,
@@ -1920,19 +1920,19 @@
                                 X轴样本: xValues.slice(0, 5),
                                 Y轴样本: yValues.slice(0, 5)
                             });
-                            
+
                             if (xValues.length > 0 && yValues.length > 0) {
                                 // 生成曲线名称
                                 const traceName = Object.keys(combination)
                                     .map(column => `${column}=${combination[column]}`)
                                     .join('-');
-                                
+
                                 // 检查是否已有该曲线的个性化设置
                                 let existingTrace = null;
                                 if (currentPlot && currentPlot.traces) {
                                     existingTrace = currentPlot.traces.find(t => t.name === traceName);
                                 }
-                                
+
                                 const trace = {
                                     x: xValues,
                                     y: yValues,
@@ -1997,22 +1997,31 @@
                 const layout = {
                     title: {
                         text: chartTitle,
-                        font: { size: 16 }
+                        font: { size: 16, color: '#333' }
                     },
                     xaxis: {
-                        title: xAxisTitle,
+                        title: {
+                            text: xAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        },
                         showgrid: true,
-                        gridcolor: '#e9ecef'
+                        gridcolor: '#e9ecef',
+                        linecolor: '#d0d0d0'
                     },
                     yaxis: {
-                        title: yAxisTitle,
+                        title: {
+                            text: yAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        },
                         showgrid: true,
-                        gridcolor: '#e9ecef'
+                        gridcolor: '#e9ecef',
+                        linecolor: '#d0d0d0'
                     },
                     plot_bgcolor: 'white',
                     paper_bgcolor: 'white',
                     margin: margins,
-                    legend: legendConfig
+                    legend: legendConfig,
+                    hovermode: 'closest'
                 };
 
                 console.log('图例配置:', legendConfig);
@@ -2035,7 +2044,12 @@
                     modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
                 };
 
-                Plotly.newPlot('plotDiv', traces, layout, config);
+                // 添加动画效果
+                await Plotly.newPlot('plotDiv', traces, layout, config);
+
+                // 添加曲线绘制动画
+                await animateTraces('plotDiv', traces);
+
                 currentPlot = { traces, layout, config };
 
                 // 显示工具栏、样式控制区域和曲线控制面板
@@ -2278,6 +2292,56 @@
             } else {
                 toggleBtn.textContent = '◀';
                 toggleBtn.title = '收起侧边栏';
+            }
+        }
+
+        /**
+         * 为图表添加曲线绘制动画
+         * @param {string} plotId - 图表容器ID
+         * @param {Array} traces - 曲线数据
+         */
+        async function animateTraces(plotId, traces) {
+            if (!traces || traces.length === 0) return;
+
+            try {
+                // 首先隐藏所有曲线
+                const hiddenTraces = traces.map(trace => ({
+                    ...trace,
+                    x: [],
+                    y: []
+                }));
+
+                await Plotly.react(plotId, hiddenTraces);
+
+                // 所有曲线一起动画绘制
+                const animationDuration = 400; // 总动画时长缩短到400ms
+                const steps = 10; // 减少步数到10步
+
+                for (let step = 1; step <= steps; step++) {
+                    const progress = step / steps;
+
+                    // 为所有曲线同时更新数据
+                    const updatedTraces = traces.map(trace => {
+                        const endIndex = Math.ceil(trace.x.length * progress);
+                        return {
+                            ...trace,
+                            x: trace.x.slice(0, endIndex),
+                            y: trace.y.slice(0, endIndex)
+                        };
+                    });
+
+                    await Plotly.react(plotId, updatedTraces);
+
+                    // 等待一小段时间
+                    if (step < steps) {
+                        await new Promise(resolve => setTimeout(resolve, animationDuration / steps));
+                    }
+                }
+
+            } catch (error) {
+                console.error('动画播放失败:', error);
+                // 如果动画失败，直接显示完整图表
+                await Plotly.react(plotId, traces);
             }
         }
     </script>

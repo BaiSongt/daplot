@@ -423,6 +423,111 @@
             font-style: italic;
         }
 
+        /* 曲线控制面板样式 */
+        .curve-control-panel {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .curve-control-panel h4 {
+            margin: 0;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 6px 6px 0 0;
+            font-size: 0.9rem;
+            color: #495057;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .curve-control-toggle {
+            transition: transform 0.2s ease;
+            font-size: 0.8rem;
+        }
+
+        .curve-control-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .curve-control-content {
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            transition: max-height 0.3s ease;
+        }
+
+        .curve-control-content.collapsed {
+            max-height: 0;
+            overflow: hidden;
+        }
+
+        .curve-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            transition: background-color 0.2s ease;
+        }
+
+        .curve-item:hover {
+            background: #f8f9fa;
+        }
+
+        .curve-name {
+            flex: 1;
+            font-size: 0.8rem;
+            color: #495057;
+            font-weight: 500;
+            min-width: 120px;
+        }
+
+        .curve-color-picker {
+            width: 30px;
+            height: 25px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .curve-marker-select {
+            padding: 4px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .curve-control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .curve-control-buttons .btn {
+            flex: 1;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
         .flexible-selector {
             background: #e3f2fd;
             border: 1px solid #bbdefb;
@@ -820,6 +925,27 @@
                         </div>
                     </div>
 
+                    <!-- 曲线控制面板 -->
+                    <div id="curveControlPanel" class="curve-control-panel">
+                        <h4 onclick="toggleCurveControlPanel()">
+                            🎨 曲线样式控制
+                            <span class="curve-control-toggle" id="curveControlToggle">▼</span>
+                        </h4>
+                        <div id="curveControlContent" class="curve-control-content">
+                            <div id="curveControlList">
+                                <!-- 动态生成的曲线控制项 -->
+                            </div>
+                            <div class="curve-control-buttons">
+                                <button class="btn" onclick="applyCurveStyles()" style="background-color: #28a745; border-color: #28a745;">
+                                    应用曲线样式
+                                </button>
+                                <button class="btn" onclick="resetAllCurveStyles()" style="background-color: #6c757d; border-color: #6c757d;">
+                                    重置样式
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="plotDiv">
                         <div class="no-data-message">
                             <h3 style="font-size: 13px; margin-bottom: 8px;">📈 图表区域</h3>
@@ -848,26 +974,26 @@
         function waitForPlotly() {
             return new Promise((resolve, reject) => {
                 console.log('开始等待 Plotly 加载...');
-                
+
                 if (typeof Plotly !== 'undefined') {
                     console.log('✓ Plotly 已经加载完成');
                     resolve();
                     return;
                 }
-                
+
                 let fallbackTriggered = false;
                 const startTime = Date.now();
-                
+
                 const checkInterval = setInterval(() => {
                     const elapsed = Date.now() - startTime;
-                    
+
                     if (typeof Plotly !== 'undefined') {
                         console.log(`✓ Plotly 加载完成，耗时: ${elapsed}ms`);
                         clearInterval(checkInterval);
                         resolve();
                         return;
                     }
-                    
+
                     // 5秒后触发备用加载机制
                     if (elapsed > 5000 && !fallbackTriggered) {
                         fallbackTriggered = true;
@@ -875,7 +1001,7 @@
                         updateLoadingText('Plotly 加载较慢，正在尝试备用CDN...');
                         loadPlotlyFallback();
                     }
-                    
+
                     // 20秒超时
                     if (elapsed > 20000) {
                         console.error('✗ Plotly 加载超时 (20秒)');
@@ -884,12 +1010,12 @@
                         reject(new Error('Plotly 加载超时'));
                         return;
                     }
-                    
+
                     // 更新加载状态
                     if (elapsed % 2000 < 100) { // 每2秒更新一次
                         const seconds = Math.floor(elapsed / 1000);
-                        const message = fallbackTriggered ? 
-                            `正在加载 Plotly... (${seconds}s) (尝试备用CDN)` : 
+                        const message = fallbackTriggered ?
+                            `正在加载 Plotly... (${seconds}s) (尝试备用CDN)` :
                             `正在加载 Plotly... (${seconds}s)`;
                         updateLoadingText(message);
                         console.log(`等待 Plotly 加载中... ${seconds}s`);
@@ -1032,7 +1158,7 @@
 
                 const data = await response.json();
                 console.log('获取到文件列表:', data);
-                
+
                 const fileSelector = document.getElementById('fileSelector');
                 fileSelector.innerHTML = '<option value="">请选择数据文件</option>';
 
@@ -1045,12 +1171,12 @@
                         option.textContent = `${displayName} (${file.rows}行×${file.columns}列)`;
                         fileSelector.appendChild(option);
                     });
-                    
+
                     // 如果localStorage中有fileId，尝试选中它
                     if (fileId) {
                         console.log('尝试选中localStorage中的文件:', fileId);
                         fileSelector.value = fileId;
-                        
+
                         // 验证是否成功选中
                         if (fileSelector.value === fileId) {
                             console.log('✓ 成功选中文件:', fileId);
@@ -1184,9 +1310,9 @@
             const selector = {
                 id: selectorId,
                 column: '',
-                selectedValues: []
+                values: []
             };
-            
+
             flexibleHeaderSelectors.push(selector);
             renderFlexibleHeaderSelectors();
             updateGlobalIndicator();
@@ -1203,7 +1329,7 @@
         function renderFlexibleHeaderSelectors() {
             const container = document.getElementById('flexibleHeaderList');
             container.innerHTML = '';
-            
+
             flexibleHeaderSelectors.forEach(selector => {
                 const selectorDiv = document.createElement('div');
                 selectorDiv.className = 'flexible-header-item';
@@ -1211,7 +1337,7 @@
                     <div class="header-item-controls">
                         <select onchange="updateSelectorColumn('${selector.id}', this.value)">
                             <option value="">选择列</option>
-                            ${headers.map(header => 
+                            ${headers.map(header =>
                                 `<option value="${header}" ${selector.column === header ? 'selected' : ''}>${header}</option>`
                             ).join('')}
                         </select>
@@ -1225,7 +1351,7 @@
                     </div>
                 `;
                 container.appendChild(selectorDiv);
-                
+
                 if (selector.column) {
                     loadHeaderValues(selector.id, selector.column);
                 }
@@ -1237,37 +1363,41 @@
             const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
             if (selector) {
                 selector.column = column;
-                selector.selectedValues = [];
+                selector.values = [];
                 renderFlexibleHeaderSelectors();
+
+                if (column) {
+                    loadHeaderValues(selectorId, column);
+                }
             }
         }
 
         // 加载表头值
         async function loadHeaderValues(selectorId, column) {
             if (!column || !fileId) return;
-            
+
             try {
                 const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${encodeURIComponent(column)}`));
                 if (!response.ok) {
                     throw new Error('获取列值失败');
                 }
-                
+
                 const data = await response.json();
                 const tagsContainer = document.getElementById(`tags_${selectorId}`);
                 tagsContainer.innerHTML = '';
-                
+
                 const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
-                
+
                 data.values.forEach(value => {
                     const tag = document.createElement('div');
                     tag.className = 'header-tag';
                     tag.textContent = value;
                     tag.onclick = () => toggleSelectorValue(selectorId, value, tag);
-                    
-                    if (selector && selector.selectedValues.includes(value)) {
+
+                    if (selector && selector.values.includes(value)) {
                         tag.classList.add('selected');
                     }
-                    
+
                     tagsContainer.appendChild(tag);
                 });
             } catch (error) {
@@ -1280,24 +1410,24 @@
         function toggleSelectorValue(selectorId, value, tagElement) {
             const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
             if (!selector) return;
-            
-            const index = selector.selectedValues.indexOf(value);
+
+            const index = selector.values.indexOf(value);
             if (index > -1) {
-                selector.selectedValues.splice(index, 1);
+                selector.values.splice(index, 1);
                 tagElement.classList.remove('selected');
             } else {
-                selector.selectedValues.push(value);
+                selector.values.push(value);
                 tagElement.classList.add('selected');
             }
-            
+
             updateGlobalIndicator();
         }
 
         // 更新全局指示器
         function updateGlobalIndicator() {
             const globalIndicator = document.getElementById('globalIndicator');
-            const hasActiveSelectors = flexibleHeaderSelectors.some(s => s.column && s.selectedValues.length > 0);
-            
+            const hasActiveSelectors = flexibleHeaderSelectors.some(s => s.column && s.values.length > 0);
+
             if (hasActiveSelectors) {
                 globalIndicator.style.display = 'none';
             } else {
@@ -1317,9 +1447,9 @@
         function getFlexibleHeaderFilters() {
             const filters = {};
             flexibleHeaderSelectors.forEach(selector => {
-                if (selector.column && selector.selectedValues.length > 0) {
+                if (selector.column && selector.values && selector.values.length > 0) {
                     // 将所有筛选值转换为字符串类型，以匹配后端API期望
-                    filters[selector.column] = selector.selectedValues.map(value => String(value));
+                    filters[selector.column] = selector.values.map(value => String(value));
                 }
             });
             return filters;
@@ -1341,17 +1471,17 @@
                 console.log('开始初始化预测页面...');
                 console.log('- fileId:', fileId);
                 console.log('- headers:', headers);
-                
+
                 showMessage('正在初始化预测页面...', 'info');
-                
+
                 // 初始化各个选择器
                 populateAxisSelectors();
-    
+
                 initializeFlexibleHeaderManager();
-                
+
                 // 检查表单有效性
                 checkFormValidity();
-                
+
                 console.log('✓ 预测页面初始化完成');
                 showMessage('预测页面初始化完成，请选择相关参数开始分析', 'success');
             } catch (error) {
@@ -1483,77 +1613,91 @@
                 const colors = getColorScheme(colorScheme);
                 let colorIndex = 0;
 
-                // 根据筛选条件创建曲线
+                // 根据灵活表头筛选条件创建曲线（与可视化页面逻辑一致）
                 if (hasFlexibleFilters) {
-                    // 使用灵活表头筛选功能创建曲线
-                    const flexibleColumns = Object.keys(flexibleFilters);
-                    
-                    if (flexibleColumns.length === 1) {
-                        // 单列筛选
-                        const column = flexibleColumns[0];
-                        const values = flexibleFilters[column];
-                        
-                        values.forEach(value => {
-                            // 为筛选值创建曲线
-                            const data = filteredData.filter(row => row[column] === value);
-
-                            if (data.length > 0) {
-                                const xValues = data.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
-                                const yValues = data.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
-
-                                if (xValues.length > 0 && yValues.length > 0) {
-                                    const traceName = `${value}`;
-
-                                    const trace = {
-                            x: xValues,
-                            y: yValues,
-                            mode: 'lines+markers',
-                            type: 'scatter',
-                            name: traceName,
-                            showlegend: true,
-                            line: {
-                                color: colors[colorIndex % colors.length],
-                                width: lineWidth
-                            },
-                            marker: {
-                                color: colors[colorIndex % colors.length],
-                                size: markerSize,
-                                symbol: markerStyle
-                            }
-                        };
-                                    traces.push(trace);
-                                    colorIndex++;
-                                }
-                            }
-                        });
-                    } else {
-                        // 多列筛选，创建组合曲线
-                        const xValues = filteredData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
-                        const yValues = filteredData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
-
-                        if (xValues.length > 0 && yValues.length > 0) {
-                            const traceName = '筛选数据';
-
-                            const trace = {
-                                x: xValues,
-                                y: yValues,
-                                mode: 'lines+markers',
-                                type: 'scatter',
-                                name: traceName,
-                                line: {
-                                    color: colors[colorIndex % colors.length],
-                                    width: lineWidth
-                                },
-                                marker: {
-                                    color: colors[colorIndex % colors.length],
-                                    size: markerSize,
-                                    symbol: markerStyle
-                                }
-                            };
-                            traces.push(trace);
-                            colorIndex++;
+                    // 生成所有可能的组合
+                    function generateCombinations(selectors) {
+                        if (selectors.length === 0) return [{}];
+                        if (selectors.length === 1) {
+                            return selectors[0].values.map(value => ({
+                                [selectors[0].column]: value
+                            }));
                         }
+
+                        const combinations = [];
+                        const firstSelector = selectors[0];
+                        const restCombinations = generateCombinations(selectors.slice(1));
+
+                        firstSelector.values.forEach(value => {
+                            restCombinations.forEach(restComb => {
+                                combinations.push({
+                                    [firstSelector.column]: value,
+                                    ...restComb
+                                });
+                            });
+                        });
+
+                        return combinations;
                     }
+
+                    // 获取有效的灵活表头选择器
+                    const validSelectors = [];
+                    Object.keys(flexibleFilters).forEach(column => {
+                        const values = flexibleFilters[column];
+                        if (values && values.length > 0) {
+                            validSelectors.push({ column, values });
+                        }
+                    });
+
+                    const combinations = generateCombinations(validSelectors);
+
+                    combinations.forEach((combination, combIndex) => {
+                        // 根据组合筛选数据
+                        const combinationData = filteredData.filter(row => {
+                            return Object.keys(combination).every(column =>
+                                String(row[column]) === String(combination[column])
+                            );
+                        });
+
+                        if (combinationData.length > 0) {
+                            const xValues = combinationData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
+                            const yValues = combinationData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
+
+                            if (xValues.length > 0 && yValues.length > 0) {
+                                // 生成曲线名称
+                                const traceName = Object.keys(combination)
+                                    .map(column => `${column}=${combination[column]}`)
+                                    .join('-');
+
+                                // 检查是否已有该曲线的个性化设置
+                                let existingTrace = null;
+                                if (currentPlot && currentPlot.traces) {
+                                    existingTrace = currentPlot.traces.find(t => t.name === traceName);
+                                }
+
+                                const trace = {
+                                    x: xValues,
+                                    y: yValues,
+                                    mode: 'lines+markers',
+                                    type: 'scatter',
+                                    name: traceName,
+                                    showlegend: true,
+                                    line: {
+                                        color: existingTrace ? existingTrace.line.color : colors[colorIndex % colors.length],
+                                        width: lineWidth
+                                    },
+                                    marker: {
+                                        color: existingTrace ? existingTrace.marker.color : colors[colorIndex % colors.length],
+                                        size: markerSize,
+                                        symbol: existingTrace ? existingTrace.marker.symbol : markerStyle
+                                    }
+                                };
+
+                                traces.push(trace);
+                                colorIndex++;
+                            }
+                        }
+                    });
                 } else {
                     // 全局模式，显示所有数据
                     const xValues = filteredData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
@@ -1640,14 +1784,23 @@
                 };
 
                 if (typeof Plotly !== 'undefined') {
+                    // 添加动画效果
                     await Plotly.newPlot('plotDiv', traces, layout, config);
+
+                    // 添加曲线绘制动画
+                    await animateTraces('plotDiv', traces);
+
                     currentPlot = { traces, layout, config };
                 } else {
                     throw new Error('Plotly 库未加载');
                 }
 
-                // 显示图表控制区域
+                // 显示图表控制区域和曲线控制面板
                 document.getElementById('chartControls').style.display = 'block';
+                document.getElementById('curveControlPanel').style.display = 'block';
+
+                // 生成曲线控制项
+                generateCurveControls(traces);
 
             } catch (error) {
                 console.error('Error rendering chart:', error);
@@ -1657,7 +1810,11 @@
 
         // 生成预测
         async function generatePrediction() {
-            if (!originalData) {
+            console.log('=== 开始生成预测 ===');
+            console.log('originalData:', originalData);
+            console.log('currentPlot:', currentPlot);
+
+            if (!currentPlot) {
                 showMessage('请先生成原始图表', 'error');
                 return;
             }
@@ -1668,9 +1825,17 @@
                 const predictionSteps = parseInt(document.getElementById('predictionSteps').value);
                 const predictionMethod = document.getElementById('predictionMethod').value;
 
+                console.log('预测参数:', { predictionSteps, predictionMethod });
+
                 // 这里可以调用后端API进行预测，或者使用前端简单预测算法
                 // 为了演示，我们使用简单的线性预测
-                predictionData = await generateSimplePrediction(originalData, predictionSteps, predictionMethod);
+                predictionData = await generateSimplePrediction(currentPlot, predictionSteps, predictionMethod);
+
+                console.log('生成的预测数据:', predictionData);
+
+                if (!predictionData || predictionData.length === 0) {
+                    throw new Error('预测数据生成失败或为空');
+                }
 
                 await renderPredictionChart();
 
@@ -1683,7 +1848,7 @@
         }
 
         // 预测算法（调用后端机器学习API）
-        async function generateSimplePrediction(originalData, steps, method) {
+        async function generateSimplePrediction(plotData, steps, method) {
             try {
                 // 检查是否为机器学习算法
                 const mlMethods = ['svr', 'randomforest', 'neuralnetwork', 'xgboost', 'lstm'];
@@ -1691,10 +1856,10 @@
 
                 if (isMLMethod) {
                     // 调用后端机器学习API
-                    return await generateMLPrediction(originalData, steps, method);
+                    return await generateMLPrediction(plotData, steps, method);
                 } else {
                     // 使用前端传统算法
-                    return await generateTraditionalPrediction(originalData, steps, method);
+                    return await generateTraditionalPrediction(plotData, steps, method);
                 }
             } catch (error) {
                 console.error('预测生成失败:', error);
@@ -1704,83 +1869,101 @@
         }
 
         // 调用后端机器学习预测API
-        async function generateMLPrediction(originalData, steps, method) {
-            const currentFileId = document.getElementById('fileSelector').value;
-            if (!currentFileId) {
-                throw new Error('请先选择数据文件');
-            }
-
-            const xAxis = document.getElementById('xAxis').value;
-            const yAxis = document.getElementById('yAxis').value;
-
-            if (!xAxis || !yAxis) {
-                throw new Error('请选择X轴和Y轴');
-            }
-
-            // 获取当前筛选条件
-            const filters = {};
-
-
-
-            // 获取灵活表头筛选
-            const flexibleFilters = getFlexibleHeaderFilters();
-            Object.assign(filters, flexibleFilters);
-
-            const payload = {
-                file_id: currentFileId,
-                filters: filters,
-                x_axis: xAxis,
-                y_axis: yAxis,
-                method: method,
-                steps: steps
-            };
+        async function generateMLPrediction(plotData, steps, method) {
+            // 获取当前图表的traces
+            const currentTraces = currentPlot.traces;
+            const predictionTraces = [];
 
             showMessage('正在使用机器学习算法生成预测...', 'info');
 
-            const response = await fetch(window.pageBridge.getApiUrl('/predict'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+            // 为每条原始曲线生成对应的预测曲线
+            for (let i = 0; i < currentTraces.length; i++) {
+                const trace = currentTraces[i];
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || '预测请求失败');
+                try {
+                    // 直接使用前端曲线的数据进行预测
+                    const xValues = trace.x;
+                    const yValues = trace.y;
+
+                    console.log(`为曲线 "${trace.name}" 生成预测，数据点数: ${xValues.length}`);
+
+                    if (xValues.length < 3) {
+                        console.warn(`曲线 "${trace.name}" 数据点不足，跳过预测`);
+                        continue;
+                    }
+
+                    // 构建预测请求，直接传递数据点
+                    const payload = {
+                        x_values: xValues,
+                        y_values: yValues,
+                        method: method,
+                        steps: steps
+                    };
+
+                    console.log(`发送给后端的预测请求 (曲线 ${i+1}/${currentTraces.length}):`, {
+                        ...payload,
+                        x_values: `[${xValues.length} points]`,
+                        y_values: `[${yValues.length} points]`
+                    });
+
+                    const response = await fetch(window.pageBridge.getApiUrl('/predict_direct'), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || '预测请求失败');
+                    }
+
+                    const predictionResult = await response.json();
+
+                    // 只在第一次显示模型信息
+                    if (i === 0) {
+                        displayModelInfo(predictionResult.metrics, predictionResult.model_info);
+                    }
+
+                    // 创建预测曲线，使用与原始曲线相同的颜色
+                    const predictionTrace = {
+                        x: predictionResult.x_values,
+                        y: predictionResult.y_values,
+                        mode: 'lines+markers',
+                        type: 'scatter',
+                        name: `${trace.name} (${getMethodDisplayName(method)})`,
+                        line: {
+                            color: trace.line.color,
+                            width: trace.line.width,
+                            dash: 'dash'
+                        },
+                        marker: {
+                            color: trace.marker.color,
+                            size: trace.marker.size,
+                            symbol: 'diamond'
+                        }
+                    };
+
+                    predictionTraces.push(predictionTrace);
+
+                } catch (error) {
+                    console.error(`为曲线 "${trace.name}" 生成预测失败:`, error);
+                    showMessage(`为曲线 "${trace.name}" 生成预测失败: ${error.message}`, 'warning');
+                }
             }
 
-            const predictionResult = await response.json();
+            if (predictionTraces.length > 0) {
+                showMessage(`${getMethodDisplayName(method)}预测完成！生成了 ${predictionTraces.length} 条预测曲线`, 'success');
+            } else {
+                throw new Error('所有预测曲线生成失败');
+            }
 
-            // 显示模型信息
-            displayModelInfo(predictionResult.metrics, predictionResult.model_info);
-
-            // 创建预测曲线
-            const predictionTrace = {
-                x: predictionResult.x_values,
-                y: predictionResult.y_values,
-                mode: 'lines+markers',
-                type: 'scatter',
-                name: `${getMethodDisplayName(method)} 预测`,
-                line: {
-                    color: 'rgba(255, 99, 132, 0.8)',
-                    width: 3,
-                    dash: 'dash'
-                },
-                marker: {
-                    color: 'rgba(255, 99, 132, 1)',
-                    size: 8,
-                    symbol: 'diamond'
-                }
-            };
-
-            showMessage(`${getMethodDisplayName(method)}预测完成！R² = ${predictionResult.metrics.r2_score.toFixed(4)}`, 'success');
-
-            return [predictionTrace];
+            return predictionTraces;
         }
 
         // 传统算法预测（前端计算）
-        async function generateTraditionalPrediction(originalData, steps, method) {
+        async function generateTraditionalPrediction(plotData, steps, method) {
             // 获取当前图表的traces
             const currentTraces = currentPlot.traces;
             const predictionTraces = [];
@@ -2187,7 +2370,21 @@
 
         // 渲染预测图表
         async function renderPredictionChart() {
-            if (!currentPlot || !predictionData) return;
+            console.log('=== 渲染预测图表 ===');
+            console.log('currentPlot:', currentPlot);
+            console.log('predictionData:', predictionData);
+
+            if (!currentPlot) {
+                console.error('currentPlot 为空');
+                showMessage('请先生成原始图表', 'error');
+                return;
+            }
+
+            if (!predictionData || predictionData.length === 0) {
+                console.error('predictionData 为空或长度为0');
+                showMessage('没有预测数据可显示', 'error');
+                return;
+            }
 
             try {
                 // 获取当前样式设置
@@ -2253,7 +2450,11 @@
                 };
 
                 if (typeof Plotly !== 'undefined') {
-                    await Plotly.newPlot('plotDiv', allTraces, layout, currentPlot.config);
+                    // 使用动画效果渲染预测图表
+                    await animatePredictionChart('plotDiv', allTraces, styledOriginalTraces, predictionData);
+
+                    // 更新布局
+                    await Plotly.relayout('plotDiv', layout);
                 } else {
                     throw new Error('Plotly 库未加载');
                 }
@@ -2385,6 +2586,7 @@
             `;
 
             document.getElementById('chartControls').style.display = 'none';
+            document.getElementById('curveControlPanel').style.display = 'none';
             document.getElementById('predictionControls').style.display = 'none';
             document.getElementById('predictionTab').disabled = true;
 
@@ -2432,6 +2634,270 @@
                     height: 800,
                     filename: 'prediction_chart'
                 });
+            }
+        }
+
+        /**
+         * 生成曲线控制项
+         * @param {Array} traces - 图表曲线数据
+         */
+        function generateCurveControls(traces) {
+            const controlList = document.getElementById('curveControlList');
+            controlList.innerHTML = '';
+
+            if (traces.length === 0) {
+                controlList.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px; font-style: italic;">暂无曲线数据</div>';
+                return;
+            }
+
+            traces.forEach((trace, index) => {
+                const curveItem = document.createElement('div');
+                curveItem.className = 'curve-item';
+                curveItem.innerHTML = `
+                    <div class="curve-name" title="${trace.name}">${trace.name}</div>
+                    <div class="curve-controls">
+                        <input type="color"
+                               class="curve-color-picker"
+                               value="${trace.line.color}"
+                               data-curve-index="${index}"
+                               title="选择颜色">
+                        <select class="curve-marker-select"
+                                data-curve-index="${index}"
+                                title="选择标记样式">
+                            <option value="circle" ${trace.marker.symbol === 'circle' ? 'selected' : ''}>圆形 ●</option>
+                            <option value="square" ${trace.marker.symbol === 'square' ? 'selected' : ''}>方形 ■</option>
+                            <option value="diamond" ${trace.marker.symbol === 'diamond' ? 'selected' : ''}>菱形 ♦</option>
+                            <option value="triangle-up" ${trace.marker.symbol === 'triangle-up' ? 'selected' : ''}>上三角 ▲</option>
+                            <option value="triangle-down" ${trace.marker.symbol === 'triangle-down' ? 'selected' : ''}>下三角 ▼</option>
+                            <option value="cross" ${trace.marker.symbol === 'cross' ? 'selected' : ''}>十字 +</option>
+                            <option value="x" ${trace.marker.symbol === 'x' ? 'selected' : ''}>X形 ×</option>
+                        </select>
+                    </div>
+                `;
+                controlList.appendChild(curveItem);
+            });
+        }
+
+        /**
+         * 切换曲线控制面板的展开/折叠状态
+         */
+        function toggleCurveControlPanel() {
+            const content = document.getElementById('curveControlContent');
+            const toggle = document.getElementById('curveControlToggle');
+
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                toggle.textContent = '▼';
+                toggle.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                toggle.textContent = '▶';
+                toggle.classList.add('collapsed');
+            }
+        }
+
+        /**
+         * 重置所有曲线样式为默认值
+         */
+        async function resetAllCurveStyles() {
+            try {
+                if (!currentPlot || !currentPlot.traces) {
+                    showMessage('请先生成图表', 'error');
+                    return;
+                }
+
+                showMessage('正在重置曲线样式...', 'info');
+
+                // 获取默认配色方案
+                const colorScheme = document.getElementById('colorScheme').value;
+                const colors = getColorScheme(colorScheme);
+                const markerStyle = document.getElementById('markerStyle').value;
+
+                // 重置所有曲线控制项
+                const colorPickers = document.querySelectorAll('.curve-color-picker');
+                const markerSelects = document.querySelectorAll('.curve-marker-select');
+
+                colorPickers.forEach((picker, index) => {
+                    picker.value = colors[index % colors.length];
+                });
+
+                markerSelects.forEach(select => {
+                    select.value = markerStyle;
+                });
+
+                // 应用重置后的样式
+                await applyCurveStyles();
+
+                showMessage('曲线样式重置成功', 'success');
+
+            } catch (error) {
+                console.error('重置曲线样式失败:', error);
+                showMessage('重置曲线样式失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 应用曲线样式
+         */
+        async function applyCurveStyles() {
+            try {
+                showMessage('正在应用曲线样式...', 'info');
+
+                if (!currentPlot || !currentPlot.traces) {
+                    showMessage('请先生成图表', 'error');
+                    return;
+                }
+
+                // 获取曲线控制面板中的设置
+                const colorPickers = document.querySelectorAll('.curve-color-picker');
+                const markerSelects = document.querySelectorAll('.curve-marker-select');
+
+                // 更新traces数据
+                const updatedTraces = currentPlot.traces.map((trace, index) => {
+                    const newTrace = { ...trace };
+
+                    // 应用颜色设置
+                    if (colorPickers[index]) {
+                        const newColor = colorPickers[index].value;
+                        newTrace.line = { ...newTrace.line, color: newColor };
+                        newTrace.marker = { ...newTrace.marker, color: newColor };
+                    }
+
+                    // 应用标记样式设置
+                    if (markerSelects[index]) {
+                        const newMarker = markerSelects[index].value;
+                        newTrace.marker = { ...newTrace.marker, symbol: newMarker };
+                    }
+
+                    return newTrace;
+                });
+
+                // 重新绘制图表
+                if (typeof Plotly !== 'undefined') {
+                    await Plotly.redraw('plotDiv');
+                    await Plotly.restyle('plotDiv', {
+                        'line.color': updatedTraces.map(t => t.line.color),
+                        'marker.color': updatedTraces.map(t => t.marker.color),
+                        'marker.symbol': updatedTraces.map(t => t.marker.symbol)
+                    });
+                } else {
+                    throw new Error('Plotly 库未加载');
+                }
+
+                // 更新currentPlot
+                currentPlot.traces = updatedTraces;
+
+                showMessage('曲线样式应用成功', 'success');
+
+            } catch (error) {
+                console.error('应用曲线样式失败:', error);
+                showMessage('应用曲线样式失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 为图表添加曲线绘制动画
+         * @param {string} plotId - 图表容器ID
+         * @param {Array} traces - 曲线数据
+         */
+        async function animateTraces(plotId, traces) {
+            if (!traces || traces.length === 0) return;
+
+            try {
+                // 首先隐藏所有曲线
+                const hiddenTraces = traces.map(trace => ({
+                    ...trace,
+                    x: [],
+                    y: []
+                }));
+
+                await Plotly.react(plotId, hiddenTraces);
+
+                // 所有曲线一起动画绘制
+                const animationDuration = 400; // 总动画时长缩短到400ms
+                const steps = 10; // 减少步数到10步
+
+                for (let step = 1; step <= steps; step++) {
+                    const progress = step / steps;
+
+                    // 为所有曲线同时更新数据
+                    const updatedTraces = traces.map(trace => {
+                        const endIndex = Math.ceil(trace.x.length * progress);
+                        return {
+                            ...trace,
+                            x: trace.x.slice(0, endIndex),
+                            y: trace.y.slice(0, endIndex)
+                        };
+                    });
+
+                    await Plotly.react(plotId, updatedTraces);
+
+                    // 等待一小段时间
+                    if (step < steps) {
+                        await new Promise(resolve => setTimeout(resolve, animationDuration / steps));
+                    }
+                }
+
+            } catch (error) {
+                console.error('动画播放失败:', error);
+                // 如果动画失败，直接显示完整图表
+                await Plotly.react(plotId, traces);
+            }
+        }
+
+        /**
+         * 为预测图表添加动画效果
+         * @param {string} plotId - 图表容器ID
+         * @param {Array} allTraces - 包含原始和预测曲线的所有数据
+         * @param {Array} originalTraces - 原始曲线数据
+         * @param {Array} predictionTraces - 预测曲线数据
+         */
+        async function animatePredictionChart(plotId, allTraces, originalTraces, predictionTraces) {
+            try {
+                // 首先显示原始曲线（带动画）
+                await animateTraces(plotId, originalTraces);
+
+                // 等待一小段时间
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // 然后添加预测曲线（也带动画）
+                if (predictionTraces.length > 0) {
+                    // 先添加空的预测曲线
+                    const emptyPredTraces = predictionTraces.map(trace => ({
+                        ...trace,
+                        x: [],
+                        y: []
+                    }));
+
+                    await Plotly.addTraces(plotId, emptyPredTraces);
+
+                    // 动画显示预测曲线
+                    const animationDuration = 300;
+                    const steps = 8;
+
+                    for (let step = 1; step <= steps; step++) {
+                        const progress = step / steps;
+
+                        predictionTraces.forEach((predTrace, i) => {
+                            const endIndex = Math.ceil(predTrace.x.length * progress);
+                            const traceIndex = originalTraces.length + i;
+
+                            Plotly.restyle(plotId, {
+                                x: [predTrace.x.slice(0, endIndex)],
+                                y: [predTrace.y.slice(0, endIndex)]
+                            }, [traceIndex]);
+                        });
+
+                        if (step < steps) {
+                            await new Promise(resolve => setTimeout(resolve, animationDuration / steps));
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.error('预测动画播放失败:', error);
+                // 如果动画失败，直接显示完整图表
+                await Plotly.react(plotId, allTraces);
             }
         }
 
