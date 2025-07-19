@@ -1,0 +1,2417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据预测 - DaPlot</title>
+    <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" defer onerror="loadPlotlyFallback()"></script>
+    <script>
+        // Plotly 备用加载机制
+        function loadPlotlyFallback() {
+            console.log('主 Plotly CDN 加载失败，尝试备用 CDN...');
+            
+            const fallbackCDNs = [
+                'https://unpkg.com/plotly.js@2.26.0/dist/plotly.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js',
+                'https://cdn.jsdelivr.net/npm/plotly.js@2.26.0/dist/plotly.min.js'
+            ];
+            
+            let currentIndex = 0;
+            
+            function tryNextCDN() {
+                if (currentIndex >= fallbackCDNs.length) {
+                    console.error('所有 Plotly CDN 都加载失败');
+                    updateLoadingText('Plotly 加载失败，请检查网络连接或刷新页面重试');
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = fallbackCDNs[currentIndex];
+                script.defer = true;
+                
+                script.onload = function() {
+                    console.log(`✓ Plotly 从备用 CDN 加载成功: ${fallbackCDNs[currentIndex]}`);
+                };
+                
+                script.onerror = function() {
+                    console.log(`✗ 备用 CDN 加载失败: ${fallbackCDNs[currentIndex]}`);
+                    // 清理失败的脚本标签
+                    document.head.removeChild(script);
+                    currentIndex++;
+                    // 延迟1秒后尝试下一个CDN
+                    setTimeout(tryNextCDN, 1000);
+                };
+                
+                document.head.appendChild(script);
+                updateLoadingText(`正在尝试备用CDN (${currentIndex + 1}/${fallbackCDNs.length})...`);
+            }
+            
+            // 清理失败的原始脚本
+            const failedScripts = document.querySelectorAll('script[src*="plotly"]');
+            failedScripts.forEach(script => {
+                if (script.src.includes('cdn.plot.ly')) {
+                    script.remove();
+                }
+            });
+            
+            tryNextCDN();
+        }
+        
+        function updateLoadingText(text) {
+            // 这个函数会在页面加载后被重新定义
+            console.log('Loading:', text);
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            transition: width 0.3s ease;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 50px;
+            padding: 15px 5px;
+        }
+
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 15px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        .sidebar-toggle:hover {
+            background: #0056b3;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #333;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .nav-bar {
+            background: none;
+            border-radius: 0;
+            padding: 0;
+            margin-bottom: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #666;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(74, 144, 226, 0.1);
+            color: #4a90e2;
+            transform: translateX(3px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .nav-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .controls-panel {
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            height: fit-content;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .chart-area {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 12px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .tag {
+            background: #e9ecef;
+            color: #495057;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .tag:hover {
+            background: #dee2e6;
+        }
+
+        .tag.selected {
+            background: #667eea;
+            color: white;
+            border-color: #5a6fd8;
+        }
+
+        .status-message {
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 11px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .toolbar-btn {
+            background: white;
+            border: 1px solid #ced4da;
+            color: #495057;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s ease;
+        }
+
+        .toolbar-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .chart-controls {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .style-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .style-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .style-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #495057;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .style-group select,
+        .style-group input {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            min-width: 80px;
+        }
+
+        .style-group input[type="number"] {
+            width: 60px;
+        }
+
+        .apply-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .apply-buttons .btn {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+        }
+
+        .prediction-controls {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .prediction-controls h4 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .chart-tab {
+            background: #e9ecef;
+            color: #495057;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .chart-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .chart-tab:hover {
+            background: #dee2e6;
+        }
+
+        .chart-tab.active:hover {
+            background: white;
+        }
+
+        #plotDiv {
+            width: 100%;
+            height: 500px;
+        }
+
+        .no-data-message {
+            text-align: center;
+            color: #6c757d;
+            padding: 50px;
+            font-style: italic;
+        }
+
+        .flexible-selector {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .flexible-selector h4 {
+            color: #1565c0;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .header-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .header-tag {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #bbdefb;
+        }
+
+        .header-tag:hover {
+            background: #bbdefb;
+        }
+
+        .header-tag.selected {
+            background: #1976d2;
+            color: white;
+            border-color: #1565c0;
+        }
+
+        .header-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+
+        .header-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 11px;
+        }
+
+        .header-checkbox:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .header-checkbox input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .header-checkbox label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .header-checkbox input[type="checkbox"]:checked + label {
+            color: #667eea;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="sidebar" id="sidebar">
+            <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起/展开侧边栏">◀</button>
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h1>DaPlot</h1>
+                </div>
+                <nav class="nav-bar">
+                <a href="index.html" class="nav-btn">
+                    <i>🏠</i>
+                    <span>首页</span>
+                </a>
+                <a href="data_integrated.html" class="nav-btn">
+                    <i>📊</i>
+                    <span>数据操作</span>
+                </a>
+                <a href="visualization.html" class="nav-btn">
+                    <i>📈</i>
+                    <span>可视化绘图</span>
+                </a>
+                <a href="prediction.html" class="nav-btn active">
+                    <i>🔮</i>
+                    <span>数据预测</span>
+                </a>
+                <a href="donate.html" class="nav-btn">
+                    <i>❤️</i>
+                    <span>捐赠支持</span>
+                </a>
+            </nav>
+
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="main-content">
+                <div class="controls-panel">
+                    <div class="status-message" id="statusMessage"></div>
+
+                    <div class="section">
+                        <h3 style="font-size: 13px; margin-bottom: 8px;">📁 文件选择</h3>
+                        <div class="form-group">
+                            <label for="fileSelector">选择数据文件:</label>
+                            <select id="fileSelector" class="form-control" onchange="switchFile()">
+                                <option value="">请选择数据文件</option>
+                            </select>
+                        </div>
+                        <div id="currentFileInfo" style="font-size: 10px; color: #666; margin-top: 3px; padding: 3px; background: #f8f9fa; border-radius: 2px;"></div>
+                    </div>
+
+                    <div class="section flexible-selector">
+                        <h4>🎯 灵活表头选择</h4>
+                        <div class="form-group">
+                            <label for="headerColumn">选择要分析的表头列:</label>
+                            <select id="headerColumn" class="form-control" onchange="updateHeaderValues()">
+                                <option value="">请选择表头列</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>选择表头内容:</label>
+                            <div id="headerValueTags" class="tag-container">
+                                <!-- 表头内容标签将在这里动态生成 -->
+                            </div>
+                        </div>
+                        <div id="groupValueTags" class="header-tags">
+                            <!-- 分组值标签将在这里动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3 style="font-size: 13px; margin-bottom: 8px;">⚙️ 状态变量选择</h3>
+                        <div class="form-group">
+                            <label for="statusColumn">状态量列:</label>
+                            <select id="statusColumn" class="form-control">
+                                <option value="">请选择状态量列</option>
+                            </select>
+                        </div>
+                        <div id="statusTags" class="tag-container">
+                            <!-- 状态值标签将在这里动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3 style="font-size: 13px; margin-bottom: 8px;">📊 坐标轴设置</h3>
+                        <div class="form-group">
+                            <label for="xAxis">X轴:</label>
+                            <select id="xAxis" class="form-control">
+                                <option value="">请选择X轴变量</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="yAxis">Y轴:</label>
+                            <select id="yAxis" class="form-control">
+                                <option value="">请选择Y轴变量</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn" id="generateChart" onclick="generateOriginalChart()" disabled>
+                            生成原始图表
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chart-area">
+                    <div id="chartToolbar" class="toolbar">
+                        <button class="toolbar-btn" onclick="resetZoom()">🔍 重置缩放</button>
+                        <button class="toolbar-btn" onclick="downloadPNG()">📷 保存PNG</button>
+                        <button class="toolbar-btn" onclick="downloadSVG()">🎨 保存SVG</button>
+                    </div>
+
+                    <!-- 图表标签页 -->
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" onclick="switchTab('original')">原始数据</button>
+                        <button class="chart-tab" onclick="switchTab('prediction')" id="predictionTab" disabled>趋势预测</button>
+                    </div>
+
+                    <!-- 预测控制区域 -->
+                    <div id="predictionControls" class="prediction-controls" style="display: none;">
+                        <h4>🔮 趋势预测设置</h4>
+                        <div class="style-controls">
+                            <div class="style-group">
+                                <label for="predictionSteps">预测步数:</label>
+                                <input type="number" id="predictionSteps" min="1" max="50" value="10" style="width: 80px;">
+                            </div>
+                            <div class="style-group">
+                                <label for="predictionMethod">预测方法:</label>
+                                <select id="predictionMethod">
+                                    <optgroup label="传统算法">
+                                        <option value="linear">线性回归</option>
+                                        <option value="polynomial">多项式拟合</option>
+                                        <option value="exponential">指数拟合</option>
+                                    </optgroup>
+                                    <optgroup label="机器学习算法">
+                                        <option value="svr">支持向量机回归(SVR)</option>
+                                        <option value="randomforest">随机森林回归</option>
+                                        <option value="neuralnetwork">神经网络回归</option>
+                                        <option value="xgboost">XGBoost回归</option>
+                                        <option value="lstm">LSTM时间序列</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <button class="btn" onclick="generatePrediction()" style="background-color: #28a745; border-color: #28a745;">
+                                生成预测
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 图表控制区域 -->
+                    <div id="chartControls" class="chart-controls" style="display: none;">
+                        <div class="style-controls">
+                            <!-- 标题和轴标签设置 -->
+                            <div class="style-group">
+                                <label for="chartTitle">图表标题:</label>
+                                <input type="text" id="chartTitle" placeholder="请输入图表标题" style="min-width: 150px;">
+                            </div>
+
+                            <div class="style-group">
+                                <label for="xAxisTitle">X轴标题:</label>
+                                <input type="text" id="xAxisTitle" placeholder="请输入X轴标题" style="min-width: 120px;">
+                            </div>
+
+                            <div class="style-group">
+                                <label for="yAxisTitle">Y轴标题:</label>
+                                <input type="text" id="yAxisTitle" placeholder="请输入Y轴标题" style="min-width: 120px;">
+                            </div>
+
+                            <div class="style-group">
+                                <label for="legendPosition">图例:</label>
+                                <select id="legendPosition">
+                                    <option value="outside-right">右侧外部</option>
+                                    <option value="inside-topright">内部右上</option>
+                                    <option value="inside-topleft">内部左上</option>
+                                    <option value="inside-bottomright">内部右下</option>
+                                    <option value="inside-bottomleft">内部左下</option>
+                                    <option value="top">顶部</option>
+                                    <option value="bottom">底部</option>
+                                </select>
+                            </div>
+
+                            <div class="style-group">
+                                <label for="lineWidth">线条:</label>
+                                <input type="number" id="lineWidth" min="1" max="8" value="2" step="1">
+                            </div>
+
+                            <div class="style-group">
+                                <label for="markerSize">标记:</label>
+                                <input type="number" id="markerSize" min="3" max="15" value="6" step="1">
+                            </div>
+
+                            <div class="style-group">
+                                <label for="markerStyle">样式:</label>
+                                <select id="markerStyle">
+                                    <option value="circle">圆形 ●</option>
+                                    <option value="square">方形 ■</option>
+                                    <option value="diamond">菱形 ♦</option>
+                                    <option value="triangle-up">上三角 ▲</option>
+                                    <option value="triangle-down">下三角 ▼</option>
+                                    <option value="cross">十字 +</option>
+                                    <option value="x">X形 ×</option>
+                                </select>
+                            </div>
+
+                            <div class="style-group">
+                                <label for="colorScheme">配色:</label>
+                                <select id="colorScheme">
+                                    <option value="default">默认配色</option>
+                                    <option value="warm">暖色调</option>
+                                    <option value="cool">冷色调</option>
+                                    <option value="pastel">柔和色</option>
+                                    <option value="bright">鲜艳色</option>
+                                    <option value="monochrome">单色调</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="apply-buttons">
+                            <button class="btn" onclick="applyStyleToChart()" style="background-color: #17a2b8; border-color: #17a2b8;">
+                                应用样式
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="plotDiv">
+                        <div class="no-data-message">
+                            <h3 style="font-size: 13px; margin-bottom: 8px;">📈 图表区域</h3>
+                            <p>请先选择数据文件、分组条件和坐标轴，然后点击"生成原始图表"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let fileId = null;
+        let headers = [];
+        let selectedHeaderColumn = '';
+        let selectedHeaderValues = [];
+        let selectedStatusColumn = '';
+        let selectedStatus = [];
+        let allData = [];
+        let currentPlot = null;
+        let originalData = null;
+        let predictionData = null;
+        let currentTab = 'original';
+
+        // 检查 Plotly 是否已加载（增强版本）
+        function waitForPlotly() {
+            return new Promise((resolve, reject) => {
+                console.log('开始等待 Plotly 加载...');
+                
+                if (typeof Plotly !== 'undefined') {
+                    console.log('✓ Plotly 已经加载完成');
+                    resolve();
+                    return;
+                }
+                
+                let fallbackTriggered = false;
+                const startTime = Date.now();
+                
+                const checkInterval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    
+                    if (typeof Plotly !== 'undefined') {
+                        console.log(`✓ Plotly 加载完成，耗时: ${elapsed}ms`);
+                        clearInterval(checkInterval);
+                        resolve();
+                        return;
+                    }
+                    
+                    // 5秒后触发备用加载机制
+                    if (elapsed > 5000 && !fallbackTriggered) {
+                        fallbackTriggered = true;
+                        console.log('⚠ Plotly 加载超过5秒，触发备用加载机制...');
+                        updateLoadingText('Plotly 加载较慢，正在尝试备用CDN...');
+                        loadPlotlyFallback();
+                    }
+                    
+                    // 20秒超时
+                    if (elapsed > 20000) {
+                        console.error('✗ Plotly 加载超时 (20秒)');
+                        clearInterval(checkInterval);
+                        updateLoadingText('Plotly 加载超时，请检查网络连接或刷新页面重试');
+                        reject(new Error('Plotly 加载超时'));
+                        return;
+                    }
+                    
+                    // 更新加载状态
+                    if (elapsed % 2000 < 100) { // 每2秒更新一次
+                        const seconds = Math.floor(elapsed / 1000);
+                        const message = fallbackTriggered ? 
+                            `正在加载 Plotly... (${seconds}s) (尝试备用CDN)` : 
+                            `正在加载 Plotly... (${seconds}s)`;
+                        updateLoadingText(message);
+                        console.log(`等待 Plotly 加载中... ${seconds}s`);
+                    }
+                }, 100);
+            });
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('=== 开始初始化数据预测页面 ===');
+                showMessage('正在初始化页面...', 'info');
+
+                // 先从localStorage加载数据
+                loadDataFromStorage();
+                console.log('✓ localStorage数据加载完成');
+
+                // 等待 Plotly 加载完成
+                await waitForPlotly();
+                console.log('✓ Plotly 已加载完成');
+
+                // 加载文件列表（这会选中localStorage中的fileId）
+                await loadFileList();
+                console.log('✓ 文件列表加载完成');
+
+                // 检查表单有效性
+                checkFormValidity();
+
+                // 如果有fileId，初始化预测功能
+                if (fileId && headers.length > 0) {
+                    await initializePrediction();
+                    console.log('✓ 预测功能初始化完成');
+                    showMessage('页面加载完成，可以开始数据预测', 'success');
+                } else {
+                    console.log('! 没有可用的文件数据');
+                    showMessage('请选择数据文件或先在数据页面上传数据', 'info');
+                }
+
+                console.log('=== 页面初始化完成 ===');
+
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                showMessage('页面初始化失败: ' + error.message, 'error');
+            }
+        });}
+
+        // 侧边栏切换
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // 显示消息
+        function showMessage(message, type = 'info') {
+            const messageElement = document.getElementById('statusMessage');
+            messageElement.textContent = message;
+            messageElement.className = `status-message ${type}`;
+            messageElement.style.display = 'block';
+
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    messageElement.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // 更新加载文本（重新定义全局函数）
+        function updateLoadingText(text) {
+            console.log('Loading Status:', text);
+            showMessage(text, 'info');
+        }
+
+        // 检查表单有效性
+        function checkFormValidity() {
+            const fileSelector = document.getElementById('fileSelector');
+            const headerColumn = document.getElementById('headerColumn');
+            const xAxis = document.getElementById('xAxis');
+            const yAxis = document.getElementById('yAxis');
+            const generateBtn = document.getElementById('generateChart');
+
+            const isValid = fileSelector.value &&
+                           headerColumn.value &&
+                           selectedHeaderValues.length > 0 &&
+                           xAxis.value &&
+                           yAxis.value;
+
+            generateBtn.disabled = !isValid;
+        }
+
+        // 从localStorage加载数据
+        function loadDataFromStorage() {
+            const storedFileId = localStorage.getItem('fileId');
+            const storedHeaders = localStorage.getItem('headers');
+
+            if (storedFileId && storedHeaders) {
+                fileId = storedFileId;
+                headers = JSON.parse(storedHeaders);
+
+                const fileSelector = document.getElementById('fileSelector');
+                fileSelector.value = fileId;
+
+                updateCurrentFileInfo();
+                populateHeaderColumnSelector();
+                populateAxisSelectors();
+                populateStatusColumnSelector();
+            }
+        }
+
+        // 获取配色方案
+        function getColorScheme(scheme) {
+            const colorSchemes = {
+                'default': ['#4a90e2', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'],
+                'warm': ['#ff6b6b', '#ffa726', '#ff7043', '#d32f2f', '#f57c00', '#e65100', '#bf360c', '#8d6e63'],
+                'cool': ['#42a5f5', '#26c6da', '#66bb6a', '#29b6f6', '#26a69a', '#5c6bc0', '#7e57c2', '#ab47bc'],
+                'pastel': ['#ffcdd2', '#f8bbd9', '#e1bee7', '#d1c4e9', '#c5cae9', '#bbdefb', '#b3e5fc', '#b2dfdb'],
+                'bright': ['#ff1744', '#ff6d00', '#76ff03', '#00e676', '#00bcd4', '#3f51b5', '#9c27b0', '#e91e63'],
+                'monochrome': ['#212121', '#424242', '#616161', '#757575', '#9e9e9e', '#bdbdbd', '#e0e0e0', '#f5f5f5']
+            };
+            return colorSchemes[scheme] || colorSchemes['default'];
+        }
+
+        // 获取图例配置
+        function getLegendConfig(position) {
+            const legendConfigs = {
+                'outside-right': { x: 1.02, y: 1, xanchor: 'left', yanchor: 'top' },
+                'inside-topright': { x: 0.98, y: 0.98, xanchor: 'right', yanchor: 'top' },
+                'inside-topleft': { x: 0.02, y: 0.98, xanchor: 'left', yanchor: 'top' },
+                'inside-bottomright': { x: 0.98, y: 0.02, xanchor: 'right', yanchor: 'bottom' },
+                'inside-bottomleft': { x: 0.02, y: 0.02, xanchor: 'left', yanchor: 'bottom' },
+                'top': { x: 0.5, y: 1.02, xanchor: 'center', yanchor: 'bottom', orientation: 'h' },
+                'bottom': { x: 0.5, y: -0.1, xanchor: 'center', yanchor: 'top', orientation: 'h' }
+            };
+            return legendConfigs[position] || legendConfigs['outside-right'];
+        }
+
+        // 加载文件列表
+        async function loadFileList() {
+            try {
+                console.log('开始加载文件列表...');
+                const response = await fetch('http://localhost:8001/api/files');
+                if (!response.ok) {
+                    throw new Error('获取文件列表失败');
+                }
+
+                const data = await response.json();
+                console.log('获取到文件列表:', data);
+                
+                const fileSelector = document.getElementById('fileSelector');
+                fileSelector.innerHTML = '<option value="">请选择数据文件</option>';
+
+                if (data.files && data.files.length > 0) {
+                    console.log(`找到 ${data.files.length} 个文件`);
+                    data.files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.file_id;
+                        const displayName = file.filename || file.original_filename || `文件 ${file.file_id.substring(0, 8)}...`;
+                        option.textContent = `${displayName} (${file.rows}行×${file.columns}列)`;
+                        fileSelector.appendChild(option);
+                    });
+                    
+                    // 如果localStorage中有fileId，尝试选中它
+                    if (fileId) {
+                        console.log('尝试选中localStorage中的文件:', fileId);
+                        fileSelector.value = fileId;
+                        
+                        // 验证是否成功选中
+                        if (fileSelector.value === fileId) {
+                            console.log('✓ 成功选中文件:', fileId);
+                            updateCurrentFileInfo();
+                            // 如果文件选中成功但headers为空，需要重新加载文件数据
+                            if (headers.length === 0) {
+                                console.log('headers为空，重新加载文件数据...');
+                                await switchFile();
+                            }
+                        } else {
+                            console.log('! 文件选择失败，可能文件不存在于列表中');
+                            fileId = null;
+                            headers = [];
+                            localStorage.removeItem('fileId');
+                            localStorage.removeItem('headers');
+                        }
+                    }
+                } else {
+                    console.log('没有找到可用文件');
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '暂无可用文件';
+                    option.disabled = true;
+                    fileSelector.appendChild(option);
+                }
+
+            } catch (error) {
+                console.error('加载文件列表失败:', error);
+                showMessage('加载文件列表失败: ' + error.message, 'error');
+            }
+        }
+
+        // 切换文件
+        async function switchFile() {
+            const fileSelector = document.getElementById('fileSelector');
+            const selectedFileId = fileSelector.value;
+
+            if (!selectedFileId) {
+                fileId = null;
+                headers = [];
+                clearVisualization();
+                return;
+            }
+
+            try {
+                showMessage('正在切换文件...', 'info');
+
+                const response = await fetch(`http://localhost:8001/api/file/${selectedFileId}`);
+                if (!response.ok) {
+                    throw new Error('获取文件数据失败');
+                }
+
+                const fileData = await response.json();
+
+                fileId = selectedFileId;
+                headers = fileData.headers || [];
+
+                localStorage.setItem('fileId', fileId);
+                localStorage.setItem('headers', JSON.stringify(headers));
+
+                updateCurrentFileInfo();
+                populateHeaderColumnSelector();
+                populateAxisSelectors();
+                populateStatusColumnSelector();
+                clearVisualization();
+
+                if (fileId) {
+                    await initializePrediction();
+                }
+
+                showMessage('文件切换成功', 'success');
+
+            } catch (error) {
+                console.error('切换文件失败:', error);
+                showMessage('切换文件失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新当前文件信息
+        function updateCurrentFileInfo() {
+            const fileSelector = document.getElementById('fileSelector');
+            const currentFileInfo = document.getElementById('currentFileInfo');
+
+            if (fileSelector.value && headers.length > 0) {
+                currentFileInfo.textContent = `当前文件: ${headers.length} 列数据`;
+                currentFileInfo.style.display = 'block';
+            } else {
+                currentFileInfo.style.display = 'none';
+            }
+        }
+
+        // 填充坐标轴选择器
+        function populateAxisSelectors() {
+            const xAxisSelect = document.getElementById('xAxis');
+            const yAxisSelect = document.getElementById('yAxis');
+
+            xAxisSelect.innerHTML = '<option value="">请选择X轴变量</option>';
+            yAxisSelect.innerHTML = '<option value="">请选择Y轴变量</option>';
+
+            headers.forEach(header => {
+                const xOption = document.createElement('option');
+                xOption.value = header;
+                xOption.textContent = header;
+                xAxisSelect.appendChild(xOption);
+
+                const yOption = document.createElement('option');
+                yOption.value = header;
+                yOption.textContent = header;
+                yAxisSelect.appendChild(yOption);
+            });
+
+            xAxisSelect.addEventListener('change', checkFormValidity);
+            yAxisSelect.addEventListener('change', checkFormValidity);
+        }
+
+        // 填充状态列选择器
+        function populateStatusColumnSelector() {
+            const statusColumnSelect = document.getElementById('statusColumn');
+            statusColumnSelect.innerHTML = '<option value="">请选择状态量列</option>';
+
+            headers.forEach(header => {
+                const option = document.createElement('option');
+                option.value = header;
+                option.textContent = header;
+                statusColumnSelect.appendChild(option);
+            });
+
+            statusColumnSelect.addEventListener('change', updateStatusValues);
+        }
+
+
+        // 这些函数已被删除，现在使用headerColumn相关功能
+
+        // 更新状态值
+        async function updateStatusValues() {
+            const statusColumn = document.getElementById('statusColumn').value;
+            selectedStatusColumn = statusColumn;
+
+            if (!statusColumn || !fileId) {
+                document.getElementById('statusTags').innerHTML = '';
+                selectedStatus = [];
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:8001/api/unique_values/${fileId}/${statusColumn}`);
+                if (!response.ok) {
+                    throw new Error('获取状态值失败');
+                }
+
+                const data = await response.json();
+                const statusTags = document.getElementById('statusTags');
+                statusTags.innerHTML = '';
+
+                data.values.forEach(value => {
+                    const tag = document.createElement('div');
+                    tag.className = 'tag';
+                    tag.textContent = value;
+                    tag.onclick = () => toggleStatusValue(value, tag);
+                    statusTags.appendChild(tag);
+                });
+
+                selectedStatus = [];
+
+            } catch (error) {
+                console.error('获取状态值失败:', error);
+                showMessage('获取状态值失败: ' + error.message, 'error');
+            }
+        }
+
+        // 切换状态值选择
+        function toggleStatusValue(value, tagElement) {
+            const index = selectedStatus.indexOf(value);
+            if (index > -1) {
+                selectedStatus.splice(index, 1);
+                tagElement.classList.remove('selected');
+            } else {
+                selectedStatus.push(value);
+                tagElement.classList.add('selected');
+            }
+        }
+
+        // 填充表头列选择器
+        function populateHeaderColumnSelector() {
+            const headerColumnSelect = document.getElementById('headerColumn');
+            headerColumnSelect.innerHTML = '<option value="">请选择表头列</option>';
+
+            if (headers && headers.length > 0) {
+                headers.forEach(header => {
+                    const option = document.createElement('option');
+                    option.value = header;
+                    option.textContent = header;
+                    headerColumnSelect.appendChild(option);
+                });
+            }
+
+            // 移除之前的事件监听器，避免重复添加
+            headerColumnSelect.removeEventListener('change', updateHeaderValues);
+            headerColumnSelect.addEventListener('change', updateHeaderValues);
+        }
+
+        // 更新表头内容值
+        async function updateHeaderValues() {
+            const headerColumn = document.getElementById('headerColumn').value;
+            selectedHeaderColumn = headerColumn;
+            const headerValueTags = document.getElementById('headerValueTags');
+
+            if (!headerColumn || !fileId) {
+                headerValueTags.innerHTML = '';
+                selectedHeaderValues = [];
+                selectedHeaderColumn = '';
+                checkFormValidity();
+                return;
+            }
+
+            try {
+                showMessage('正在获取表头内容...', 'info');
+
+                const response = await fetch(`http://localhost:8001/api/unique_values/${fileId}/${encodeURIComponent(headerColumn)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                headerValueTags.innerHTML = '';
+
+                data.values.forEach(value => {
+                    const tag = document.createElement('div');
+                    tag.className = 'tag';
+                    tag.textContent = value;
+                    tag.onclick = () => toggleHeaderValue(value, tag);
+                    headerValueTags.appendChild(tag);
+                });
+
+                selectedHeaderValues = [];
+                checkFormValidity();
+
+            } catch (error) {
+                console.error('获取表头内容失败:', error);
+                showMessage('获取表头内容失败: ' + error.message, 'error');
+            }
+        }
+
+        // 切换表头内容值选择
+        function toggleHeaderValue(value, tagElement) {
+            const index = selectedHeaderValues.indexOf(value);
+            if (index > -1) {
+                selectedHeaderValues.splice(index, 1);
+                tagElement.classList.remove('selected');
+            } else {
+                selectedHeaderValues.push(value);
+                tagElement.classList.add('selected');
+            }
+            checkFormValidity();
+        }
+
+        // 获取选中的表头内容值
+        function getSelectedHeaderValues() {
+            return selectedHeaderValues;
+        }
+
+        // 获取选中的表头列
+        function getSelectedHeaderColumn() {
+            return document.getElementById('headerColumn').value;
+        }
+
+        // 初始化预测页面
+        async function initializePrediction() {
+            if (!fileId) {
+                console.log('! initializePrediction: 没有fileId，跳过初始化');
+                return;
+            }
+
+            if (!headers || headers.length === 0) {
+                console.log('! initializePrediction: 没有headers数据，跳过初始化');
+                return;
+            }
+
+            try {
+                console.log('开始初始化预测页面...');
+                console.log('- fileId:', fileId);
+                console.log('- headers:', headers);
+                
+                showMessage('正在初始化预测页面...', 'info');
+                
+                // 初始化各个选择器
+                populateHeaderColumnSelector();
+                populateAxisSelectors();
+                populateStatusColumnSelector();
+                
+                // 检查表单有效性
+                checkFormValidity();
+                
+                console.log('✓ 预测页面初始化完成');
+                showMessage('预测页面初始化完成，请选择相关参数开始分析', 'success');
+            } catch (error) {
+                console.error('初始化预测页面失败:', error);
+                showMessage('初始化预测页面失败: ' + error.message, 'error');
+            }
+        }
+
+        // 生成原始图表
+        async function generateOriginalChart() {
+            console.log('=== 开始生成原始图表 ===');
+            console.log('- 文件ID:', fileId);
+            console.log('- 表头列名:', selectedHeaderColumn);
+            console.log('- 选择的表头值数量:', selectedHeaderValues.length, '表头值列表:', selectedHeaderValues);
+            console.log('- 状态量列名:', selectedStatusColumn);
+            console.log('- 选择的状态值数量:', selectedStatus.length, '状态值列表:', selectedStatus);
+
+            const xAxis = document.getElementById('xAxis').value;
+            const yAxis = document.getElementById('yAxis').value;
+
+            console.log('- X轴变量:', xAxis);
+            console.log('- Y轴变量:', yAxis);
+
+            if (!fileId) {
+                showMessage('请先选择数据文件', 'error');
+                return;
+            }
+
+            if (!selectedHeaderValues || selectedHeaderValues.length === 0) {
+                showMessage('请先选择表头值', 'error');
+                return;
+            }
+
+            if (!xAxis) {
+                showMessage('请选择X轴变量', 'error');
+                return;
+            }
+
+            if (!yAxis) {
+                showMessage('请选择Y轴变量', 'error');
+                return;
+            }
+
+            try {
+                showMessage('正在生成原始图表...', 'info');
+
+                // 构建筛选条件
+                const filters = {};
+
+                // 添加表头筛选条件
+                if (selectedHeaderColumn && selectedHeaderValues.length > 0) {
+                    filters[selectedHeaderColumn] = selectedHeaderValues;
+                }
+
+                if (selectedStatus && selectedStatus.length > 0) {
+                    filters[selectedStatusColumn] = selectedStatus.map(String);
+                }
+
+                const response = await fetch('http://localhost:8001/api/plot_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_id: fileId,
+                        filters: filters,
+                        x_axis: xAxis,
+                        y_axis: yAxis
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API响应错误:', response.status, errorText);
+                    throw new Error(`HTTP error! status: ${response.status} ${errorText}`);
+                }
+
+                const plotData = await response.json();
+                console.log('获取到的绘图数据:', plotData);
+
+                originalData = plotData;
+                await renderOriginalChart(plotData);
+
+                // 启用预测标签页
+                document.getElementById('predictionTab').disabled = false;
+                document.getElementById('predictionControls').style.display = 'block';
+
+                showMessage('原始图表生成成功', 'success');
+
+            } catch (error) {
+                console.error('Error generating chart:', error);
+                showMessage('图表生成失败: ' + error.message, 'error');
+            }
+        }
+
+        // 渲染原始图表
+        async function renderOriginalChart(plotData) {
+            const xAxis = document.getElementById('xAxis').value;
+            const yAxis = document.getElementById('yAxis').value;
+
+            try {
+                // 构建筛选条件
+                const filters = {};
+
+                // 添加表头筛选条件
+                if (selectedHeaderColumn && selectedHeaderValues.length > 0) {
+                    filters[selectedHeaderColumn] = selectedHeaderValues;
+                }
+
+                if (selectedStatus && selectedStatus.length > 0) {
+                    filters[selectedStatusColumn] = selectedStatus.map(String);
+                }
+
+                const response = await fetch('http://localhost:8001/api/filter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_id: fileId,
+                        filters: filters
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const filteredData = await response.json();
+                console.log('筛选后的数据总行数:', filteredData.length);
+
+                const colorScheme = document.getElementById('colorScheme').value;
+                const lineWidth = parseInt(document.getElementById('lineWidth').value);
+                const markerSize = parseInt(document.getElementById('markerSize').value);
+                const markerStyle = document.getElementById('markerStyle').value;
+
+                const traces = [];
+                const colors = getColorScheme(colorScheme);
+                let colorIndex = 0;
+
+                // 为每个表头值创建曲线
+                selectedHeaderValues.forEach(headerValue => {
+                    if (selectedStatus && selectedStatus.length > 0) {
+                        // 如果有状态值筛选，为每个状态值创建子曲线
+                        selectedStatus.forEach(statusValue => {
+                            const headerStatusData = filteredData.filter(row =>
+                                row[selectedHeaderColumn] === headerValue &&
+                                String(row[selectedStatusColumn]) === String(statusValue)
+                            );
+
+                            if (headerStatusData.length > 0) {
+                                const xValues = headerStatusData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
+                                const yValues = headerStatusData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
+
+                                if (xValues.length > 0 && yValues.length > 0) {
+                                    const traceName = `${headerValue}-${selectedStatusColumn}-${statusValue}`;
+
+                                    const trace = {
+                                        x: xValues,
+                                        y: yValues,
+                                        mode: 'lines+markers',
+                                        type: 'scatter',
+                                        name: traceName,
+                                        line: {
+                                            color: colors[colorIndex % colors.length],
+                                            width: lineWidth
+                                        },
+                                        marker: {
+                                            color: colors[colorIndex % colors.length],
+                                            size: markerSize,
+                                            symbol: markerStyle
+                                        }
+                                    };
+                                    traces.push(trace);
+                                    colorIndex++;
+                                }
+                            }
+                        });
+                    } else {
+                        // 如果没有状态值筛选，直接为表头值创建曲线
+                        const headerData = filteredData.filter(row =>
+                            row[selectedHeaderColumn] === headerValue
+                        );
+
+                        if (headerData.length > 0) {
+                            const xValues = headerData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
+                            const yValues = headerData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
+
+                            if (xValues.length > 0 && yValues.length > 0) {
+                                const traceName = `${headerValue}`;
+
+                                const trace = {
+                                    x: xValues,
+                                    y: yValues,
+                                    mode: 'lines+markers',
+                                    type: 'scatter',
+                                    name: traceName,
+                                    line: {
+                                        color: colors[colorIndex % colors.length],
+                                        width: lineWidth
+                                    },
+                                    marker: {
+                                        color: colors[colorIndex % colors.length],
+                                        size: markerSize,
+                                        symbol: markerStyle
+                                    }
+                                };
+                                traces.push(trace);
+                                colorIndex++;
+                            }
+                        }
+                    }
+                });
+
+                if (traces.length === 0) {
+                    showMessage('没有找到匹配的数据进行绘图', 'warning');
+                    return;
+                }
+
+                // 获取图例位置配置
+                const legendPosition = document.getElementById('legendPosition').value;
+                const legendConfig = getLegendConfig(legendPosition);
+
+                // 获取用户输入的标题
+                const chartTitle = document.getElementById('chartTitle').value || '数据可视化图表';
+                const xAxisTitle = document.getElementById('xAxisTitle').value || xAxis;
+                const yAxisTitle = document.getElementById('yAxisTitle').value || yAxis;
+
+                const layout = {
+                    title: {
+                        text: chartTitle,
+                        font: { size: 16, color: '#333' }
+                    },
+                    xaxis: {
+                        title: {
+                            text: xAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        },
+                        gridcolor: '#f0f0f0',
+                        linecolor: '#d0d0d0'
+                    },
+                    yaxis: {
+                        title: {
+                            text: yAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        },
+                        gridcolor: '#f0f0f0',
+                        linecolor: '#d0d0d0'
+                    },
+                    legend: {
+                        ...legendConfig,
+                        bgcolor: 'rgba(255,255,255,0.8)',
+                        bordercolor: '#d0d0d0',
+                        borderwidth: 1,
+                        font: { size: 10 }
+                    },
+                    plot_bgcolor: 'white',
+                    paper_bgcolor: 'white',
+                    margin: { l: 60, r: 60, t: 60, b: 60 },
+                    hovermode: 'closest'
+                };
+
+                const config = {
+                    responsive: true,
+                    displayModeBar: true,
+                    modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+                    displaylogo: false
+                };
+
+                if (typeof Plotly !== 'undefined') {
+                    await Plotly.newPlot('plotDiv', traces, layout, config);
+                    currentPlot = { traces, layout, config };
+                } else {
+                    throw new Error('Plotly 库未加载');
+                }
+
+                // 显示图表控制区域
+                document.getElementById('chartControls').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error rendering chart:', error);
+                showMessage('渲染图表失败: ' + error.message, 'error');
+            }
+        }
+
+        // 生成预测
+        async function generatePrediction() {
+            if (!originalData) {
+                showMessage('请先生成原始图表', 'error');
+                return;
+            }
+
+            try {
+                showMessage('正在生成预测数据...', 'info');
+
+                const predictionSteps = parseInt(document.getElementById('predictionSteps').value);
+                const predictionMethod = document.getElementById('predictionMethod').value;
+
+                // 这里可以调用后端API进行预测，或者使用前端简单预测算法
+                // 为了演示，我们使用简单的线性预测
+                predictionData = await generateSimplePrediction(originalData, predictionSteps, predictionMethod);
+
+                await renderPredictionChart();
+
+                showMessage('预测生成成功', 'success');
+
+            } catch (error) {
+                console.error('生成预测失败:', error);
+                showMessage('生成预测失败: ' + error.message, 'error');
+            }
+        }
+
+        // 预测算法（调用后端机器学习API）
+        async function generateSimplePrediction(originalData, steps, method) {
+            try {
+                // 检查是否为机器学习算法
+                const mlMethods = ['svr', 'randomforest', 'neuralnetwork', 'xgboost', 'lstm'];
+                const isMLMethod = mlMethods.includes(method);
+
+                if (isMLMethod) {
+                    // 调用后端机器学习API
+                    return await generateMLPrediction(originalData, steps, method);
+                } else {
+                    // 使用前端传统算法
+                    return await generateTraditionalPrediction(originalData, steps, method);
+                }
+            } catch (error) {
+                console.error('预测生成失败:', error);
+                showMessage('预测生成失败: ' + error.message, 'error');
+                return [];
+            }
+        }
+
+        // 调用后端机器学习预测API
+        async function generateMLPrediction(originalData, steps, method) {
+            const currentFileId = document.getElementById('fileSelector').value;
+            if (!currentFileId) {
+                throw new Error('请先选择数据文件');
+            }
+
+            const xAxis = document.getElementById('xAxis').value;
+            const yAxis = document.getElementById('yAxis').value;
+
+            if (!xAxis || !yAxis) {
+                throw new Error('请选择X轴和Y轴');
+            }
+
+            // 获取当前筛选条件
+            const filters = {};
+
+            // 获取状态筛选
+            const statusColumn = document.getElementById('statusColumn').value;
+            if (statusColumn) {
+                const selectedStatusValues = getSelectedStatusValues();
+                if (selectedStatusValues.length > 0) {
+                    filters[statusColumn] = selectedStatusValues;
+                }
+            }
+
+            // 获取表头筛选
+            const headerColumn = document.getElementById('headerColumn').value;
+            if (headerColumn) {
+                const selectedHeaderValues = getSelectedHeaderValues();
+                if (selectedHeaderValues.length > 0) {
+                    filters[headerColumn] = selectedHeaderValues;
+                }
+            }
+
+            const payload = {
+                file_id: currentFileId,
+                filters: filters,
+                x_axis: xAxis,
+                y_axis: yAxis,
+                method: method,
+                steps: steps
+            };
+
+            showMessage('正在使用机器学习算法生成预测...', 'info');
+
+            const response = await fetch('http://localhost:8001/api/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || '预测请求失败');
+            }
+
+            const predictionResult = await response.json();
+
+            // 显示模型信息
+            displayModelInfo(predictionResult.metrics, predictionResult.model_info);
+
+            // 创建预测曲线
+            const predictionTrace = {
+                x: predictionResult.x_values,
+                y: predictionResult.y_values,
+                mode: 'lines+markers',
+                type: 'scatter',
+                name: `${getMethodDisplayName(method)} 预测`,
+                line: {
+                    color: 'rgba(255, 99, 132, 0.8)',
+                    width: 3,
+                    dash: 'dash'
+                },
+                marker: {
+                    color: 'rgba(255, 99, 132, 1)',
+                    size: 8,
+                    symbol: 'diamond'
+                }
+            };
+
+            showMessage(`${getMethodDisplayName(method)}预测完成！R² = ${predictionResult.metrics.r2_score.toFixed(4)}`, 'success');
+
+            return [predictionTrace];
+        }
+
+        // 传统算法预测（前端计算）
+        async function generateTraditionalPrediction(originalData, steps, method) {
+            // 获取当前图表的traces
+            const currentTraces = currentPlot.traces;
+            const predictionTraces = [];
+
+            currentTraces.forEach((trace, index) => {
+                const xValues = [...trace.x];
+                const yValues = [...trace.y];
+
+                if (xValues.length < 2) return;
+
+                const predictionX = [];
+                const predictionY = [];
+
+                // 根据不同算法生成预测
+                const predictions = generatePredictionByMethod(xValues, yValues, steps, method);
+
+                predictions.forEach((pred, i) => {
+                    predictionX.push(pred.x);
+                    predictionY.push(pred.y);
+                });
+
+                // 创建预测曲线
+                const predictionTrace = {
+                    x: predictionX,
+                    y: predictionY,
+                    mode: 'lines+markers',
+                    type: 'scatter',
+                    name: `${trace.name} (${getMethodDisplayName(method)})`,
+                    line: {
+                        color: trace.line.color,
+                        width: trace.line.width,
+                        dash: 'dash'
+                    },
+                    marker: {
+                        color: trace.marker.color,
+                        size: trace.marker.size,
+                        symbol: 'diamond'
+                    }
+                };
+
+                predictionTraces.push(predictionTrace);
+            });
+
+            return predictionTraces;
+        }
+
+        // 显示模型信息
+        function displayModelInfo(metrics, modelInfo) {
+            const infoDiv = document.getElementById('modelInfo') || createModelInfoDiv();
+
+            const infoHTML = `
+                <h4>模型信息</h4>
+                <p><strong>算法:</strong> ${modelInfo.algorithm}</p>
+                <p><strong>训练数据点:</strong> ${metrics.training_points}</p>
+                <p><strong>R² 得分:</strong> ${metrics.r2_score.toFixed(4)}</p>
+                <p><strong>RMSE:</strong> ${metrics.rmse.toFixed(4)}</p>
+                <p><strong>MSE:</strong> ${metrics.mse.toFixed(4)}</p>
+                ${Object.keys(modelInfo).filter(key => key !== 'algorithm').map(key =>
+                    `<p><strong>${key}:</strong> ${JSON.stringify(modelInfo[key])}</p>`
+                ).join('')}
+            `;
+
+            infoDiv.innerHTML = infoHTML;
+            infoDiv.style.display = 'block';
+        }
+
+        // 创建模型信息显示区域
+        function createModelInfoDiv() {
+            const infoDiv = document.createElement('div');
+            infoDiv.id = 'modelInfo';
+            infoDiv.style.cssText = `
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 10px 0;
+                font-size: 14px;
+                display: none;
+            `;
+
+            const predictionSection = document.querySelector('.prediction-section');
+            if (predictionSection) {
+                predictionSection.appendChild(infoDiv);
+            }
+
+            return infoDiv;
+        }
+
+        // 获取选中的状态值
+        function getSelectedStatusValues() {
+            const statusTags = document.getElementById('statusValueTags');
+            if (!statusTags) return [];
+
+            const selectedTags = statusTags.querySelectorAll('.tag.selected');
+            return Array.from(selectedTags).map(tag => tag.textContent.trim());
+        }
+
+        // 获取选中的表头值
+        function getSelectedHeaderValues() {
+            const headerTags = document.getElementById('headerValueTags');
+            if (!headerTags) return [];
+
+            const selectedTags = headerTags.querySelectorAll('.tag.selected');
+            return Array.from(selectedTags).map(tag => tag.textContent.trim());
+        }
+
+        // 根据方法生成预测数据
+        function generatePredictionByMethod(xValues, yValues, steps, method) {
+            const lastX = xValues[xValues.length - 1];
+            const stepSize = xValues.length > 1 ? xValues[xValues.length - 1] - xValues[xValues.length - 2] : 1;
+            const predictions = [];
+
+            switch (method) {
+                case 'linear':
+                    return generateLinearPrediction(xValues, yValues, steps, stepSize);
+                case 'polynomial':
+                    return generatePolynomialPrediction(xValues, yValues, steps, stepSize);
+                case 'exponential':
+                    return generateExponentialPrediction(xValues, yValues, steps, stepSize);
+                case 'svr':
+                    return generateSVRPrediction(xValues, yValues, steps, stepSize);
+                case 'randomforest':
+                    return generateRandomForestPrediction(xValues, yValues, steps, stepSize);
+                case 'neuralnetwork':
+                    return generateNeuralNetworkPrediction(xValues, yValues, steps, stepSize);
+                case 'xgboost':
+                    return generateXGBoostPrediction(xValues, yValues, steps, stepSize);
+                case 'lstm':
+                    return generateLSTMPrediction(xValues, yValues, steps, stepSize);
+                default:
+                    return generateLinearPrediction(xValues, yValues, steps, stepSize);
+            }
+        }
+
+        // 获取方法显示名称
+         function getMethodDisplayName(method) {
+             const methodNames = {
+                 'linear': '线性回归',
+                 'polynomial': '多项式拟合',
+                 'exponential': '指数拟合',
+                 'svr': 'SVR预测',
+                 'randomforest': '随机森林预测',
+                 'neuralnetwork': '神经网络预测',
+                 'xgboost': 'XGBoost预测',
+                 'lstm': 'LSTM预测'
+             };
+             return methodNames[method] || '预测';
+         }
+
+         // 线性回归预测
+         function generateLinearPrediction(xValues, yValues, steps, stepSize) {
+             const n = xValues.length;
+             if (n < 2) return [];
+
+             // 计算线性回归参数
+             const sumX = xValues.reduce((a, b) => a + b, 0);
+             const sumY = yValues.reduce((a, b) => a + b, 0);
+             const sumXY = xValues.reduce((sum, x, i) => sum + x * yValues[i], 0);
+             const sumXX = xValues.reduce((sum, x) => sum + x * x, 0);
+
+             const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+             const intercept = (sumY - slope * sumX) / n;
+
+             const predictions = [];
+             const lastX = xValues[xValues.length - 1];
+
+             for (let i = 1; i <= steps; i++) {
+                 const newX = lastX + stepSize * i;
+                 const newY = slope * newX + intercept;
+                 predictions.push({ x: newX, y: newY });
+             }
+
+             return predictions;
+         }
+
+         // 多项式拟合预测
+         function generatePolynomialPrediction(xValues, yValues, steps, stepSize) {
+             const n = xValues.length;
+             if (n < 3) return generateLinearPrediction(xValues, yValues, steps, stepSize);
+
+             // 简化的二次多项式拟合
+             const lastX = xValues[xValues.length - 1];
+             const lastY = yValues[yValues.length - 1];
+             const secondLastX = xValues[xValues.length - 2];
+             const secondLastY = yValues[yValues.length - 2];
+             const thirdLastX = xValues[xValues.length - 3];
+             const thirdLastY = yValues[yValues.length - 3];
+
+             // 计算二阶差分
+             const firstDiff1 = lastY - secondLastY;
+             const firstDiff2 = secondLastY - thirdLastY;
+             const secondDiff = firstDiff1 - firstDiff2;
+
+             const predictions = [];
+             for (let i = 1; i <= steps; i++) {
+                 const newX = lastX + stepSize * i;
+                 const newY = lastY + firstDiff1 * i + secondDiff * i * (i - 1) / 2;
+                 predictions.push({ x: newX, y: newY });
+             }
+
+             return predictions;
+         }
+
+         // 指数拟合预测
+         function generateExponentialPrediction(xValues, yValues, steps, stepSize) {
+             const n = xValues.length;
+             if (n < 2) return [];
+
+             // 计算指数增长率
+             const lastY = yValues[yValues.length - 1];
+             const secondLastY = yValues[yValues.length - 2];
+
+             if (secondLastY <= 0 || lastY <= 0) {
+                 return generateLinearPrediction(xValues, yValues, steps, stepSize);
+             }
+
+             const growthRate = Math.log(lastY / secondLastY);
+             const predictions = [];
+             const lastX = xValues[xValues.length - 1];
+
+             for (let i = 1; i <= steps; i++) {
+                 const newX = lastX + stepSize * i;
+                 const newY = lastY * Math.exp(growthRate * i);
+                 predictions.push({ x: newX, y: newY });
+             }
+
+             return predictions;
+         }
+
+         // 支持向量机回归预测（简化版）
+         function generateSVRPrediction(xValues, yValues, steps, stepSize) {
+             const n = xValues.length;
+             if (n < 3) return generateLinearPrediction(xValues, yValues, steps, stepSize);
+
+             // 使用RBF核的简化SVR
+             const predictions = [];
+             const lastX = xValues[xValues.length - 1];
+             const gamma = 1.0 / n; // 简化的gamma参数
+
+             for (let i = 1; i <= steps; i++) {
+                 const newX = lastX + stepSize * i;
+                 let prediction = 0;
+                 let weightSum = 0;
+
+                 // 计算与历史数据点的相似度加权预测
+                 for (let j = Math.max(0, n - 10); j < n; j++) {
+                     const distance = Math.abs(newX - xValues[j]);
+                     const weight = Math.exp(-gamma * distance * distance);
+                     prediction += weight * yValues[j];
+                     weightSum += weight;
+                 }
+
+                 const newY = weightSum > 0 ? prediction / weightSum : yValues[n - 1];
+                 predictions.push({ x: newX, y: newY });
+             }
+
+             return predictions;
+         }
+
+         // 随机森林回归预测（简化版）
+         function generateRandomForestPrediction(xValues, yValues, steps, stepSize) {
+             const n = xValues.length;
+             if (n < 5) return generateLinearPrediction(xValues, yValues, steps, stepSize);
+
+             const predictions = [];
+             const lastX = xValues[xValues.length - 1];
+             const numTrees = 5; // 简化的树数量
+
+             for (let i = 1; i <= steps; i++) {
+                 const newX = lastX + stepSize * i;
+                 let treePredictions = [];
+
+                 // 生成多个决策树的预测
+                 for (let tree = 0; tree < numTrees; tree++) {
+                     // 随机选择特征窗口
+                     const windowSize = Math.min(5, Math.floor(n * 0.8));
+                     const startIdx = Math.max(0, n - windowSize - tree);
+                     const endIdx = Math.min(n, startIdx + windowSize);
+
+                     // 简单的局部线性拟合
+                     const localX = xValues.slice(startIdx, endIdx);
+                     const localY = yValues.slice(startIdx, endIdx);
+                     const localPred = generateLinearPrediction(localX, localY, 1, stepSize * i);
+
+                     if (localPred.length > 0) {
+                         treePredictions.push(localPred[0].y);
+                     }
+                 }
+
+                 // 平均所有树的预测
+                 const newY = treePredictions.length > 0 ?
+                     treePredictions.reduce((a, b) => a + b, 0) / treePredictions.length :
+                     yValues[n - 1];
+
+                 predictions.push({ x: newX, y: newY });
+             }
+
+             return predictions;
+         }
+
+         // 神经网络回归预测（简化版）
+         function generateNeuralNetworkPrediction(xValues, yValues, steps, stepSize) {
+             const n = xValues.length;
+             if (n < 3) return generateLinearPrediction(xValues, yValues, steps, stepSize);
+
+             // 简化的单层神经网络
+             const windowSize = Math.min(5, n);
+             const predictions = [];
+             const lastX = xValues[xValues.length - 1];
+
+             // 激活函数（tanh）
+             const tanh = x => Math.tanh(x);
+
+             for (let i = 1; i <= steps; i++) {
+                 const newX = lastX + stepSize * i;
+                 let output = 0;
+
+                 // 使用最近的数据点作为"神经元"
+                 for (let j = n - windowSize; j < n; j++) {
+                     if (j >= 0) {
+                         const input = (newX - xValues[j]) / stepSize; // 标准化输入
+                         const weight = 1.0 / windowSize; // 简化的权重
+                         const activation = tanh(input);
+                         output += weight * yValues[j] * (1 + 0.1 * activation);
+                     }
+                 }
+
+                 predictions.push({ x: newX, y: output });
+             }
+
+             return predictions;
+         }
+
+         // XGBoost回归预测（简化版）
+         function generateXGBoostPrediction(xValues, yValues, steps, stepSize) {
+             const n = xValues.length;
+             if (n < 4) return generateLinearPrediction(xValues, yValues, steps, stepSize);
+
+             const predictions = [];
+             const lastX = xValues[xValues.length - 1];
+             const numBoosts = 3; // 简化的提升轮数
+
+             for (let i = 1; i <= steps; i++) {
+                 const newX = lastX + stepSize * i;
+                 let prediction = yValues[n - 1]; // 初始预测
+
+                 // 梯度提升过程
+                 for (let boost = 0; boost < numBoosts; boost++) {
+                     // 计算残差并进行简单的树拟合
+                     const windowStart = Math.max(0, n - 8 + boost);
+                     const localX = xValues.slice(windowStart);
+                     const localY = yValues.slice(windowStart);
+
+                     // 简单的梯度计算
+                     const gradient = localY[localY.length - 1] - prediction;
+                     const learningRate = 0.1;
+
+                     // 基于趋势的简单提升
+                     if (localY.length >= 2) {
+                         const trend = localY[localY.length - 1] - localY[localY.length - 2];
+                         prediction += learningRate * (gradient + trend * 0.5);
+                     }
+                 }
+
+                 predictions.push({ x: newX, y: prediction });
+             }
+
+             return predictions;
+         }
+
+         // LSTM时间序列预测（简化版）
+         function generateLSTMPrediction(xValues, yValues, steps, stepSize) {
+             const n = xValues.length;
+             if (n < 5) return generateLinearPrediction(xValues, yValues, steps, stepSize);
+
+             const predictions = [];
+             const lastX = xValues[xValues.length - 1];
+             const sequenceLength = Math.min(10, n); // LSTM序列长度
+
+             // 简化的LSTM状态
+             let cellState = 0;
+             let hiddenState = 0;
+
+             // 初始化状态
+             for (let j = n - sequenceLength; j < n; j++) {
+                 if (j >= 0) {
+                     const input = yValues[j];
+                     // 简化的LSTM门控机制
+                     const forgetGate = 1 / (1 + Math.exp(-input * 0.1));
+                     const inputGate = 1 / (1 + Math.exp(-input * 0.1));
+                     const outputGate = 1 / (1 + Math.exp(-input * 0.1));
+
+                     cellState = forgetGate * cellState + inputGate * Math.tanh(input * 0.1);
+                     hiddenState = outputGate * Math.tanh(cellState);
+                 }
+             }
+
+             // 生成预测
+             for (let i = 1; i <= steps; i++) {
+                 const newX = lastX + stepSize * i;
+
+                 // 使用当前隐藏状态预测下一个值
+                 const prediction = hiddenState * 10 + yValues[n - 1] * 0.8;
+
+                 // 更新LSTM状态
+                 const forgetGate = 1 / (1 + Math.exp(-prediction * 0.1));
+                 const inputGate = 1 / (1 + Math.exp(-prediction * 0.1));
+                 const outputGate = 1 / (1 + Math.exp(-prediction * 0.1));
+
+                 cellState = forgetGate * cellState + inputGate * Math.tanh(prediction * 0.1);
+                 hiddenState = outputGate * Math.tanh(cellState);
+
+                 predictions.push({ x: newX, y: prediction });
+             }
+
+             return predictions;
+         }
+
+        // 渲染预测图表
+        async function renderPredictionChart() {
+            if (!currentPlot || !predictionData) return;
+
+            try {
+                // 获取当前样式设置
+                const colorScheme = document.getElementById('colorScheme').value;
+                const lineWidth = parseInt(document.getElementById('lineWidth').value);
+                const markerSize = parseInt(document.getElementById('markerSize').value);
+                const markerStyle = document.getElementById('markerStyle').value;
+                const legendPosition = document.getElementById('legendPosition').value;
+                const chartTitle = document.getElementById('chartTitle').value || '数据可视化图表';
+                const xAxisTitle = document.getElementById('xAxisTitle').value || document.getElementById('xAxis').value;
+                const yAxisTitle = document.getElementById('yAxisTitle').value || document.getElementById('yAxis').value;
+
+                // 应用样式到原始数据traces
+                const colors = getColorScheme(colorScheme);
+                const styledOriginalTraces = currentPlot.traces.map((trace, index) => ({
+                    ...trace,
+                    line: {
+                        ...trace.line,
+                        color: colors[index % colors.length],
+                        width: lineWidth
+                    },
+                    marker: {
+                        ...trace.marker,
+                        color: colors[index % colors.length],
+                        size: markerSize,
+                        symbol: markerStyle
+                    }
+                }));
+
+                // 合并原始数据和预测数据
+                const allTraces = [...styledOriginalTraces, ...predictionData];
+
+                // 获取图例配置
+                const legendConfig = getLegendConfig(legendPosition);
+
+                const layout = {
+                    ...currentPlot.layout,
+                    title: {
+                        text: chartTitle + ' (含预测)',
+                        font: { size: 16, color: '#333' }
+                    },
+                    xaxis: {
+                        ...currentPlot.layout.xaxis,
+                        title: {
+                            text: xAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        }
+                    },
+                    yaxis: {
+                        ...currentPlot.layout.yaxis,
+                        title: {
+                            text: yAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        }
+                    },
+                    legend: {
+                        ...legendConfig,
+                        bgcolor: 'rgba(255,255,255,0.8)',
+                        bordercolor: '#d0d0d0',
+                        borderwidth: 1,
+                        font: { size: 10 }
+                    }
+                };
+
+                if (typeof Plotly !== 'undefined') {
+                    await Plotly.newPlot('plotDiv', allTraces, layout, currentPlot.config);
+                } else {
+                    throw new Error('Plotly 库未加载');
+                }
+
+            } catch (error) {
+                console.error('渲染预测图表失败:', error);
+                showMessage('渲染预测图表失败: ' + error.message, 'error');
+            }
+        }
+
+        // 切换标签页
+        function switchTab(tab) {
+            currentTab = tab;
+
+            // 更新标签页样式
+            document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+
+            // 根据标签页显示不同内容
+            if (tab === 'original') {
+                if (originalData && currentPlot) {
+                    // 应用当前样式设置到原始图表
+                    applyStyleToOriginalChart();
+                }
+            } else if (tab === 'prediction') {
+                if (predictionData) {
+                    renderPredictionChart();
+                } else {
+                    showMessage('请先生成预测数据', 'warning');
+                }
+            }
+        }
+
+        // 应用样式到原始图表（不重新生成数据）
+        function applyStyleToOriginalChart() {
+            if (!currentPlot) return;
+
+            try {
+                // 获取当前样式设置
+                const colorScheme = document.getElementById('colorScheme').value;
+                const lineWidth = parseInt(document.getElementById('lineWidth').value);
+                const markerSize = parseInt(document.getElementById('markerSize').value);
+                const markerStyle = document.getElementById('markerStyle').value;
+                const legendPosition = document.getElementById('legendPosition').value;
+                const chartTitle = document.getElementById('chartTitle').value || '数据可视化图表';
+                const xAxisTitle = document.getElementById('xAxisTitle').value || document.getElementById('xAxis').value;
+                const yAxisTitle = document.getElementById('yAxisTitle').value || document.getElementById('yAxis').value;
+
+                // 应用样式到traces
+                const colors = getColorScheme(colorScheme);
+                const styledTraces = currentPlot.traces.map((trace, index) => ({
+                    ...trace,
+                    line: {
+                        ...trace.line,
+                        color: colors[index % colors.length],
+                        width: lineWidth
+                    },
+                    marker: {
+                        ...trace.marker,
+                        color: colors[index % colors.length],
+                        size: markerSize,
+                        symbol: markerStyle
+                    }
+                }));
+
+                // 获取图例配置
+                const legendConfig = getLegendConfig(legendPosition);
+
+                const layout = {
+                    ...currentPlot.layout,
+                    title: {
+                        text: chartTitle,
+                        font: { size: 16, color: '#333' }
+                    },
+                    xaxis: {
+                        ...currentPlot.layout.xaxis,
+                        title: {
+                            text: xAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        }
+                    },
+                    yaxis: {
+                        ...currentPlot.layout.yaxis,
+                        title: {
+                            text: yAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        }
+                    },
+                    legend: {
+                        ...legendConfig,
+                        bgcolor: 'rgba(255,255,255,0.8)',
+                        bordercolor: '#d0d0d0',
+                        borderwidth: 1,
+                        font: { size: 10 }
+                    }
+                };
+
+                // 更新currentPlot以保存新的样式
+                currentPlot = { traces: styledTraces, layout, config: currentPlot.config };
+
+                if (typeof Plotly !== 'undefined') {
+                    Plotly.newPlot('plotDiv', styledTraces, layout, currentPlot.config);
+                } else {
+                    throw new Error('Plotly 库未加载');
+                }
+
+            } catch (error) {
+                console.error('应用样式失败:', error);
+                showMessage('应用样式失败: ' + error.message, 'error');
+            }
+        }
+
+        // 应用样式到图表
+        function applyStyleToChart() {
+            if (currentTab === 'original') {
+                applyStyleToOriginalChart();
+            } else if (currentTab === 'prediction') {
+                renderPredictionChart();
+            }
+        }
+
+        // 清除可视化
+        function clearVisualization() {
+            document.getElementById('plotDiv').innerHTML = `
+                <div class="no-data-message">
+                    <h3 style="font-size: 13px; margin-bottom: 8px;">📈 图表区域</h3>
+                    <p>请先选择数据文件、分组条件和坐标轴，然后点击"生成原始图表"</p>
+                </div>
+            `;
+
+            document.getElementById('chartControls').style.display = 'none';
+            document.getElementById('predictionControls').style.display = 'none';
+            document.getElementById('predictionTab').disabled = true;
+
+            // 重置到原始标签页
+            switchTab('original');
+
+            selectedStatus = [];
+            originalData = null;
+            predictionData = null;
+            currentPlot = null;
+
+            // 清除标签选择状态
+            document.querySelectorAll('.header-tag').forEach(tag => tag.classList.remove('selected'));
+            document.querySelectorAll('.tag').forEach(tag => tag.classList.remove('selected'));
+
+            checkFormValidity();
+        }
+
+        // 工具栏功能
+        function resetZoom() {
+            if (currentPlot && typeof Plotly !== 'undefined') {
+                Plotly.relayout('plotDiv', {
+                    'xaxis.autorange': true,
+                    'yaxis.autorange': true
+                });
+            }
+        }
+
+        function downloadPNG() {
+            if (currentPlot && typeof Plotly !== 'undefined') {
+                Plotly.downloadImage('plotDiv', {
+                    format: 'png',
+                    width: 1200,
+                    height: 800,
+                    filename: 'prediction_chart'
+                });
+            }
+        }
+
+        function downloadSVG() {
+            if (currentPlot && typeof Plotly !== 'undefined') {
+                Plotly.downloadImage('plotDiv', {
+                    format: 'svg',
+                    width: 1200,
+                    height: 800,
+                    filename: 'prediction_chart'
+                });
+            }
+        }
+
+
+    </script>
+</body>
+</html>
