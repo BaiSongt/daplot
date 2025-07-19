@@ -408,13 +408,38 @@ async def delete_file_data(file_id: str):
         logger.error(f"❌ 文件ID未找到: {file_id}")
         raise HTTPException(status_code=404, detail="File ID not found.")
 
+    # 删除数据和元数据
     del data_storage[file_id]
+    if file_id in file_metadata:
+        del file_metadata[file_id]
+
     logger.info(f"✅ 文件删除成功: {file_id}")
 
     return {
         "success": True,
         "message": "File deleted successfully",
         "file_id": file_id
+    }
+
+@app.delete("/api/files/clear")
+async def clear_all_files():
+    """
+    Clears all files from storage.
+    """
+    logger.info("🗑️ 请求清空所有文件")
+
+    file_count = len(data_storage)
+
+    # 清空所有存储
+    data_storage.clear()
+    file_metadata.clear()
+
+    logger.info(f"✅ 已清空所有文件，共删除 {file_count} 个文件")
+
+    return {
+        "success": True,
+        "message": f"All files cleared successfully. Deleted {file_count} files.",
+        "deleted_count": file_count
     }
 
 @app.get("/api/unique_values/{file_id}/{column_name}")

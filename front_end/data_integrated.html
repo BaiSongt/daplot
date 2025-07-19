@@ -429,6 +429,7 @@
     <script src="/assets/js/lib-loader.js"></script>
     <script src="/assets/js/data-persistence.js"></script>
     <script src="/assets/js/page-bridge.js"></script>
+    <script src="/assets/js/page-state-manager.js"></script>
 </head>
 <body>
     <!-- 加载提示覆盖层 -->
@@ -561,7 +562,7 @@
                 let attempts = 0;
                 const maxAttempts = 50; // 最多等待5秒
                 const loadingOverlay = document.getElementById('loadingOverlay');
-                
+
                 const checkLuckysheet = () => {
                     attempts++;
                     if (typeof luckysheet !== 'undefined' && luckysheet.create) {
@@ -580,7 +581,7 @@
                         setTimeout(checkLuckysheet, 100);
                     }
                 };
-                
+
                 checkLuckysheet();
             });
         }
@@ -590,7 +591,7 @@
             try {
                 // 等待 Luckysheet 加载完成
                 await waitForLuckysheet();
-                
+
                 const fileInput = document.getElementById('fileInput');
 
                 // 文件选择事件
@@ -601,7 +602,7 @@
 
                 // 设置自动保存
                 setupAutoSave();
-                
+
                 console.log('页面初始化完成');
             } catch (error) {
                 console.error('页面初始化失败:', error);
@@ -1255,6 +1256,29 @@
                 toggleBtn.title = '收起侧边栏';
             }
         }
+
+        // 页面状态管理初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置当前页面为数据集成页面
+            if (window.pageStateManager) {
+                window.pageStateManager.setCurrentPage('data_integrated');
+            }
+        });
+
+        // 在关键操作后保存状态
+        function savePageState() {
+            if (window.pageStateManager) {
+                window.pageStateManager.saveState();
+            }
+        }
+
+        // 重写一些关键函数，在操作后保存状态
+        const originalLoadFile = loadFile;
+        loadFile = async function() {
+            const result = await originalLoadFile.apply(this, arguments);
+            setTimeout(savePageState, 500); // 延迟保存，确保操作完成
+            return result;
+        };
     </script>
 </body>
 </html>

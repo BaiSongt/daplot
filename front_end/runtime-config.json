@@ -3,6 +3,6 @@
   "frontend_port": 3000,
   "api_base_url": "http://localhost:8001",
   "frontend_url": "http://localhost:3000",
-  "startup_time": "2025-07-19T20:32:24.903471",
+  "startup_time": "2025-07-19T20:44:23.318512",
   "version": "1.0.0"
 }

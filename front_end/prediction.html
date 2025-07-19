@@ -8,6 +8,7 @@
     <script src="assets/js/lib-loader.js"></script>
     <script src="assets/js/data-persistence.js"></script>
     <script src="assets/js/page-bridge.js"></script>
+    <script src="assets/js/page-state-manager.js"></script>
     <style>
         * {
             margin: 0;
@@ -143,7 +144,7 @@
         }
 
         .controls-panel {
-            width: 400px;
+            width: 500px;
             background: white;
             border-radius: 12px;
             padding: 20px;
@@ -2900,6 +2901,42 @@
                 await Plotly.react(plotId, allTraces);
             }
         }
+
+        // 页面状态管理初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置当前页面为数据预测页面
+            if (window.pageStateManager) {
+                window.pageStateManager.setCurrentPage('prediction');
+            }
+        });
+
+        // 在关键操作后保存状态
+        function savePageState() {
+            if (window.pageStateManager) {
+                window.pageStateManager.saveState();
+            }
+        }
+
+        // 重写一些关键函数，在操作后保存状态
+        const originalSwitchFile = switchFile;
+        switchFile = function() {
+            originalSwitchFile.apply(this, arguments);
+            setTimeout(savePageState, 500); // 延迟保存，确保操作完成
+        };
+
+        const originalRenderChart = renderChart;
+        renderChart = async function() {
+            const result = await originalRenderChart.apply(this, arguments);
+            setTimeout(savePageState, 500);
+            return result;
+        };
+
+        const originalGeneratePrediction = generatePrediction;
+        generatePrediction = async function() {
+            const result = await originalGeneratePrediction.apply(this, arguments);
+            setTimeout(savePageState, 500);
+            return result;
+        };
 
 
     </script>

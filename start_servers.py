@@ -30,9 +30,9 @@ def setup_logging():
     """设置日志记录"""
     log_dir = Path(__file__).parent / 'logs'
     log_dir.mkdir(exist_ok=True)
-    
+
     log_file = log_dir / f'daplot_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
-    
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
@@ -64,20 +64,20 @@ def check_frontend_dependencies(frontend_dir):
     """检查前端依赖文件是否存在"""
     required_files = [
         'lib-loader.js',
-        'data-persistence.js', 
+        'data-persistence.js',
         'page-bridge.js'
     ]
-    
+
     missing_files = []
     for file_name in required_files:
         file_path = frontend_dir / file_name
         if not file_path.exists():
             missing_files.append(file_name)
-    
+
     if missing_files:
         print(f"⚠️  缺少前端依赖文件: {', '.join(missing_files)}")
         return False
-    
+
     print("✅ 前端依赖文件检查完成")
     return True
 
@@ -100,7 +100,7 @@ def create_config_file(frontend_dir, backend_port, frontend_port):
         'startup_time': datetime.now().isoformat(),
         'version': '1.0.0'
     }
-    
+
     config_file = frontend_dir / 'runtime-config.json'
     try:
         with open(config_file, 'w', encoding='utf-8') as f:
@@ -225,11 +225,11 @@ def main():
     # 设置信号处理
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
     # 设置日志
     logger = setup_logging()
     logger.info("DaPlot 应用启动脚本开始执行")
-    
+
     print("========================================")
     print("           DaPlot 应用启动脚本")
     print("========================================")
@@ -270,7 +270,7 @@ def main():
     if not check_frontend_dependencies(frontend_dir):
         print("❌ 前端依赖检查失败，但继续启动...")
         logger.warning("前端依赖文件不完整")
-    
+
     # 创建运行时配置文件
     create_config_file(frontend_dir, backend_port, frontend_port)
     print()
@@ -280,7 +280,7 @@ def main():
     if not backend_process:
         logger.error("后端服务器启动失败")
         return 1
-    
+
     # 等待后端服务器完全启动
     print("🔍 等待后端服务器就绪...")
     for i in range(30):  # 最多等待30秒
@@ -301,7 +301,7 @@ def main():
         if backend_process:
             backend_process.terminate()
         return 1
-    
+
     # 检查前端服务器健康状态
     print("🔍 等待前端服务器就绪...")
     for i in range(10):  # 最多等待10秒
@@ -337,15 +337,15 @@ def main():
         # 定期健康检查
         health_check_interval = 30  # 30秒检查一次
         last_health_check = time.time()
-        
+
         print("🔄 开始监控服务器状态...")
         logger.info("服务器监控开始")
-        
+
         # 等待用户中断
         while True:
             time.sleep(1)
             current_time = time.time()
-            
+
             # 检查进程是否还在运行
             if backend_process.poll() is not None:
                 print("❌ 后端服务器意外停止")
@@ -355,23 +355,23 @@ def main():
                 print("❌ 前端服务器意外停止")
                 logger.error("前端服务器进程意外终止")
                 break
-            
+
             # 定期健康检查
             if current_time - last_health_check >= health_check_interval:
                 backend_healthy = check_server_health(backend_port, '/docs')
                 frontend_healthy = check_server_health(frontend_port)
-                
+
                 if not backend_healthy:
                     print("⚠️  后端服务器健康检查失败")
                     logger.warning("后端服务器健康检查失败")
-                
+
                 if not frontend_healthy:
                     print("⚠️  前端服务器健康检查失败")
                     logger.warning("前端服务器健康检查失败")
-                
+
                 if backend_healthy and frontend_healthy:
                     logger.info("服务器健康检查正常")
-                
+
                 last_health_check = current_time
 
     except KeyboardInterrupt:
@@ -381,7 +381,24 @@ def main():
     finally:
         # 清理进程
         cleanup_success = True
-        
+
+        # 在停止后端服务器之前，先清空文件管理器
+        if backend_process and backend_process.poll() is None:
+            try:
+                print("🗑️ 正在清空文件管理器...")
+                import requests
+                clear_response = requests.delete(f"http://localhost:{backend_port}/api/files/clear", timeout=5)
+                if clear_response.status_code == 200:
+                    result = clear_response.json()
+                    print(f"✅ 文件管理器已清空，删除了 {result.get('deleted_count', 0)} 个文件")
+                    logger.info(f"文件管理器已清空，删除了 {result.get('deleted_count', 0)} 个文件")
+                else:
+                    print("⚠️  清空文件管理器失败，但继续关闭")
+                    logger.warning("清空文件管理器失败")
+            except Exception as e:
+                print(f"⚠️  清空文件管理器时出错: {e}")
+                logger.warning(f"清空文件管理器时出错: {e}")
+
         if backend_process and backend_process.poll() is None:
             try:
                 backend_process.terminate()
@@ -414,7 +431,7 @@ def main():
                 print(f"❌ 停止前端服务器时出错: {e}")
                 logger.error(f"停止前端服务器时出错: {e}")
                 cleanup_success = False
-        
+
         # 清理运行时配置文件
         config_file = frontend_dir / 'runtime-config.json'
         if config_file.exists():
@@ -423,7 +440,7 @@ def main():
                 print("✅ 运行时配置文件已清理")
             except Exception as e:
                 print(f"⚠️  清理配置文件失败: {e}")
-        
+
         if cleanup_success:
             print("\n🎉 所有服务器已安全停止")
             logger.info("DaPlot 应用已安全关闭")

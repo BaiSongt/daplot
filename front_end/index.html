@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 数据可视化平台</title>
+    <script src="assets/js/page-bridge.js"></script>
+    <script src="assets/js/page-state-manager.js"></script>
     <style>
         * {
             margin: 0;
@@ -35,16 +37,16 @@
             font-size: 12px;
             position: relative;
         }
-        
+
         .sidebar.collapsed {
             width: 50px;
             padding: 15px 5px;
         }
-        
+
         .sidebar.collapsed .sidebar-content {
             display: none;
         }
-        
+
         .sidebar-toggle {
             position: absolute;
             top: 15px;
@@ -58,7 +60,7 @@
             font-size: 12px;
             z-index: 1000;
         }
-        
+
         .sidebar-toggle:hover {
             background: #0056b3;
         }
@@ -498,14 +500,14 @@
                 ctaButton.href = 'visualization.html';
             }
         });
-        
+
         // 侧边栏收起/展开功能
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const toggleBtn = document.querySelector('.sidebar-toggle');
-            
+
             sidebar.classList.toggle('collapsed');
-            
+
             if (sidebar.classList.contains('collapsed')) {
                 toggleBtn.textContent = '▶';
                 toggleBtn.title = '展开侧边栏';
@@ -562,6 +564,49 @@
 
             requestAnimationFrame(update);
         }
+
+        // 页面状态管理初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.pageStateManager) {
+                window.pageStateManager.setCurrentPage('index');
+                addStateIndicators();
+            }
+        });
+
+        // 为导航链接添加状态指示器
+        function addStateIndicators() {
+            const pages = ['data_integrated', 'visualization', 'prediction'];
+
+            pages.forEach(page => {
+                const key = 'daplot_page_state_' + page;
+                const savedData = localStorage.getItem(key);
+
+                // 找到对应的导航链接
+                const links = document.querySelectorAll('a[href*="' + page + '"]');
+                links.forEach(link => {
+                    if (savedData) {
+                        // 添加状态指示器
+                        if (!link.querySelector('.state-indicator')) {
+                            const indicator = document.createElement('span');
+                            indicator.className = 'state-indicator';
+                            indicator.innerHTML = ' 💾';
+                            indicator.title = '此页面有保存的状态';
+                            indicator.style.color = '#28a745';
+                            link.appendChild(indicator);
+                        }
+                    } else {
+                        // 移除状态指示器
+                        const indicator = link.querySelector('.state-indicator');
+                        if (indicator) {
+                            indicator.remove();
+                        }
+                    }
+                });
+            });
+        }
+
+        // 定期更新状态指示器
+        setInterval(addStateIndicators, 30000); // 每30秒更新一次
     </script>
 </body>
 </html>
