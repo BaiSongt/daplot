@@ -148,14 +148,28 @@
         }
 
         .donate-section {
-            background: rgba(255, 255, 255, 0.95);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 60px 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.2);
             max-width: 800px;
             width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .donate-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+            pointer-events: none;
         }
 
         .donate-title {
@@ -193,22 +207,43 @@
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 40px;
             margin: 40px 0;
+            position: relative;
+            z-index: 1;
         }
 
         .qr-code-card {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             padding: 30px;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .qr-code-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
         }
 
         .qr-code-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
             background: rgba(255, 255, 255, 1);
+        }
+        
+        .qr-code-card:hover::before {
+            left: 100%;
         }
 
         .qr-code-title {
@@ -248,10 +283,26 @@
 
         .thank-you-section {
             margin-top: 40px;
-            padding: 30px;
-            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(53, 122, 189, 0.1));
-            border-radius: 15px;
+            padding: 50px 40px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 20px;
             border: 1px solid rgba(74, 144, 226, 0.2);
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .thank-you-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+            pointer-events: none;
         }
 
         .thank-you-title {
@@ -268,11 +319,27 @@
         }
 
         .contact-info {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-            color: #666;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin: 30px 0;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .contact-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+            pointer-events: none;
         }
 
         @media (max-width: 768px) {
@@ -358,10 +425,12 @@
                     <div class="donate-description">
                         <p><strong>为什么需要您的支持？</strong></p>
                         <ul style="text-align: left; margin-top: 15px; padding-left: 20px;">
-                            <li>🚀 持续开发新功能和改进用户体验</li>
-                            <li>🔧 维护服务器和基础设施运行</li>
-                            <li>📚 提供更好的文档和技术支持</li>
-                            <li>🌟 保持项目的开源和免费使用</li>
+                            <li>🚀 持续开发新功能：增加更多图表类型、预测算法和数据处理能力</li>
+                            <li>🔧 维护服务器和基础设施：确保服务稳定运行和数据安全</li>
+                            <li>📚 完善文档和教程：提供更详细的使用指南和最佳实践</li>
+                            <li>🌟 保持项目开源免费：让更多用户受益于数据可视化工具</li>
+                            <li>🤖 集成更多AI功能：智能数据分析、自动图表推荐等</li>
+                            <li>🌐 多语言支持：扩展国际化功能，服务全球用户</li>
                         </ul>
                     </div>
 
@@ -388,22 +457,26 @@
                         <p class="thank-you-text">
                             无论金额大小，您的每一份支持都对我们意义重大。您的捐赠将直接用于：
                             <br><br>
-                            • 改进软件功能和性能优化<br>
-                            • 增加新的数据可视化图表类型<br>
-                            • 提升用户界面和交互体验<br>
-                            • 维护项目的长期可持续发展
+                            • 🔬 <strong>算法研发</strong>：集成更先进的机器学习和深度学习算法<br>
+                            • 🎨 <strong>界面优化</strong>：提升用户体验，增加更多个性化设置<br>
+                            • 📊 <strong>图表扩展</strong>：支持3D图表、动态图表、地理信息图表等<br>
+                            • ⚡ <strong>性能提升</strong>：优化大数据处理能力和图表渲染速度<br>
+                            • 🛡️ <strong>安全保障</strong>：加强数据安全和隐私保护机制<br>
+                            • 🌍 <strong>社区建设</strong>：建立用户社区，促进经验分享和协作
                             <br><br>
-                            <strong>DaPlot 将始终保持开源免费，让更多人受益于数据可视化的便利。</strong>
+                            <strong>DaPlot 将始终保持开源免费，致力于成为最好用的数据可视化平台。</strong>
                         </p>
                     </div>
 
                     <div class="contact-info">
                         <p>
                             <strong>其他支持方式：</strong><br>
-                            • 在GitHub上给项目点星⭐<br>
-                            • 向朋友推荐DaPlot<br>
-                            • 提交Bug报告和功能建议<br>
-                            • 参与代码贡献和文档完善
+                            • ⭐ 在GitHub上给项目点星，提升项目知名度<br>
+                            • 📢 向同事朋友推荐DaPlot，扩大用户群体<br>
+                            • 🐛 提交Bug报告和功能建议，帮助改进产品<br>
+                            • 💻 参与代码贡献和文档完善，共建开源生态<br>
+                            • 📝 分享使用心得和案例，帮助其他用户<br>
+                            • 🎓 在学术论文中引用DaPlot，支持开源研究
                         </p>
                     </div>
                 </div>

@@ -1505,21 +1505,22 @@
                                     const traceName = `${value}`;
 
                                     const trace = {
-                                        x: xValues,
-                                        y: yValues,
-                                        mode: 'lines+markers',
-                                        type: 'scatter',
-                                        name: traceName,
-                                        line: {
-                                            color: colors[colorIndex % colors.length],
-                                            width: lineWidth
-                                        },
-                                        marker: {
-                                            color: colors[colorIndex % colors.length],
-                                            size: markerSize,
-                                            symbol: markerStyle
-                                        }
-                                    };
+                            x: xValues,
+                            y: yValues,
+                            mode: 'lines+markers',
+                            type: 'scatter',
+                            name: traceName,
+                            showlegend: true,
+                            line: {
+                                color: colors[colorIndex % colors.length],
+                                width: lineWidth
+                            },
+                            marker: {
+                                color: colors[colorIndex % colors.length],
+                                size: markerSize,
+                                symbol: markerStyle
+                            }
+                        };
                                     traces.push(trace);
                                     colorIndex++;
                                 }
@@ -1567,6 +1568,7 @@
                             mode: 'lines+markers',
                             type: 'scatter',
                             name: traceName,
+                            showlegend: true,
                             line: {
                                 color: colors[colorIndex % colors.length],
                                 width: lineWidth

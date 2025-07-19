@@ -173,30 +173,55 @@
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
             margin: 40px 0;
         }
 
         .feature-card {
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             border-radius: 15px;
-            padding: 30px 20px;
+            padding: 25px;
             text-align: center;
             transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .feature-card:hover::before {
+            left: 100%;
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(74, 144, 226, 0.15);
+            background: rgba(255, 255, 255, 1);
+            border-color: rgba(74, 144, 226, 0.3);
         }
 
         .feature-icon {
             font-size: 3rem;
             margin-bottom: 20px;
             display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1) rotate(5deg);
         }
 
         .feature-title {
@@ -239,15 +264,28 @@
 
         .stats-section {
             display: flex;
-            justify-content: space-around;
-            margin: 40px 0;
-            padding: 30px 0;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            justify-content: center;
+            gap: 40px;
+            margin: 50px 0;
+            flex-wrap: wrap;
         }
 
         .stat-item {
             text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px 20px;
+            min-width: 120px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(74, 144, 226, 0.15);
+            border-color: rgba(74, 144, 226, 0.3);
         }
 
         .stat-number {
@@ -359,31 +397,56 @@
                     <div class="features-grid">
                         <div class="feature-card">
                             <span class="feature-icon">📁</span>
-                            <h3 class="feature-title">简单上传</h3>
+                            <h3 class="feature-title">数据操作</h3>
                             <p class="feature-description">
-                                支持Excel文件拖拽上传，自动解析数据结构，快速开始分析工作
+                                支持Excel文件拖拽上传，自动解析数据结构，提供数据预览、筛选和清洗功能
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">📈</span>
+                            <h3 class="feature-title">可视化绘图</h3>
+                            <p class="feature-description">
+                                基于Plotly.js的高质量交互式图表，支持多种图表类型、样式自定义和导出功能
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">🔮</span>
+                            <h3 class="feature-title">数据预测</h3>
+                            <p class="feature-description">
+                                集成多种机器学习算法，提供线性回归、神经网络、LSTM等预测模型
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">🎨</span>
+                            <h3 class="feature-title">样式定制</h3>
+                            <p class="feature-description">
+                                丰富的图表样式选项，支持颜色方案、线条样式、标记符号等个性化设置
                             </p>
                         </div>
                         <div class="feature-card">
                             <span class="feature-icon">🔍</span>
                             <h3 class="feature-title">智能筛选</h3>
                             <p class="feature-description">
-                                灵活的数据筛选功能，支持多条件组合，精确定位您需要的数据
+                                灵活的数据筛选功能，支持多条件组合、灵活表头筛选，精确定位数据
                             </p>
                         </div>
                         <div class="feature-card">
-                            <span class="feature-icon">📊</span>
-                            <h3 class="feature-title">交互式图表</h3>
+                            <span class="feature-icon">💾</span>
+                            <h3 class="feature-title">多格式导出</h3>
                             <p class="feature-description">
-                                基于Plotly.js的高质量图表，支持缩放、平移和多种导出格式
+                                支持PNG、SVG、PDF等多种格式导出，满足不同场景的使用需求
                             </p>
                         </div>
                     </div>
 
                     <div class="stats-section">
                         <div class="stat-item">
-                            <span class="stat-number">3</span>
+                            <span class="stat-number">6</span>
                             <span class="stat-label">核心功能</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">8</span>
+                            <span class="stat-label">预测算法</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-number">∞</span>
@@ -403,10 +466,17 @@
 
                     <div class="footer-info">
                         <p>
-                            <strong>使用流程：</strong><br>
-                            1. 📊 上传您的Excel数据文件<br>
-                            2. 🎯 选择项目和状态变量进行筛选<br>
-                            3. 📈 设置坐标轴并生成可视化图表
+                            <strong>完整使用流程：</strong><br>
+                            1. 📊 <strong>数据操作</strong> - 上传Excel文件，预览和筛选数据<br>
+                            2. 📈 <strong>可视化绘图</strong> - 选择坐标轴，自定义样式，生成交互式图表<br>
+                            3. 🔮 <strong>数据预测</strong> - 使用机器学习算法进行趋势预测分析<br>
+                            4. 💾 <strong>导出分享</strong> - 将图表导出为PNG、SVG等格式
+                        </p>
+                        <br>
+                        <p>
+                            <strong>支持的预测算法：</strong><br>
+                            • 传统算法：线性回归、多项式拟合、指数拟合<br>
+                            • 机器学习：SVR、随机森林、神经网络、XGBoost、LSTM
                         </p>
                     </div>
                 </div>
