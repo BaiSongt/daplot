@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 数据操作 (SheetJS + Luckysheet + 后端集成)</title>
-    
+
     <!-- Luckysheet CSS - 使用更稳定的CDN源 -->
     <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/plugins/css/pluginsCss.css" />
     <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/plugins/plugins.css" />
     <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/css/luckysheet.css" />
     <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/assets/iconfont/iconfont.css" />
-    
+
     <style>
         * {
             margin: 0;
@@ -41,16 +41,16 @@
             font-size: 12px;
             position: relative;
         }
-        
+
         .sidebar.collapsed {
             width: 50px;
             padding: 15px 5px;
         }
-        
+
         .sidebar.collapsed .sidebar-content {
             display: none;
         }
-        
+
         .sidebar-toggle {
             position: absolute;
             top: 15px;
@@ -64,7 +64,7 @@
             font-size: 12px;
             z-index: 1000;
         }
-        
+
         .sidebar-toggle:hover {
             background: #0056b3;
         }
@@ -437,7 +437,7 @@
                         🔄
                     </button>
                 </div>
-                
+
                 <div class="file-list" id="fileList" style="margin-top: 15px;">
                     <!-- 文件列表将在这里动态生成 -->
                 </div>
@@ -459,14 +459,14 @@
                         <i>📄</i> 导出CSV
                     </button>
                 </div>
-                
+
                 <div class="toolbar-group">
                     <span class="toolbar-label">数据:</span>
                     <button class="btn btn-sm btn-success" onclick="goToVisualization()">
                         <i>📈</i> 前往可视化
                     </button>
                 </div>
-                
+
                 <div class="sync-indicator" id="syncIndicator" style="display: none;">
                     <span id="syncStatus">已同步</span>
                 </div>
@@ -494,7 +494,7 @@
 
     <!-- SheetJS - 使用更稳定的CDN源 -->
     <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    
+
     <!-- Luckysheet JavaScript - 使用更稳定的CDN源 -->
     <script src="https://unpkg.com/luckysheet@latest/dist/plugins/js/plugin.js"></script>
     <script src="https://unpkg.com/luckysheet@latest/dist/luckysheet.umd.js"></script>
@@ -507,20 +507,20 @@
         let isLuckysheetInitialized = false;
         let hasUnsavedChanges = false;
         let autoSaveInterval = null;
-        
+
         // API配置
         const API_BASE_URL = 'http://localhost:8001';
 
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('fileInput');
-            
+
             // 文件选择事件
             fileInput.addEventListener('change', handleFileSelect);
-            
+
             // 加载文件列表
             refreshFileList();
-            
+
             // 设置自动保存
             setupAutoSave();
         });
@@ -557,12 +557,12 @@
                 }
 
                 const data = await response.json();
-                
+
                 // 处理多sheet文件响应
                 if (data.multiple_sheets) {
                     showMessage(`文件上传成功！发现 ${data.total_sheets} 个工作表`, 'success');
                     refreshFileList();
-                    
+
                     // 加载第一个sheet
                     if (data.files && data.files.length > 0) {
                         await loadFile(data.files[0].file_id);
@@ -575,7 +575,7 @@
 
                     showMessage('文件上传成功！', 'success');
                     refreshFileList();
-                    
+
                     // 加载文件到Luckysheet
                     await loadFile(data.file_id);
                 }
@@ -589,15 +589,15 @@
         async function refreshFileList() {
             try {
                 showMessage('正在刷新文件列表...', 'success');
-                
+
                 const response = await fetch(`${API_BASE_URL}/api/files`);
                 if (!response.ok) {
                     throw new Error('获取文件列表失败');
                 }
-                
+
                 const data = await response.json();
                 displayFileList(data.files);
-                
+
             } catch (error) {
                 console.error('刷新文件列表失败:', error);
                 showMessage('刷新文件列表失败: ' + error.message, 'error');
@@ -606,12 +606,12 @@
 
         function displayFileList(files) {
             const fileList = document.getElementById('fileList');
-            
+
             if (!files || files.length === 0) {
                 fileList.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无文件</div>';
                 return;
             }
-            
+
             fileList.innerHTML = files.map(file => `
                 <div class="file-item ${file.file_id === currentFileId ? 'active' : ''}" onclick="loadFile('${file.file_id}')" style="cursor: pointer; padding: 8px 12px; margin: 2px 0; border: 1px solid #e0e0e0; border-radius: 4px; background: ${file.file_id === currentFileId ? '#e3f2fd' : '#fafafa'}; transition: all 0.2s ease; font-size: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -632,20 +632,20 @@
         async function loadFile(fileId) {
             try {
                 showMessage('正在加载文件...', 'success');
-                
+
                 // 从后端获取完整数据
                 const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`);
                 if (!response.ok) {
                     throw new Error('文件不存在或已过期');
                 }
-                
+
                 const data = await response.json();
                 loadFileToLuckysheet(data, fileId);
-                
+
                 currentFileId = fileId;
                 refreshFileList(); // 刷新文件列表以更新active状态
                 updateSyncIndicator('synced');
-                
+
             } catch (error) {
                 console.error('加载文件失败:', error);
                 showMessage('加载文件失败: ' + error.message, 'error');
@@ -655,17 +655,17 @@
         function loadFileToLuckysheet(fileInfo, fileId) {
             const currentFileName = document.getElementById('currentFileName');
             const dataInfo = document.getElementById('dataInfo');
-            
+
             // 保存表头信息
             currentHeaders = fileInfo.headers || [];
-            
+
             // 更新文件信息显示
             currentFileName.textContent = fileInfo.filename || `文件 ${fileId.substring(0, 8)}...`;
             dataInfo.textContent = `${fileInfo.headers.length}列 × ${fileInfo.preview_data ? fileInfo.preview_data.length : 0}行`;
-            
+
             // 准备Luckysheet数据格式
             const luckysheetData = [];
-            
+
             // 添加表头行
             if (fileInfo.headers && fileInfo.headers.length > 0) {
                 const headerRow = [];
@@ -683,7 +683,7 @@
                     });
                 });
             }
-            
+
             // 添加数据行
             if (fileInfo.preview_data && fileInfo.preview_data.length > 0) {
                 fileInfo.preview_data.forEach((row, rowIndex) => {
@@ -703,17 +703,17 @@
                     });
                 });
             }
-            
+
             // 销毁现有的Luckysheet实例
             if (isLuckysheetInitialized) {
                 luckysheet.destroy();
             }
-            
+
             // 清空容器
             const container = document.getElementById('luckysheet');
             container.innerHTML = '';
             container.className = '';
-            
+
             // 初始化Luckysheet
             const options = {
                 container: 'luckysheet',
@@ -776,11 +776,11 @@
                     }
                 }
             };
-            
+
             luckysheet.create(options);
             isLuckysheetInitialized = true;
             hasUnsavedChanges = false;
-            
+
             showMessage('文件加载成功！', 'success');
         }
 
@@ -791,27 +791,27 @@
                     const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`, {
                         method: 'DELETE'
                     });
-                    
+
                     console.log('删除响应状态:', response.status);
-                    
+
                     if (!response.ok) {
                         const errorText = await response.text();
                         console.error('删除失败响应:', errorText);
                         throw new Error(`删除文件失败: ${response.status} ${errorText}`);
                     }
-                    
+
                     const result = await response.json();
                     console.log('删除成功:', result);
-                    
+
                     if (currentFileId === fileId) {
                         currentFileId = null;
-                        
+
                         // 销毁Luckysheet实例
                         if (isLuckysheetInitialized) {
                             luckysheet.destroy();
                             isLuckysheetInitialized = false;
                         }
-                        
+
                         const container = document.getElementById('luckysheet');
                         container.innerHTML = `
                             <div class="empty-state">
@@ -826,10 +826,10 @@
                         document.getElementById('dataInfo').textContent = '';
                         updateSyncIndicator('synced');
                     }
-                    
+
                     refreshFileList();
                     showMessage('文件已删除', 'success');
-                    
+
                 } catch (error) {
                     console.error('删除文件失败:', error);
                     showMessage('删除文件失败: ' + error.message, 'error');
@@ -842,18 +842,18 @@
                 showMessage('没有可保存的文件', 'error');
                 return;
             }
-            
+
             try {
                 updateSyncIndicator('syncing');
                 showMessage('正在保存到服务器...', 'success');
-                
+
                 // 获取当前Luckysheet数据
                 const sheetData = luckysheet.getSheetData();
-                
+
                 // 转换数据格式
                 const headers = [];
                 const dataRows = [];
-                
+
                 // 提取数据
                 if (sheetData && sheetData.length > 0) {
                     // 获取最大行列数
@@ -869,7 +869,7 @@
                             });
                         }
                     });
-                    
+
                     // 提取表头（第一行）
                     if (sheetData[0]) {
                         for (let c = 0; c < maxCol; c++) {
@@ -877,7 +877,7 @@
                             headers.push(cell && cell.v ? cell.v.toString() : `列${c + 1}`);
                         }
                     }
-                    
+
                     // 提取数据行（从第二行开始）
                     for (let r = 1; r < sheetData.length; r++) {
                         const row = sheetData[r];
@@ -894,14 +894,14 @@
                         }
                     }
                 }
-                
+
                 // 发送到后端
                 const savePayload = {
                     file_id: currentFileId,
                     headers: headers,
                     data: dataRows
                 };
-                
+
                 const response = await fetch(`${API_BASE_URL}/api/save`, {
                     method: 'POST',
                     headers: {
@@ -909,17 +909,17 @@
                     },
                     body: JSON.stringify(savePayload)
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('保存失败');
                 }
-                
+
                 const result = await response.json();
-                
+
                 hasUnsavedChanges = false;
                 updateSyncIndicator('synced');
                 showMessage('文件已保存到服务器', 'success');
-                
+
             } catch (error) {
                 console.error('保存失败:', error);
                 updateSyncIndicator('error');
@@ -932,11 +932,11 @@
                 showMessage('没有可导出的数据', 'error');
                 return;
             }
-            
+
             try {
                 // 获取当前Luckysheet数据
                 const sheetData = luckysheet.getSheetData();
-                
+
                 // 转换为SheetJS格式
                 const wsData = [];
                 if (sheetData && sheetData.length > 0) {
@@ -950,16 +950,16 @@
                         }
                     });
                 }
-                
+
                 // 创建工作簿
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
                 XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-                
+
                 // 导出文件
                 const fileName = currentFileId ? `file_${currentFileId.substring(0, 8)}.xlsx` : 'export.xlsx';
                 XLSX.writeFile(wb, fileName);
-                
+
                 showMessage('Excel文件导出成功', 'success');
             } catch (error) {
                 console.error('导出失败:', error);
@@ -972,11 +972,11 @@
                 showMessage('没有可导出的数据', 'error');
                 return;
             }
-            
+
             try {
                 // 获取当前Luckysheet数据
                 const sheetData = luckysheet.getSheetData();
-                
+
                 // 转换为CSV格式
                 const csvData = [];
                 if (sheetData && sheetData.length > 0) {
@@ -996,21 +996,21 @@
                         }
                     });
                 }
-                
+
                 // 创建下载链接
                 const csvContent = csvData.join('\n');
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
                 const url = URL.createObjectURL(blob);
                 link.setAttribute('href', url);
-                
+
                 const fileName = currentFileId ? `file_${currentFileId.substring(0, 8)}.csv` : 'export.csv';
                 link.setAttribute('download', fileName);
                 link.style.visibility = 'hidden';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                
+
                 showMessage('CSV文件导出成功', 'success');
             } catch (error) {
                 console.error('导出失败:', error);
@@ -1028,7 +1028,7 @@
                         console.log('Saving to localStorage (after save):');
                         console.log('currentFileId:', currentFileId);
                         console.log('currentHeaders:', currentHeaders);
-                        
+
                         localStorage.setItem('fileId', currentFileId);
                         if (currentHeaders && currentHeaders.length > 0) {
                             localStorage.setItem('headers', JSON.stringify(currentHeaders));
@@ -1045,7 +1045,7 @@
                 console.log('Saving to localStorage:');
                 console.log('currentFileId:', currentFileId);
                 console.log('currentHeaders:', currentHeaders);
-                
+
                 localStorage.setItem('fileId', currentFileId);
                 if (currentHeaders && currentHeaders.length > 0) {
                     localStorage.setItem('headers', JSON.stringify(currentHeaders));
@@ -1067,10 +1067,10 @@
         function updateSyncIndicator(status) {
             const indicator = document.getElementById('syncIndicator');
             const statusText = document.getElementById('syncStatus');
-            
+
             indicator.style.display = 'inline-flex';
             indicator.className = `sync-indicator ${status}`;
-            
+
             switch (status) {
                 case 'synced':
                     statusText.textContent = '已同步';
@@ -1119,19 +1119,19 @@
                 e.preventDefault();
                 e.returnValue = '您有未保存的更改，确定要离开吗？';
             }
-            
+
             if (autoSaveInterval) {
                 clearInterval(autoSaveInterval);
             }
         });
-        
+
         // 侧边栏收起/展开功能
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const toggleBtn = document.querySelector('.sidebar-toggle');
-            
+
             sidebar.classList.toggle('collapsed');
-            
+
             if (sidebar.classList.contains('collapsed')) {
                 toggleBtn.textContent = '▶';
                 toggleBtn.title = '展开侧边栏';

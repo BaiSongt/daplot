@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 数据操作 (离线版本)</title>
-    
+
     <style>
         * {
             margin: 0;
@@ -255,26 +255,26 @@
 </head>
 <body>
     <div id="statusMessage" class="status-message"></div>
-    
+
     <div class="page-wrapper">
         <div class="sidebar">
             <div class="sidebar-header">
                 <h1>📊 DaPlot</h1>
             </div>
-            
+
             <div class="section">
                 <h3>📁 文件管理</h3>
                 <button class="btn" onclick="document.getElementById('fileInput').click()">
                     <span>📤</span> 导入Excel文件
                 </button>
                 <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
-                
+
                 <div style="margin: 10px 0;">
                     <button class="btn btn-sm btn-warning" onclick="refreshFileList()">
                         <span>🔄</span> 刷新列表
                     </button>
                 </div>
-                
+
                 <div class="file-list" id="fileList" style="margin-top: 15px;">
                     <!-- 文件列表将在这里动态生成 -->
                 </div>
@@ -295,7 +295,7 @@
                         <span>📄</span> 导出CSV
                     </button>
                 </div>
-                
+
                 <div class="toolbar-group">
                     <span class="toolbar-label">数据:</span>
                     <button class="btn btn-sm btn-success" onclick="goToVisualization()">
@@ -308,7 +308,7 @@
                 <div class="section">
                     <h3 id="currentFileName">请选择或导入Excel文件</h3>
                     <div id="dataInfo"></div>
-                    
+
                     <div id="dataContainer">
                         <div class="empty-state">
                             <span>📊</span>
@@ -327,17 +327,17 @@
         let currentData = null;
         let currentHeaders = [];
         let hasUnsavedChanges = false;
-        
+
         // API配置
         const API_BASE_URL = 'http://localhost:8001';
 
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('fileInput');
-            
+
             // 文件选择事件
             fileInput.addEventListener('change', handleFileSelect);
-            
+
             // 加载文件列表
             refreshFileList();
         });
@@ -374,14 +374,14 @@
                 }
 
                 const data = await response.json();
-                
+
                 if (!data.file_id) {
                     throw new Error('服务器响应中缺少文件ID');
                 }
 
                 showMessage('文件上传成功！', 'success');
                 refreshFileList();
-                
+
                 // 加载文件
                 await loadFile(data.file_id);
 
@@ -394,15 +394,15 @@
         async function refreshFileList() {
             try {
                 showMessage('正在刷新文件列表...', 'success');
-                
+
                 const response = await fetch(`${API_BASE_URL}/api/files`);
                 if (!response.ok) {
                     throw new Error('获取文件列表失败');
                 }
-                
+
                 const data = await response.json();
                 displayFileList(data.files);
-                
+
             } catch (error) {
                 console.error('刷新文件列表失败:', error);
                 showMessage('刷新文件列表失败: ' + error.message, 'error');
@@ -411,12 +411,12 @@
 
         function displayFileList(files) {
             const fileList = document.getElementById('fileList');
-            
+
             if (!files || files.length === 0) {
                 fileList.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无文件</div>';
                 return;
             }
-            
+
             fileList.innerHTML = files.map(file => `
                 <div class="file-item ${file.file_id === currentFileId ? 'active' : ''}" onclick="loadFile('${file.file_id}')">
                     <div class="file-info">
@@ -435,21 +435,21 @@
         async function loadFile(fileId) {
             try {
                 showMessage('正在加载文件...', 'success');
-                
+
                 // 从后端获取完整数据
                 const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`);
                 if (!response.ok) {
                     throw new Error('文件不存在或已过期');
                 }
-                
+
                 const data = await response.json();
                 displayFileData(data, fileId);
-                
+
                 currentFileId = fileId;
                 currentData = data;
                 currentHeaders = data.headers || [];
                 refreshFileList(); // 刷新文件列表以更新active状态
-                
+
             } catch (error) {
                 console.error('加载文件失败:', error);
                 showMessage('加载文件失败: ' + error.message, 'error');
@@ -460,14 +460,14 @@
             const currentFileName = document.getElementById('currentFileName');
             const dataInfo = document.getElementById('dataInfo');
             const dataContainer = document.getElementById('dataContainer');
-            
+
             // 更新文件信息显示
             currentFileName.textContent = fileInfo.filename || `文件 ${fileId.substring(0, 8)}...`;
             dataInfo.textContent = `${fileInfo.headers.length}列 × ${fileInfo.preview_data ? fileInfo.preview_data.length : 0}行`;
-            
+
             // 创建表格
             let tableHTML = '<div class="table-container"><table class="data-table">';
-            
+
             // 添加表头
             if (fileInfo.headers && fileInfo.headers.length > 0) {
                 tableHTML += '<thead><tr>';
@@ -476,7 +476,7 @@
                 });
                 tableHTML += '</tr></thead>';
             }
-            
+
             // 添加数据行
             tableHTML += '<tbody>';
             if (fileInfo.preview_data && fileInfo.preview_data.length > 0) {
@@ -489,7 +489,7 @@
                     tableHTML += '</tr>';
                 });
             }
-            
+
             // 添加几个空行供编辑
             for (let i = 0; i < 5; i++) {
                 tableHTML += '<tr>';
@@ -498,12 +498,12 @@
                 });
                 tableHTML += '</tr>';
             }
-            
+
             tableHTML += '</tbody></table></div>';
-            
+
             dataContainer.innerHTML = tableHTML;
             hasUnsavedChanges = false;
-            
+
             showMessage('文件加载成功！', 'success');
         }
 
@@ -513,16 +513,16 @@
                     const response = await fetch(`${API_BASE_URL}/api/file/${fileId}`, {
                         method: 'DELETE'
                     });
-                    
+
                     if (!response.ok) {
                         throw new Error('删除文件失败');
                     }
-                    
+
                     if (currentFileId === fileId) {
                         currentFileId = null;
                         currentData = null;
                         currentHeaders = [];
-                        
+
                         const dataContainer = document.getElementById('dataContainer');
                         dataContainer.innerHTML = `
                             <div class="empty-state">
@@ -534,10 +534,10 @@
                         document.getElementById('currentFileName').textContent = '请选择或导入Excel文件';
                         document.getElementById('dataInfo').textContent = '';
                     }
-                    
+
                     refreshFileList();
                     showMessage('文件已删除', 'success');
-                    
+
                 } catch (error) {
                     console.error('删除文件失败:', error);
                     showMessage('删除文件失败: ' + error.message, 'error');
@@ -550,50 +550,50 @@
                 showMessage('没有可保存的文件', 'error');
                 return;
             }
-            
+
             try {
                 showMessage('正在保存到服务器...', 'success');
-                
+
                 // 从表格中提取数据
                 const table = document.querySelector('.data-table');
                 if (!table) {
                     throw new Error('没有找到数据表格');
                 }
-                
+
                 const headers = [];
                 const dataRows = [];
-                
+
                 // 提取表头
                 const headerCells = table.querySelectorAll('thead th');
                 headerCells.forEach(cell => {
                     headers.push(cell.textContent.trim());
                 });
-                
+
                 // 提取数据行
                 const bodyRows = table.querySelectorAll('tbody tr');
                 bodyRows.forEach(row => {
                     const cells = row.querySelectorAll('td');
                     const rowData = [];
                     let hasData = false;
-                    
+
                     cells.forEach(cell => {
                         const value = cell.textContent.trim();
                         rowData.push(value);
                         if (value !== '') hasData = true;
                     });
-                    
+
                     if (hasData) {
                         dataRows.push(rowData);
                     }
                 });
-                
+
                 // 发送到后端
                 const savePayload = {
                     file_id: currentFileId,
                     headers: headers,
                     data: dataRows
                 };
-                
+
                 const response = await fetch(`${API_BASE_URL}/api/save`, {
                     method: 'POST',
                     headers: {
@@ -601,16 +601,16 @@
                     },
                     body: JSON.stringify(savePayload)
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('保存失败');
                 }
-                
+
                 const result = await response.json();
-                
+
                 hasUnsavedChanges = false;
                 showMessage('文件已保存到服务器', 'success');
-                
+
             } catch (error) {
                 console.error('保存失败:', error);
                 showMessage('保存失败: ' + error.message, 'error');
@@ -626,16 +626,16 @@
                 showMessage('没有可导出的数据', 'error');
                 return;
             }
-            
+
             try {
                 // 从表格中提取数据
                 const table = document.querySelector('.data-table');
                 if (!table) {
                     throw new Error('没有找到数据表格');
                 }
-                
+
                 const csvData = [];
-                
+
                 // 提取表头
                 const headerCells = table.querySelectorAll('thead th');
                 const headers = [];
@@ -643,14 +643,14 @@
                     headers.push(cell.textContent.trim());
                 });
                 csvData.push(headers.join(','));
-                
+
                 // 提取数据行
                 const bodyRows = table.querySelectorAll('tbody tr');
                 bodyRows.forEach(row => {
                     const cells = row.querySelectorAll('td');
                     const rowData = [];
                     let hasData = false;
-                    
+
                     cells.forEach(cell => {
                         const value = cell.textContent.trim();
                         // 处理包含逗号或引号的值
@@ -661,26 +661,26 @@
                         }
                         if (value !== '') hasData = true;
                     });
-                    
+
                     if (hasData) {
                         csvData.push(rowData.join(','));
                     }
                 });
-                
+
                 // 创建下载链接
                 const csvContent = csvData.join('\n');
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
                 const url = URL.createObjectURL(blob);
                 link.setAttribute('href', url);
-                
+
                 const fileName = currentFileId ? `file_${currentFileId.substring(0, 8)}.csv` : 'export.csv';
                 link.setAttribute('download', fileName);
                 link.style.visibility = 'hidden';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                
+
                 showMessage('CSV文件导出成功', 'success');
             } catch (error) {
                 console.error('导出失败:', error);

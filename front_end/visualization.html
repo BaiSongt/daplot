@@ -35,16 +35,16 @@
             font-size: 12px;
             position: relative;
         }
-        
+
         .sidebar.collapsed {
             width: 50px;
             padding: 15px 5px;
         }
-        
+
         .sidebar.collapsed .sidebar-content {
             display: none;
         }
-        
+
         .sidebar-toggle {
             position: absolute;
             top: 15px;
@@ -58,7 +58,7 @@
             font-size: 12px;
             z-index: 1000;
         }
-        
+
         .sidebar-toggle:hover {
             background: #0056b3;
         }
@@ -92,7 +92,7 @@
             border-bottom: 1px solid #dee2e6;
             font-size: 14px;
         }
-        
+
         .control-panel {
             background: #f8f9fa;
             padding: 10px 15px;
@@ -103,7 +103,7 @@
             flex-wrap: wrap;
             font-size: 11px;
         }
-        
+
         .main-content {
             width: 100%;
             padding: 15px;
@@ -175,7 +175,7 @@
             border: 1px solid #e9ecef;
             min-height: 600px;
         }
-        
+
         .toolbar {
             display: flex;
             gap: 10px;
@@ -184,7 +184,7 @@
             background: #f8f9fa;
             border-radius: 4px;
         }
-        
+
         .toolbar-btn {
             padding: 6px 12px;
             border: 1px solid #dee2e6;
@@ -194,7 +194,7 @@
             font-size: 11px;
             transition: all 0.2s;
         }
-        
+
         .toolbar-btn:hover {
             background: #e9ecef;
             border-color: #adb5bd;
@@ -562,10 +562,10 @@
                     <span>捐赠支持</span>
                 </a>
             </nav>
-                
+
             </div>
         </div>
-        
+
         <div class="content">
             <div class="main-content">
                 <div class="controls-panel">
@@ -624,14 +624,14 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="chart-area">
                     <div id="chartToolbar" class="toolbar">
                         <button class="toolbar-btn" onclick="resetZoom()">🔍 重置缩放</button>
                         <button class="toolbar-btn" onclick="downloadPNG()">📷 保存PNG</button>
                         <button class="toolbar-btn" onclick="downloadSVG()">🎨 保存SVG</button>
                     </div>
-                    
+
                     <!-- 图表控制区域 -->
                     <div id="chartControls" class="chart-controls" style="display: none;">
                         <div class="style-controls">
@@ -640,17 +640,17 @@
                                 <label for="chartTitle">图表标题:</label>
                                 <input type="text" id="chartTitle" placeholder="请输入图表标题" style="min-width: 150px;">
                             </div>
-                            
+
                             <div class="style-group">
                                 <label for="xAxisTitle">X轴标题:</label>
                                 <input type="text" id="xAxisTitle" placeholder="请输入X轴标题" style="min-width: 120px;">
                             </div>
-                            
+
                             <div class="style-group">
                                 <label for="yAxisTitle">Y轴标题:</label>
                                 <input type="text" id="yAxisTitle" placeholder="请输入Y轴标题" style="min-width: 120px;">
                             </div>
-                            
+
                             <div class="style-group">
                                 <label for="legendPosition">图例:</label>
                                 <select id="legendPosition">
@@ -663,17 +663,17 @@
                                     <option value="bottom">底部</option>
                                 </select>
                             </div>
-                            
+
                             <div class="style-group">
                                 <label for="lineWidth">线条:</label>
                                 <input type="number" id="lineWidth" min="1" max="8" value="2" step="1">
                             </div>
-                            
+
                             <div class="style-group">
                                 <label for="markerSize">标记:</label>
                                 <input type="number" id="markerSize" min="3" max="15" value="6" step="1">
                             </div>
-                            
+
                             <div class="style-group">
                                 <label for="markerStyle">样式:</label>
                                 <select id="markerStyle">
@@ -686,7 +686,7 @@
                                     <option value="x">X形 ×</option>
                                 </select>
                             </div>
-                            
+
                             <div class="style-group">
                                 <label for="colorScheme">配色:</label>
                                 <select id="colorScheme">
@@ -699,14 +699,14 @@
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div class="apply-buttons">
                             <button class="btn" onclick="applyStyleToChart()" style="background-color: #17a2b8; border-color: #17a2b8;">
                                 应用样式
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- 曲线控制面板 -->
                     <div id="curveControlPanel" class="curve-control-panel">
                         <h4 onclick="toggleCurveControlPanel()">
@@ -727,7 +727,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div id="plotDiv">
                         <div class="no-data-message">
                             <h3 style="font-size: 13px; margin-bottom: 8px;">📈 图表区域</h3>
@@ -753,13 +753,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 显示加载指示器
             showMessage('正在初始化页面...', 'info');
-            
+
             // 初始化样式控制
             initializeStyleControls();
-            
+
             // 初始化表单验证状态
             checkFormValidity();
-            
+
             // 延迟执行以确保页面完全加载
             setTimeout(() => {
                 loadFileList();
@@ -810,15 +810,15 @@
                  if (!response.ok) {
                      throw new Error('获取文件列表失败');
                  }
-                 
+
                  const data = await response.json();
                  const fileSelector = document.getElementById('fileSelector');
-                 
+
                  console.log('加载文件列表:', data);
-                 
+
                  // 清空现有选项
                  fileSelector.innerHTML = '<option value="">请选择数据文件</option>';
-                 
+
                  // 添加文件选项
                  if (data.files && data.files.length > 0) {
                      data.files.forEach(file => {
@@ -835,13 +835,13 @@
                      option.disabled = true;
                      fileSelector.appendChild(option);
                  }
-                 
+
                  // 如果有当前文件ID，选中它
                  if (fileId) {
                      fileSelector.value = fileId;
                      updateCurrentFileInfo();
                  }
-                 
+
              } catch (error) {
                  console.error('加载文件列表失败:', error);
                  showMessage('加载文件列表失败: ' + error.message, 'error');
@@ -851,46 +851,46 @@
         async function switchFile() {
             const fileSelector = document.getElementById('fileSelector');
             const selectedFileId = fileSelector.value;
-            
+
             if (!selectedFileId) {
                 fileId = null;
                 headers = [];
                 clearVisualization();
                 return;
             }
-            
+
             try {
                 showMessage('正在切换文件...', 'info');
-                
+
                 // 获取文件数据
                 const response = await fetch(`http://localhost:8001/api/file/${selectedFileId}`);
                 if (!response.ok) {
                     throw new Error('获取文件数据失败');
                 }
-                
+
                 const fileData = await response.json();
-                
+
                 // 更新全局变量
                 fileId = selectedFileId;
                 headers = fileData.headers || [];
-                
+
                 // 保存到localStorage
                 localStorage.setItem('fileId', fileId);
                 localStorage.setItem('headers', JSON.stringify(headers));
-                
+
                 // 更新界面
                 updateCurrentFileInfo();
                 populateAxisSelectors();
                 populateStatusColumnSelector();
                 clearVisualization();
-                
+
                 // 重新初始化可视化
                 if (fileId) {
                     await initializeVisualization();
                 }
-                
+
                 showMessage('文件切换成功', 'success');
-                
+
             } catch (error) {
                 console.error('切换文件失败:', error);
                 showMessage('切换文件失败: ' + error.message, 'error');
@@ -900,7 +900,7 @@
         function updateCurrentFileInfo() {
             const fileSelector = document.getElementById('fileSelector');
             const currentFileInfo = document.getElementById('currentFileInfo');
-            
+
             if (fileSelector.value && headers.length > 0) {
                 const selectedOption = fileSelector.options[fileSelector.selectedIndex];
                 currentFileInfo.textContent = `已选择: ${selectedOption.textContent}`;
@@ -917,14 +917,14 @@
             selectedStatus = [];
             selectedStatusColumn = '';
             allData = [];
-            
+
             // 清空界面
             document.getElementById('projectTags').innerHTML = '';
             document.getElementById('statusTags').innerHTML = '';
             document.getElementById('statusColumn').value = '';
             document.getElementById('xAxis').value = '';
             document.getElementById('yAxis').value = '';
-            
+
             // 清空图表
             const plotDiv = document.getElementById('plotDiv');
             plotDiv.innerHTML = `
@@ -933,7 +933,7 @@
                     <p>请先选择项目、状态变量和坐标轴，然后点击"生成图表"</p>
                 </div>
             `;
-            
+
             document.getElementById('chartToolbar').style.display = 'none';
             document.getElementById('chartControls').style.display = 'none';
             document.getElementById('curveControlPanel').style.display = 'none';
@@ -943,11 +943,11 @@
         function loadDataFromStorage() {
             fileId = localStorage.getItem('fileId');
             const headersStr = localStorage.getItem('headers');
-            
+
             console.log('Loading data from storage:');
             console.log('fileId:', fileId);
             console.log('headersStr:', headersStr);
-            
+
             if (headersStr) {
                 try {
                     headers = JSON.parse(headersStr);
@@ -992,10 +992,10 @@
 
         function populateStatusColumnSelector() {
             const statusColumnSelect = document.getElementById('statusColumn');
-            
+
             // 清空现有选项
             statusColumnSelect.innerHTML = '<option value="">请选择状态量列</option>';
-            
+
             // 添加列选项
             headers.forEach(header => {
                 const option = document.createElement('option');
@@ -1003,7 +1003,7 @@
                 option.textContent = header;
                 statusColumnSelect.appendChild(option);
             });
-            
+
             // 添加变化监听器
             statusColumnSelect.addEventListener('change', onStatusColumnChange);
         }
@@ -1012,13 +1012,13 @@
             const statusColumnSelect = document.getElementById('statusColumn');
             selectedStatusColumn = statusColumnSelect.value;
             selectedStatus = []; // 重置状态值选择
-            
+
             if (selectedStatusColumn) {
                 updateStatusTags();
             } else {
                 document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择状态量列</p>';
             }
-            
+
             checkFormValidity();
         }
 
@@ -1087,7 +1087,7 @@
                 document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择项目</p>';
                 return;
             }
-            
+
             if (!selectedStatusColumn) {
                 document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择状态量列</p>';
                 return;
@@ -1164,7 +1164,7 @@
                            xAxis && yAxis;
 
             generateBtn.disabled = !isValid;
-            
+
             // 应用样式按钮只有在图表已生成后才能使用
             const plotDiv = document.getElementById('plotDiv');
             const hasChart = plotDiv && plotDiv.querySelector('.js-plotly-plot');
@@ -1172,16 +1172,16 @@
                 applyStyleBtn.disabled = !hasChart;
             }
         }
-        
+
         async function applyStyleToChart() {
             try {
                 showMessage('正在应用样式并重新生成图表...', 'info');
-                
+
                 // 直接调用生成图表函数，它会使用当前的样式设置
                 await generateChart();
-                
+
                 showMessage('样式应用成功', 'success');
-                
+
             } catch (error) {
                 console.error('应用样式失败:', error);
                 showMessage('应用样式失败: ' + error.message, 'error');
@@ -1196,40 +1196,40 @@
                 selectedStatus,
                 selectedStatusColumn
             });
-            
+
             // 详细检查选择状态
             console.log('详细检查:');
             console.log('- 文件ID:', fileId);
             console.log('- 选择的项目数量:', selectedProjects.length, '项目列表:', selectedProjects);
             console.log('- 状态量列名:', selectedStatusColumn);
             console.log('- 选择的状态值数量:', selectedStatus.length, '状态值列表:', selectedStatus);
-            
+
             const xAxis = document.getElementById('xAxis').value;
             const yAxis = document.getElementById('yAxis').value;
-            
+
             console.log('- X轴变量:', xAxis);
             console.log('- Y轴变量:', yAxis);
-            
+
             if (!fileId) {
                 showMessage('请先选择数据文件', 'error');
                 return;
             }
-            
+
             if (!selectedProjects || selectedProjects.length === 0) {
                 showMessage('请先选择项目', 'error');
                 return;
             }
-            
+
             if (!selectedStatus || selectedStatus.length === 0) {
                 showMessage('请先选择状态值', 'error');
                 return;
             }
-            
+
             if (!xAxis) {
                 showMessage('请选择X轴变量', 'error');
                 return;
             }
-            
+
             if (!yAxis) {
                 showMessage('请选择Y轴变量', 'error');
                 return;
@@ -1275,7 +1275,7 @@
             // 获取当前选择的轴变量
             const xAxis = document.getElementById('xAxis').value;
             const yAxis = document.getElementById('yAxis').value;
-            
+
             // 获取详细数据以生成多条曲线
             try {
                 const response = await fetch('http://localhost:8001/api/filter', {
@@ -1300,7 +1300,7 @@
                 console.log('=== API筛选结果 ===');
                 console.log('筛选后的数据总行数:', filteredData.length);
                 console.log('筛选后的数据样本 (前3行):', filteredData.slice(0, 3));
-                
+
                 // 检查数据中是否包含所需的列
                 if (filteredData.length > 0) {
                     const sampleRow = filteredData[0];
@@ -1310,38 +1310,38 @@
                     console.log('X轴列存在:', xAxis in sampleRow);
                     console.log('Y轴列存在:', yAxis in sampleRow);
                 }
-                
+
                 // 获取用户选择的样式设置
                 const colorScheme = document.getElementById('colorScheme').value;
                 const lineWidth = parseInt(document.getElementById('lineWidth').value);
                 const markerSize = parseInt(document.getElementById('markerSize').value);
                 const markerStyle = document.getElementById('markerStyle').value;
-                
+
                 const traces = [];
                 const colors = getColorScheme(colorScheme);
                 let colorIndex = 0;
 
                 console.log('=== 开始创建曲线 ===');
                 console.log('样式设置:', { colorScheme, lineWidth, markerSize, markerStyle });
-                
+
                 // 为每个项目和状态值组合创建一条曲线
                 selectedProjects.forEach(project => {
                     selectedStatus.forEach(statusValue => {
                         console.log(`\n--- 处理组合: 项目=${project}, 状态=${statusValue} ---`);
-                        
-                        const projectStatusData = filteredData.filter(row => 
+
+                        const projectStatusData = filteredData.filter(row =>
                             row['Project'] === project && String(row[selectedStatusColumn]) === String(statusValue)
                         );
-                        
+
                         console.log(`筛选条件: Project='${project}' AND ${selectedStatusColumn}='${statusValue}'`);
                         console.log(`匹配的数据行数:`, projectStatusData.length);
 
                         if (projectStatusData.length > 0) {
                             console.log('匹配数据样本:', projectStatusData.slice(0, 2));
-                            
+
                             const xValues = projectStatusData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
                             const yValues = projectStatusData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
-                            
+
                             console.log(`提取的数据:`, {
                                 原始行数: projectStatusData.length,
                                 X轴有效值数量: xValues.length,
@@ -1352,13 +1352,13 @@
 
                             if (xValues.length > 0 && yValues.length > 0) {
                                 const traceName = `${project}-${selectedStatusColumn}-${statusValue}`;
-                                
+
                                 // 检查是否已有该曲线的个性化设置
                                 let existingTrace = null;
                                 if (currentPlot && currentPlot.traces) {
                                     existingTrace = currentPlot.traces.find(t => t.name === traceName);
                                 }
-                                
+
                                 const trace = {
                                     x: xValues,
                                     y: yValues,
@@ -1395,7 +1395,7 @@
                 } else {
                     console.log('⚠️ 没有创建任何曲线!');
                 }
-                
+
                 if (traces.length === 0) {
                     showMessage('没有找到匹配的数据进行绘图', 'warning');
                     return;
@@ -1404,7 +1404,7 @@
                 // 获取图例位置配置
                 const legendPosition = document.getElementById('legendPosition').value;
                 const legendConfig = getLegendConfig(legendPosition);
-                
+
                 // 根据图例位置调整边距
                 let margins = { t: 50, r: 50, b: 50, l: 50 };
                 if (legendPosition === 'outside-right') {
@@ -1419,7 +1419,7 @@
                 const chartTitle = document.getElementById('chartTitle').value || `${xAxis}-${yAxis} 曲线图`;
                 const xAxisTitle = document.getElementById('xAxisTitle').value || xAxis;
                 const yAxisTitle = document.getElementById('yAxisTitle').value || yAxis;
-                
+
                 const layout = {
                     title: {
                         text: chartTitle,
@@ -1440,7 +1440,7 @@
                     margin: margins,
                     legend: legendConfig
                 };
-                
+
                 console.log('图例配置:', legendConfig);
                 console.log('边距配置:', margins);
 
@@ -1466,13 +1466,13 @@
                 document.getElementById('chartToolbar').style.display = 'flex';
                 document.getElementById('chartControls').style.display = 'flex';
                 document.getElementById('curveControlPanel').style.display = 'block';
-                
+
                 // 生成曲线控制项
                 generateCurveControls(traces);
-                
+
                 // 更新按钮状态
                 checkFormValidity();
-                
+
             } catch (error) {
                 console.error('Error rendering chart:', error);
                 showMessage('图表渲染失败: ' + error.message, 'error');
@@ -1487,7 +1487,7 @@
                 });
             }
         }
-        
+
         /**
          * 生成曲线控制项
          * @param {Array} traces - 图表曲线数据
@@ -1495,24 +1495,24 @@
         function generateCurveControls(traces) {
             const controlList = document.getElementById('curveControlList');
             controlList.innerHTML = '';
-            
+
             if (traces.length === 0) {
                 controlList.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px; font-style: italic;">暂无曲线数据</div>';
                 return;
             }
-            
+
             traces.forEach((trace, index) => {
                 const curveItem = document.createElement('div');
                 curveItem.className = 'curve-item';
                 curveItem.innerHTML = `
                     <div class="curve-name" title="${trace.name}">${trace.name}</div>
                     <div class="curve-controls">
-                        <input type="color" 
-                               class="curve-color-picker" 
-                               value="${trace.line.color}" 
+                        <input type="color"
+                               class="curve-color-picker"
+                               value="${trace.line.color}"
                                data-curve-index="${index}"
                                title="选择颜色">
-                        <select class="curve-marker-select" 
+                        <select class="curve-marker-select"
                                 data-curve-index="${index}"
                                 title="选择标记样式">
                             <option value="circle" ${trace.marker.symbol === 'circle' ? 'selected' : ''}>圆形 ●</option>
@@ -1527,7 +1527,7 @@
                 `;
                 controlList.appendChild(curveItem);
             });
-            
+
             // 默认展开曲线控制面板（如果之前是折叠状态）
             const content = document.getElementById('curveControlContent');
             const toggle = document.getElementById('curveControlToggle');
@@ -1537,14 +1537,14 @@
                 toggle.classList.remove('collapsed');
             }
         }
-        
+
         /**
          * 切换曲线控制面板的展开/折叠状态
          */
         function toggleCurveControlPanel() {
             const content = document.getElementById('curveControlContent');
             const toggle = document.getElementById('curveControlToggle');
-            
+
             if (content.classList.contains('collapsed')) {
                 content.classList.remove('collapsed');
                 toggle.textContent = '▼';
@@ -1555,7 +1555,7 @@
                 toggle.classList.add('collapsed');
             }
         }
-        
+
         /**
          * 重置所有曲线样式为默认值
          */
@@ -1565,73 +1565,73 @@
                     showMessage('请先生成图表', 'error');
                     return;
                 }
-                
+
                 showMessage('正在重置曲线样式...', 'info');
-                
+
                 // 获取默认配色方案
                 const colorScheme = document.getElementById('colorScheme').value;
                 const colors = getColorScheme(colorScheme);
                 const markerStyle = document.getElementById('markerStyle').value;
-                
+
                 // 重置所有曲线控制项
                 const colorPickers = document.querySelectorAll('.curve-color-picker');
                 const markerSelects = document.querySelectorAll('.curve-marker-select');
-                
+
                 colorPickers.forEach((picker, index) => {
                     picker.value = colors[index % colors.length];
                 });
-                
+
                 markerSelects.forEach(select => {
                     select.value = markerStyle;
                 });
-                
+
                 // 应用重置后的样式
                 await applyCurveStyles();
-                
+
                 showMessage('曲线样式重置成功', 'success');
-                
+
             } catch (error) {
                 console.error('重置曲线样式失败:', error);
                 showMessage('重置曲线样式失败: ' + error.message, 'error');
             }
         }
-        
+
         /**
          * 应用曲线样式
          */
         async function applyCurveStyles() {
             try {
                 showMessage('正在应用曲线样式...', 'info');
-                
+
                 if (!currentPlot || !currentPlot.traces) {
                     showMessage('请先生成图表', 'error');
                     return;
                 }
-                
+
                 // 获取曲线控制面板中的设置
                 const colorPickers = document.querySelectorAll('.curve-color-picker');
                 const markerSelects = document.querySelectorAll('.curve-marker-select');
-                
+
                 // 更新traces数据
                 const updatedTraces = currentPlot.traces.map((trace, index) => {
                     const newTrace = { ...trace };
-                    
+
                     // 应用颜色设置
                     if (colorPickers[index]) {
                         const newColor = colorPickers[index].value;
                         newTrace.line = { ...newTrace.line, color: newColor };
                         newTrace.marker = { ...newTrace.marker, color: newColor };
                     }
-                    
+
                     // 应用标记样式设置
                     if (markerSelects[index]) {
                         const newMarker = markerSelects[index].value;
                         newTrace.marker = { ...newTrace.marker, symbol: newMarker };
                     }
-                    
+
                     return newTrace;
                 });
-                
+
                 // 重新绘制图表
                 await Plotly.redraw('plotDiv');
                 await Plotly.restyle('plotDiv', {
@@ -1639,12 +1639,12 @@
                     'marker.color': updatedTraces.map(t => t.marker.color),
                     'marker.symbol': updatedTraces.map(t => t.marker.symbol)
                 });
-                
+
                 // 更新currentPlot
                 currentPlot.traces = updatedTraces;
-                
+
                 showMessage('曲线样式应用成功', 'success');
-                
+
             } catch (error) {
                 console.error('应用曲线样式失败:', error);
                 showMessage('应用曲线样式失败: ' + error.message, 'error');
@@ -1689,9 +1689,9 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const toggleBtn = document.querySelector('.sidebar-toggle');
-            
+
             sidebar.classList.toggle('collapsed');
-            
+
             if (sidebar.classList.contains('collapsed')) {
                 toggleBtn.textContent = '▶';
                 toggleBtn.title = '展开侧边栏';

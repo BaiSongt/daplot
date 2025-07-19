@@ -13,7 +13,9 @@ dependencies = [
     "uvicorn>=0.35.0",
     "pandas",
     "openpyxl",
-    "python-multipart"
+    "python-multipart",
+    "numpy",
+    "scikit-learn"
 ]
 
 [tool.pytest.ini_options]
