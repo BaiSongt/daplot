@@ -4,7 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 可视化绘图</title>
-    <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" defer></script>
+    <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" onerror="loadPlotlyFallback()" id="plotlyMainScript"></script>
+    <script>
+        // Plotly备用加载机制
+        function loadPlotlyFallback() {
+            console.warn('⚠️ 主要Plotly CDN加载失败，尝试备用CDN...');
+            
+            // 移除失败的脚本
+            const failedScript = document.getElementById('plotlyMainScript');
+            if (failedScript) {
+                failedScript.remove();
+            }
+            
+            // 尝试备用CDN列表
+            const fallbackCDNs = [
+                'https://unpkg.com/plotly.js@2.26.0/dist/plotly.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js',
+                'https://cdn.jsdelivr.net/npm/plotly.js@2.26.0/dist/plotly.min.js'
+            ];
+            
+            let currentIndex = 0;
+            
+            function tryNextCDN() {
+                if (currentIndex >= fallbackCDNs.length) {
+                    console.error('❌ 所有Plotly CDN都加载失败');
+                    if (typeof updateLoadingText === 'function') {
+                        updateLoadingText('Plotly加载失败，请检查网络连接');
+                    }
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = fallbackCDNs[currentIndex];
+                script.id = `plotlyFallback${currentIndex}`;
+                
+                script.onload = function() {
+                    console.log(`✅ 备用CDN加载成功: ${fallbackCDNs[currentIndex]}`);
+                };
+                
+                script.onerror = function() {
+                    console.warn(`⚠️ 备用CDN ${currentIndex + 1} 加载失败: ${fallbackCDNs[currentIndex]}`);
+                    script.remove();
+                    currentIndex++;
+                    setTimeout(tryNextCDN, 1000); // 1秒后尝试下一个
+                };
+                
+                document.head.appendChild(script);
+                console.log(`🔄 尝试备用CDN ${currentIndex + 1}: ${fallbackCDNs[currentIndex]}`);
+            }
+            
+            // 延迟1秒后开始尝试备用CDN
+            setTimeout(tryNextCDN, 1000);
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -16,6 +68,49 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #333;
             background: #f8f9fa;
+        }
+
+        /* 加载覆盖层 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(248, 249, 250, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 14px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .loading-tip {
+            color: #868e96;
+            font-size: 12px;
+            text-align: center;
+            max-width: 300px;
         }
 
         .page-wrapper {
@@ -669,6 +764,13 @@
     </style>
 </head>
 <body>
+    <!-- 加载覆盖层 -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在加载可视化页面...</div>
+        <div class="loading-tip">正在加载Plotly图表库和文件数据，请稍候</div>
+    </div>
+
     <div class="page-wrapper">
         <div class="sidebar" id="sidebar">
             <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起/展开侧边栏">◀</button>
@@ -880,47 +982,151 @@
         let allData = [];
         let currentPlot = null;
 
-        // 检查 Plotly 是否已加载
+        // 检查 Plotly 是否已加载（带超时机制和详细日志）
         function waitForPlotly() {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
+                console.log('🔍 开始检查Plotly加载状态...');
+                
                 if (typeof Plotly !== 'undefined') {
+                    console.log('✅ Plotly已经加载完成');
                     resolve();
-                } else {
-                    const checkInterval = setInterval(() => {
-                        if (typeof Plotly !== 'undefined') {
-                            clearInterval(checkInterval);
-                            resolve();
-                        }
-                    }, 50);
+                    return;
                 }
+                
+                console.log('⏳ Plotly尚未加载，开始等待...');
+                let attempts = 0;
+                const maxAttempts = 400; // 20秒超时 (400 * 50ms)
+                const startTime = Date.now();
+                let fallbackTriggered = false;
+                
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    const elapsed = Date.now() - startTime;
+                    
+                    if (typeof Plotly !== 'undefined') {
+                        clearInterval(checkInterval);
+                        console.log(`✅ Plotly加载成功！耗时: ${elapsed}ms, 尝试次数: ${attempts}`);
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkInterval);
+                        console.error(`❌ Plotly加载超时！耗时: ${elapsed}ms, 尝试次数: ${attempts}`);
+                        console.error('🔍 调试信息:');
+                        console.error('- window.Plotly:', typeof window.Plotly);
+                        console.error('- document.readyState:', document.readyState);
+                        
+                        // 检查所有Plotly相关脚本标签
+                        const plotlyScripts = document.querySelectorAll('script[src*="plotly"]');
+                        console.error('- Plotly脚本标签数量:', plotlyScripts.length);
+                        plotlyScripts.forEach((script, index) => {
+                            console.error(`  脚本${index + 1}: ${script.src} (ID: ${script.id || '无'})`);
+                        });
+                        
+                        reject(new Error('Plotly加载超时（20秒），可能的原因：\n1. 网络连接问题\n2. 所有CDN服务都不可用\n3. 浏览器阻止了脚本加载\n\n请检查网络连接后刷新页面重试'));
+                    } else {
+                        // 在5秒后如果还没加载成功，且还没触发备用机制，手动触发
+                        if (elapsed > 5000 && !fallbackTriggered) {
+                            fallbackTriggered = true;
+                            console.warn('⚠️ 主CDN加载时间过长，手动触发备用加载机制...');
+                            if (typeof loadPlotlyFallback === 'function') {
+                                loadPlotlyFallback();
+                            }
+                        }
+                        
+                        // 更新进度提示
+                        if (attempts % 40 === 0) {
+                            // 每2秒输出一次进度
+                            console.log(`⏳ 等待Plotly加载中... ${elapsed}ms (${attempts}/${maxAttempts})`);
+                            
+                            let loadingMsg = `正在加载Plotly图表库... ${Math.round(elapsed/1000)}s`;
+                            if (elapsed > 5000) {
+                                loadingMsg += ' (尝试备用CDN)';
+                            }
+                            updateLoadingText(loadingMsg);
+                        }
+                    }
+                }, 50);
             });
+        }
+
+        // 更新加载提示
+        function updateLoadingText(text) {
+            const loadingText = document.querySelector('.loading-text');
+            if (loadingText) {
+                loadingText.textContent = text;
+            }
+        }
+
+        // 隐藏加载覆盖层
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 300);
+            }
         }
 
         // 初始化页面
         document.addEventListener('DOMContentLoaded', async function() {
-            // 显示加载指示器
-            showMessage('正在初始化页面...', 'info');
+            try {
+                console.log('=== 开始初始化可视化页面 ===');
+                
+                // 更新加载提示
+                updateLoadingText('正在加载本地数据...');
 
-            // 等待 Plotly 加载完成
-            await waitForPlotly();
-            console.log('Plotly 已加载完成');
-
-            // 初始化样式控制
-            initializeStyleControls();
-
-            // 初始化表单验证状态
-            checkFormValidity();
-
-            // 延迟执行以确保页面完全加载
-            setTimeout(() => {
-                loadFileList();
+                // 先从localStorage加载数据
                 loadDataFromStorage();
-                if (fileId) {
-                    initializeVisualization();
+                console.log('✓ localStorage数据加载完成');
+
+                // 更新加载提示
+                updateLoadingText('正在加载Plotly图表库...');
+
+                // 等待 Plotly 加载完成
+                await waitForPlotly();
+                console.log('✓ Plotly 已加载完成');
+
+                // 更新加载提示
+                updateLoadingText('正在初始化界面...');
+
+                // 初始化样式控制
+                initializeStyleControls();
+
+                // 初始化表单验证状态
+                checkFormValidity();
+
+                // 更新加载提示
+                updateLoadingText('正在加载文件列表...');
+
+                // 加载文件列表（这会选中localStorage中的fileId）
+                await loadFileList();
+                console.log('✓ 文件列表加载完成');
+
+                // 如果有fileId，初始化可视化
+                if (fileId && headers.length > 0) {
+                    updateLoadingText('正在初始化数据可视化...');
+                    await initializeVisualization();
+                    console.log('✓ 可视化初始化完成');
+                    showMessage('页面加载完成，可以开始制作图表', 'success');
                 } else {
-                    showMessage('请选择数据文件或先上传数据', 'info');
+                    console.log('! 没有可用的文件数据');
+                    showMessage('请选择数据文件或先在数据页面上传数据', 'info');
                 }
-            }, 100);
+
+                // 隐藏加载覆盖层
+                hideLoadingOverlay();
+                console.log('=== 页面初始化完成 ===');
+
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                updateLoadingText('加载失败: ' + error.message);
+                showMessage('页面初始化失败: ' + error.message, 'error');
+                
+                // 即使失败也要隐藏加载覆盖层
+                setTimeout(() => {
+                    hideLoadingOverlay();
+                }, 2000);
+            }
         });
 
         // 初始化样式控制
@@ -957,45 +1163,139 @@
 
         async function loadFileList() {
              try {
-                 const response = await fetch('http://localhost:8001/api/files');
+                 console.log('🔄 开始加载文件列表...');
+                 console.log('📡 API端点: http://localhost:8001/api/files');
+                 
+                 const startTime = Date.now();
+                 const response = await fetch('http://localhost:8001/api/files', {
+                     method: 'GET',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'Accept': 'application/json'
+                     },
+                     cache: 'no-cache'
+                 });
+                 
+                 const requestTime = Date.now() - startTime;
+                 console.log(`📡 请求完成 - 状态: ${response.status}, 耗时: ${requestTime}ms`);
+                 
                  if (!response.ok) {
-                     throw new Error('获取文件列表失败');
+                     const errorText = await response.text();
+                     console.error('❌ 请求失败详情:', {
+                         status: response.status,
+                         statusText: response.statusText,
+                         errorText: errorText
+                     });
+                     throw new Error(`HTTP ${response.status}: ${response.statusText}${errorText ? ' - ' + errorText : ''}`);
                  }
 
-                 const data = await response.json();
-                 const fileSelector = document.getElementById('fileSelector');
+                 const responseText = await response.text();
+                 console.log('📄 原始响应内容:', responseText);
+                 
+                 let data;
+                 try {
+                     data = JSON.parse(responseText);
+                 } catch (parseError) {
+                     console.error('❌ JSON解析失败:', parseError);
+                     throw new Error('服务器返回的数据格式不正确');
+                 }
+                 
+                 console.log('📋 解析后的数据:', data);
+                 console.log('📊 数据结构分析:', {
+                     hasFiles: 'files' in data,
+                     filesType: typeof data.files,
+                     isArray: Array.isArray(data.files),
+                     length: data.files ? data.files.length : 'N/A'
+                 });
 
-                 console.log('加载文件列表:', data);
+                 const fileSelector = document.getElementById('fileSelector');
+                 if (!fileSelector) {
+                     console.error('❌ 找不到文件选择器元素');
+                     throw new Error('页面元素缺失');
+                 }
 
                  // 清空现有选项
                  fileSelector.innerHTML = '<option value="">请选择数据文件</option>';
 
                  // 添加文件选项
-                 if (data.files && data.files.length > 0) {
-                     data.files.forEach(file => {
+                 if (data.files && Array.isArray(data.files) && data.files.length > 0) {
+                     console.log(`✅ 找到 ${data.files.length} 个文件`);
+                     data.files.forEach((file, index) => {
+                         console.log(`📁 处理文件 ${index + 1}:`, file);
+                         
+                         if (!file.file_id) {
+                             console.warn('⚠️ 文件缺少file_id:', file);
+                             return;
+                         }
+                         
                          const option = document.createElement('option');
                          option.value = file.file_id;
                          const displayName = file.filename || file.original_filename || `文件 ${file.file_id.substring(0, 8)}...`;
-                         option.textContent = `${displayName} (${file.rows}行×${file.columns}列)`;
+                         const sizeInfo = (file.rows && file.columns) ? ` (${file.rows}行×${file.columns}列)` : '';
+                         option.textContent = `${displayName}${sizeInfo}`;
                          fileSelector.appendChild(option);
                      });
                  } else {
+                     console.warn('⚠️ 文件列表为空或格式不正确:', data);
                      const option = document.createElement('option');
                      option.value = '';
-                     option.textContent = '暂无可用文件';
+                     option.textContent = '暂无可用文件 - 请先在数据页面上传文件';
                      option.disabled = true;
                      fileSelector.appendChild(option);
+                     
+                     if (fileId) {
+                         console.log('🧹 清除无效的localStorage数据');
+                         showMessage('未找到之前选择的文件，请重新上传数据', 'warning');
+                         localStorage.removeItem('fileId');
+                         localStorage.removeItem('headers');
+                         fileId = null;
+                         headers = [];
+                     }
+                     return;
                  }
 
                  // 如果有当前文件ID，选中它
                  if (fileId) {
-                     fileSelector.value = fileId;
-                     updateCurrentFileInfo();
+                     console.log('🔍 检查localStorage中的fileId:', fileId);
+                     const foundFile = data.files.find(file => file.file_id === fileId);
+                     if (foundFile) {
+                         fileSelector.value = fileId;
+                         updateCurrentFileInfo();
+                         console.log('✅ 已选中文件:', foundFile.filename || foundFile.original_filename);
+                     } else {
+                         console.warn('⚠️ localStorage中的fileId在文件列表中未找到:', fileId);
+                         showMessage('之前选择的文件已不存在，请重新选择', 'warning');
+                         localStorage.removeItem('fileId');
+                         localStorage.removeItem('headers');
+                         fileId = null;
+                         headers = [];
+                     }
                  }
 
+                 console.log(`✅ 文件列表加载完成，共 ${data.files.length} 个文件`);
+
              } catch (error) {
-                 console.error('加载文件列表失败:', error);
-                 showMessage('加载文件列表失败: ' + error.message, 'error');
+                 console.error('❌ 加载文件列表失败:', error);
+                 
+                 // 显示更详细的错误信息
+                 if (error.message.includes('Failed to fetch')) {
+                     console.error('🔌 网络连接问题: 无法连接到后端服务');
+                     showMessage('无法连接到后端服务 (http://localhost:8001)，请确认服务是否正常运行', 'error');
+                 } else if (error.message.includes('JSON')) {
+                     console.error('📄 数据格式问题:', error.message);
+                     showMessage('服务器返回数据格式错误: ' + error.message, 'error');
+                 } else {
+                     console.error('🚫 其他错误:', error.message);
+                     showMessage('加载文件列表失败: ' + error.message, 'error');
+                 }
+                 
+                 // 在错误情况下也要设置基本的选项
+                 const fileSelector = document.getElementById('fileSelector');
+                 if (fileSelector) {
+                     fileSelector.innerHTML = '<option value="">加载失败 - 请刷新页面重试</option>';
+                 }
+                 
+                 throw error;
              }
          }
 
@@ -1092,27 +1392,51 @@
         }
 
         function loadDataFromStorage() {
+            console.log('开始从localStorage加载数据...');
+            
             fileId = localStorage.getItem('fileId');
             const headersStr = localStorage.getItem('headers');
 
-            console.log('Loading data from storage:');
-            console.log('fileId:', fileId);
-            console.log('headersStr:', headersStr);
+            console.log('localStorage数据:');
+            console.log('- fileId:', fileId);
+            console.log('- headersStr:', headersStr);
 
-            if (headersStr) {
+            if (fileId && headersStr) {
                 try {
                     headers = JSON.parse(headersStr);
-                    console.log('Parsed headers:', headers);
-                    populateAxisSelectors();
-                    initializeFlexibleHeaderManager();
+                    console.log('- 解析后的headers:', headers);
+                    
+                    if (Array.isArray(headers) && headers.length > 0) {
+                        console.log(`成功加载 ${headers.length} 个表头`);
+                        populateAxisSelectors();
+                        initializeFlexibleHeaderManager();
+                    } else {
+                        console.warn('headers数组为空或格式不正确');
+                        headers = [];
+                        showMessage('表头数据格式不正确，请重新选择文件', 'warning');
+                    }
                 } catch (error) {
-                    console.error('Error parsing headers:', error);
-                    showMessage('解析表头数据失败', 'error');
+                    console.error('解析headers失败:', error);
+                    headers = [];
+                    showMessage('解析表头数据失败: ' + error.message, 'error');
                 }
             } else {
-                console.warn('No headers found in localStorage');
-                showMessage('未找到表头数据，请重新选择文件', 'error');
+                console.log('localStorage中没有完整的文件数据');
+                fileId = null;
+                headers = [];
+                
+                if (!fileId && !headersStr) {
+                    console.log('这是首次访问或数据已清空');
+                } else if (!fileId) {
+                    console.warn('缺少fileId');
+                    showMessage('文件ID丢失，请重新选择文件', 'warning');
+                } else if (!headersStr) {
+                    console.warn('缺少headers数据');
+                    showMessage('表头数据丢失，请重新选择文件', 'warning');
+                }
             }
+            
+            console.log('localStorage数据加载完成:', { fileId, headersCount: headers.length });
         }
 
         function populateAxisSelectors() {
