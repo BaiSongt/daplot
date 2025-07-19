@@ -5,7 +5,38 @@
 class PageBridge {
     constructor() {
         this.storageKey = 'daplot_page_data';
+        this.apiBaseUrl = this.detectApiBaseUrl();
         this.init();
+    }
+
+    // 检测API基础地址
+    detectApiBaseUrl() {
+        // 从页面中查找API地址配置
+        const scripts = document.querySelectorAll('script');
+        for (let script of scripts) {
+            const content = script.textContent || script.innerText;
+            const match = content.match(/http:\/\/localhost:(\d+)\/api\//g);
+            if (match && match.length > 0) {
+                const url = match[0];
+                return url.replace('/api/', '');
+            }
+        }
+        
+        // 默认地址
+        return 'http://localhost:8001';
+    }
+
+    // 获取API地址
+    getApiUrl(endpoint = '') {
+        const baseUrl = this.apiBaseUrl.endsWith('/') ? this.apiBaseUrl.slice(0, -1) : this.apiBaseUrl;
+        const cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+        return baseUrl + '/api' + cleanEndpoint;
+    }
+
+    // 设置API基础地址
+    setApiBaseUrl(url) {
+        this.apiBaseUrl = url;
+        this.setSharedData('apiBaseUrl', url);
     }
 
     init() {

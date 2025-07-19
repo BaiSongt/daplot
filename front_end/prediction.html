@@ -4,64 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据预测 - DaPlot</title>
-    <!-- <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" defer onerror="loadPlotlyFallback()"></script> -->
-    <script>
-        // Plotly 备用加载机制
-        function loadPlotlyFallback() {
-            console.log('主 Plotly CDN 加载失败，尝试备用 CDN...');
-            
-            const fallbackCDNs = [
-                'https://unpkg.com/plotly.js@2.26.0/dist/plotly.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js',
-                'https://cdn.jsdelivr.net/npm/plotly.js@2.26.0/dist/plotly.min.js'
-            ];
-            
-            let currentIndex = 0;
-            
-            function tryNextCDN() {
-                if (currentIndex >= fallbackCDNs.length) {
-                    console.error('所有 Plotly CDN 都加载失败');
-                    updateLoadingText('Plotly 加载失败，请检查网络连接或刷新页面重试');
-                    return;
-                }
-                
-                const script = document.createElement('script');
-                script.src = fallbackCDNs[currentIndex];
-                script.defer = true;
-                
-                script.onload = function() {
-                    console.log(`✓ Plotly 从备用 CDN 加载成功: ${fallbackCDNs[currentIndex]}`);
-                };
-                
-                script.onerror = function() {
-                    console.log(`✗ 备用 CDN 加载失败: ${fallbackCDNs[currentIndex]}`);
-                    // 清理失败的脚本标签
-                    document.head.removeChild(script);
-                    currentIndex++;
-                    // 延迟1秒后尝试下一个CDN
-                    setTimeout(tryNextCDN, 1000);
-                };
-                
-                document.head.appendChild(script);
-                updateLoadingText(`正在尝试备用CDN (${currentIndex + 1}/${fallbackCDNs.length})...`);
-            }
-            
-            // 清理失败的原始脚本
-            const failedScripts = document.querySelectorAll('script[src*="plotly"]');
-            failedScripts.forEach(script => {
-                if (script.src.includes('cdn.plot.ly')) {
-                    script.remove();
-                }
-            });
-            
-            tryNextCDN();
-        }
-        
-        function updateLoadingText(text) {
-            // 这个函数会在页面加载后被重新定义
-            console.log('Loading:', text);
-        }
-    </script>
+    <!-- 快速修复脚本 -->
+    <script src="assets/js/lib-loader.js"></script>
+    <script src="assets/js/data-persistence.js"></script>
+    <script src="assets/js/page-bridge.js"></script>
     <style>
         * {
             margin: 0;
@@ -910,7 +856,7 @@
                 console.error('页面初始化失败:', error);
                 showMessage('页面初始化失败: ' + error.message, 'error');
             }
-        });}
+        });
 
         // 侧边栏切换
         function toggleSidebar() {
@@ -1005,7 +951,7 @@
         async function loadFileList() {
             try {
                 console.log('开始加载文件列表...');
-                const response = await fetch('http://localhost:8001/api/files');
+                const response = await fetch(window.pageBridge.getApiUrl('/files'));
                 if (!response.ok) {
                     throw new Error('获取文件列表失败');
                 }
@@ -1078,7 +1024,7 @@
             try {
                 showMessage('正在切换文件...', 'info');
 
-                const response = await fetch(`http://localhost:8001/api/file/${selectedFileId}`);
+                const response = await fetch(window.pageBridge.getApiUrl(`/file/${selectedFileId}`));
                 if (!response.ok) {
                     throw new Error('获取文件数据失败');
                 }
@@ -1176,7 +1122,7 @@
             }
 
             try {
-                const response = await fetch(`http://localhost:8001/api/unique_values/${fileId}/${statusColumn}`);
+                const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${statusColumn}`));
                 if (!response.ok) {
                     throw new Error('获取状态值失败');
                 }
@@ -1249,7 +1195,7 @@
             try {
                 showMessage('正在获取表头内容...', 'info');
 
-                const response = await fetch(`http://localhost:8001/api/unique_values/${fileId}/${encodeURIComponent(headerColumn)}`);
+                const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${encodeURIComponent(headerColumn)}`));
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -1382,7 +1328,7 @@
                     filters[selectedStatusColumn] = selectedStatus.map(String);
                 }
 
-                const response = await fetch('http://localhost:8001/api/plot_data', {
+                const response = await fetch(window.pageBridge.getApiUrl('/plot_data'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1437,7 +1383,7 @@
                     filters[selectedStatusColumn] = selectedStatus.map(String);
                 }
 
-                const response = await fetch('http://localhost:8001/api/filter', {
+                const response = await fetch(window.pageBridge.getApiUrl('/filter'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1703,7 +1649,7 @@
 
             showMessage('正在使用机器学习算法生成预测...', 'info');
 
-            const response = await fetch('http://localhost:8001/api/predict', {
+            const response = await fetch(window.pageBridge.getApiUrl('/predict'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

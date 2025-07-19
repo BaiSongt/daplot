@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 可视化绘图</title>
-    <!-- <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" onerror="loadPlotlyFallback()" id="plotlyMainScript"></script> -->
+    <!-- 快速修复脚本 -->
+    <script src="assets/js/lib-loader.js"></script>
+    <script src="assets/js/data-persistence.js"></script>
+    <script src="assets/js/page-bridge.js"></script>
     <script>
         // Plotly备用加载机制
         function loadPlotlyFallback() {
@@ -986,69 +989,54 @@
         let allData = [];
         let currentPlot = null;
 
-        // 检查 Plotly 是否已加载（带超时机制和详细日志）
+        // 等待 Plotly 加载完成（使用统一的lib-loader）
         function waitForPlotly() {
-            return new Promise((resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
                 console.log('🔍 开始检查Plotly加载状态...');
                 
+                // 如果已经加载，直接返回
                 if (typeof Plotly !== 'undefined') {
                     console.log('✅ Plotly已经加载完成');
                     resolve();
                     return;
                 }
                 
-                console.log('⏳ Plotly尚未加载，开始等待...');
-                let attempts = 0;
-                const maxAttempts = 400; // 20秒超时 (400 * 50ms)
-                const startTime = Date.now();
-                let fallbackTriggered = false;
-                
-                const checkInterval = setInterval(() => {
-                    attempts++;
-                    const elapsed = Date.now() - startTime;
-                    
-                    if (typeof Plotly !== 'undefined') {
-                        clearInterval(checkInterval);
-                        console.log(`✅ Plotly加载成功！耗时: ${elapsed}ms, 尝试次数: ${attempts}`);
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        clearInterval(checkInterval);
-                        console.error(`❌ Plotly加载超时！耗时: ${elapsed}ms, 尝试次数: ${attempts}`);
-                        console.error('🔍 调试信息:');
-                        console.error('- window.Plotly:', typeof window.Plotly);
-                        console.error('- document.readyState:', document.readyState);
+                try {
+                    // 使用lib-loader加载Plotly（优先本地，回退CDN）
+                    if (window.libLoader) {
+                        console.log('⏳ 使用lib-loader加载Plotly...');
+                        await window.libLoader.loadPlotly();
                         
-                        // 检查所有Plotly相关脚本标签
-                        const plotlyScripts = document.querySelectorAll('script[src*="plotly"]');
-                        console.error('- Plotly脚本标签数量:', plotlyScripts.length);
-                        plotlyScripts.forEach((script, index) => {
-                            console.error(`  脚本${index + 1}: ${script.src} (ID: ${script.id || '无'})`);
-                        });
-                        
-                        reject(new Error('Plotly加载超时（20秒），可能的原因：\n1. 网络连接问题\n2. 所有CDN服务都不可用\n3. 浏览器阻止了脚本加载\n\n请检查网络连接后刷新页面重试'));
+                        // 再次检查是否加载成功
+                        if (typeof Plotly !== 'undefined') {
+                            console.log('✅ Plotly通过lib-loader加载成功');
+                            resolve();
+                        } else {
+                            throw new Error('lib-loader完成但Plotly仍未定义');
+                        }
                     } else {
-                        // 在5秒后如果还没加载成功，且还没触发备用机制，手动触发
-                        if (elapsed > 5000 && !fallbackTriggered) {
-                            fallbackTriggered = true;
-                            console.warn('⚠️ 主CDN加载时间过长，手动触发备用加载机制...');
-                            if (typeof loadPlotlyFallback === 'function') {
-                                loadPlotlyFallback();
-                            }
-                        }
+                        // 备用方案：直接等待
+                        console.warn('⚠️ lib-loader不可用，使用备用等待机制...');
+                        let attempts = 0;
+                        const maxAttempts = 200; // 10秒超时
                         
-                        // 更新进度提示
-                        if (attempts % 40 === 0) {
-                            // 每2秒输出一次进度
-                            console.log(`⏳ 等待Plotly加载中... ${elapsed}ms (${attempts}/${maxAttempts})`);
+                        const checkInterval = setInterval(() => {
+                            attempts++;
                             
-                            let loadingMsg = `正在加载Plotly图表库... ${Math.round(elapsed/1000)}s`;
-                            if (elapsed > 5000) {
-                                loadingMsg += ' (尝试备用CDN)';
+                            if (typeof Plotly !== 'undefined') {
+                                clearInterval(checkInterval);
+                                console.log('✅ Plotly加载成功（备用机制）');
+                                resolve();
+                            } else if (attempts >= maxAttempts) {
+                                clearInterval(checkInterval);
+                                reject(new Error('Plotly加载超时，请刷新页面重试'));
                             }
-                            updateLoadingText(loadingMsg);
-                        }
+                        }, 50);
                     }
-                }, 50);
+                } catch (error) {
+                    console.error('❌ Plotly加载失败:', error);
+                    reject(error);
+                }
             });
         }
 
@@ -1084,11 +1072,11 @@
                 console.log('✓ localStorage数据加载完成');
 
                 // 更新加载提示
-                updateLoadingText('正在加载Plotly图表库...');
+                updateLoadingText('正在加载Plotly图表库（优先本地）...');
 
                 // 等待 Plotly 加载完成
                 await waitForPlotly();
-                console.log('✓ Plotly 已加载完成');
+                console.log('✓ Plotly 已加载完成（优先本地，回退CDN）');
 
                 // 更新加载提示
                 updateLoadingText('正在初始化界面...');
@@ -1168,10 +1156,10 @@
         async function loadFileList() {
              try {
                  console.log('🔄 开始加载文件列表...');
-                 console.log('📡 API端点: http://localhost:8001/api/files');
+                 console.log('📡 API端点:', window.pageBridge.getApiUrl('/files'));
                  
                  const startTime = Date.now();
-                 const response = await fetch('http://localhost:8001/api/files', {
+                 const response = await fetch(window.pageBridge.getApiUrl('/files'), {
                      method: 'GET',
                      headers: {
                          'Content-Type': 'application/json',
@@ -1318,7 +1306,7 @@
                 showMessage('正在切换文件...', 'info');
 
                 // 获取文件数据
-                const response = await fetch(`http://localhost:8001/api/file/${selectedFileId}`);
+                const response = await fetch(window.pageBridge.getApiUrl(`/file/${selectedFileId}`));
                 if (!response.ok) {
                     throw new Error('获取文件数据失败');
                 }
@@ -1551,7 +1539,7 @@
             try {
                 container.innerHTML = '<span style="color: #6c757d; font-size: 10px;">加载中...</span>';
                 
-                const response = await fetch(`http://localhost:8001/api/unique_values/${fileId}/${encodeURIComponent(column)}`);
+                const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${encodeURIComponent(column)}`));
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -1618,7 +1606,7 @@
                 showMessage('正在加载数据...', 'info');
 
                 // 获取所有数据
-                const response = await fetch('http://localhost:8001/api/filter', {
+                const response = await fetch(window.pageBridge.getApiUrl('/filter'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1749,7 +1737,7 @@
 
                 console.log('构建的过滤器:', filters);
 
-                const response = await fetch('http://localhost:8001/api/plot_data', {
+                const response = await fetch(window.pageBridge.getApiUrl('/plot_data'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1794,7 +1782,7 @@
                     }
                 });
 
-                const response = await fetch('http://localhost:8001/api/filter', {
+                const response = await fetch(window.pageBridge.getApiUrl('/filter'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
