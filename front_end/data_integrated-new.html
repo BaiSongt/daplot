@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot - 数据操作</title>
+    
+    <!-- 新的模块化架构 -->
+    <script src="src/utils/constants.js"></script>
+    <script src="src/utils/helpers.js"></script>
+    <script src="src/utils/validators.js"></script>
+    <script src="src/utils/formatters.js"></script>
+    <script src="src/core/ConfigManager.js"></script>
+    <script src="src/core/EventBus.js"></script>
+    <script src="src/core/ApiClient.js"></script>
+    <script src="src/core/AppState.js"></script>
+    <script src="src/core/DataManager.js"></script>
+    <script src="src/components/LoadingSpinner.js"></script>
+    <script src="src/components/StatusMessage.js"></script>
+    <script src="src/components/ErrorBoundary.js"></script>
+    <script src="src/components/Modal.js"></script>
+    <script src="src/components/FileSelector.js"></script>
+    <script src="src/daplot.js"></script>
+    
+    <!-- Luckysheet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/plugins/plugins.css" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/css/luckysheet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            transition: width 0.3s ease;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+            position: relative;
+            z-index: 1000;
+        }        .s
+idebar.collapsed {
+            width: 50px;
+            padding: 15px 5px;
+        }
+
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 15px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 1001;
+        }
+
+        .sidebar-toggle:hover {
+            background: #0056b3;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #333;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .nav-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #666;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(74, 144, 226, 0.1);
+            color: #4a90e2;
+            transform: translateX(3px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .nav-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            z-index: 999;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .spreadsheet-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .spreadsheet-header {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .spreadsheet-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .spreadsheet-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sync-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .sync-indicator.synced {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sync-indicator.syncing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .sync-indicator.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .spreadsheet-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #luckysheet {
+            width: 100%;
+            height: 100%;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #6c757d;
+            background: #fafafa;
+        }
+
+        .empty-state-content {
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #495057;
+            font-size: 18px;
+        }
+
+        .empty-state p {
+            margin-bottom: 20px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .data-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .data-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .data-stat-value {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+            
+            .sidebar:not(.collapsed) {
+                width: 250px;
+            }
+            
+            .toolbar {
+                padding: 10px 15px;
+                gap: 10px;
+            }
+            
+            .toolbar-group {
+                gap: 5px;
+            }
+            
+            .spreadsheet-header {
+                padding: 12px 15px;
+            }
+        }
+
+        /* 加载状态 */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        /* 隐藏文件输入 */
+        #fileInput {
+            display: none;
+        }
+
+        /* Luckysheet 样式覆盖 */
+        .luckysheet-wa-editor {
+            z-index: 10 !important;
+        }
+
+        .luckysheet-modal {
+            z-index: 1050 !important;
+        }
+    </style>
+</head>
+<body>    <!-- 
+全局加载遮罩 -->
+    <div id="global-loading" style="display: none;"></div>
+    
+    <!-- 全局错误边界 -->
+    <div id="global-error-boundary" style="display: none;"></div>
+
+    <div class="page-wrapper">
+        <!-- 侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+            
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h1>DaPlot</h1>
+                </div>
+
+                <nav class="nav-bar">
+                    <a href="index.html" class="nav-btn">
+                        <i>🏠</i>
+                        <span>首页</span>
+                    </a>
+                    <a href="data_integrated.html" class="nav-btn active">
+                        <i>📊</i>
+                        <span>数据操作</span>
+                    </a>
+                    <a href="visualization.html" class="nav-btn">
+                        <i>📈</i>
+                        <span>可视化绘图</span>
+                    </a>
+                    <a href="prediction.html" class="nav-btn">
+                        <i>🔮</i>
+                        <span>数据预测</span>
+                    </a>
+                    <a href="donate.html" class="nav-btn">
+                        <i>❤️</i>
+                        <span>捐赠支持</span>
+                    </a>
+                </nav>
+
+                <!-- 文件选择器组件容器 -->
+                <div id="file-selector-container"></div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="content-area">
+            <!-- 工具栏 -->
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">文件操作:</span>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" multiple>
+                    <button class="btn btn-primary" onclick="triggerFileUpload()">
+                        📁 上传文件
+                    </button>
+                    <button class="btn btn-success" onclick="saveCurrentFile()" id="saveBtn" disabled>
+                        💾 保存
+                    </button>
+                    <button class="btn btn-warning" onclick="exportData('xlsx')">
+                        📤 导出Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportData('csv')">
+                        📄 导出CSV
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">编辑操作:</span>
+                    <button class="btn btn-secondary" onclick="undoAction()" id="undoBtn" disabled>
+                        ↶ 撤销
+                    </button>
+                    <button class="btn btn-secondary" onclick="redoAction()" id="redoBtn" disabled>
+                        ↷ 重做
+                    </button>
+                    <button class="btn btn-danger" onclick="clearSheet()">
+                        🗑️ 清空
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">视图:</span>
+                    <button class="btn btn-secondary" onclick="toggleFullscreen()">
+                        ⛶ 全屏
+                    </button>
+                </div>
+            </div>
+
+            <!-- 电子表格容器 -->
+            <div class="spreadsheet-container">
+                <div class="spreadsheet-header">
+                    <div>
+                        <h3 id="current-file-name">数据编辑器</h3>
+                        <div class="data-stats" id="data-stats" style="display: none;">
+                            <div class="data-stat">
+                                <span>行数:</span>
+                                <span class="data-stat-value" id="row-count">0</span>
+                            </div>
+                            <div class="data-stat">
+                                <span>列数:</span>
+                                <span class="data-stat-value" id="col-count">0</span>
+                            </div>
+                            <div class="data-stat">
+                                <span>工作表:</span>
+                                <span class="data-stat-value" id="sheet-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="spreadsheet-actions">
+                        <div class="sync-indicator synced" id="sync-indicator">
+                            <span>●</span>
+                            <span>已同步</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="spreadsheet-content">
+                    <div id="luckysheet"></div>
+                    
+                    <div class="empty-state" id="empty-state">
+                        <div class="empty-state-content">
+                            <div class="empty-state-icon">📊</div>
+                            <h3>开始数据编辑</h3>
+                            <p>上传Excel或CSV文件开始编辑，或者选择已有文件进行操作</p>
+                            <button class="btn btn-primary" onclick="triggerFileUpload()">
+                                📁 上传文件
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Luckysheet JS -->
+    <script src="https://unpkg.com/luckysheet@2.1.13/dist/plugins/js/plugin.js"></script>
+    <script src="https://unpkg.com/luckysheet@2.1.13/dist/luckysheet.umd.js"></script>  
+  <script>
+        // 全局变量
+        let fileSelector = null;
+        let globalLoading = null;
+        let globalErrorBoundary = null;
+        let luckysheetsInstance = null;
+        let currentFileId = null;
+        let currentFileName = '';
+        let isDataModified = false;
+        let autoSaveTimer = null;
+
+        // 页面初始化
+        async function initializePage() {
+            try {
+                console.log('🚀 开始初始化数据编辑页面...');
+
+                // 等待DaPlot核心模块加载完成
+                if (typeof window.initializeDaPlot === 'function') {
+                    await window.initializeDaPlot();
+                }
+
+                // 初始化全局组件
+                initializeGlobalComponents();
+
+                // 初始化页面组件
+                await initializePageComponents();
+
+                // 初始化Luckysheet
+                await initializeLuckysheet();
+
+                // 绑定事件监听器
+                bindEventListeners();
+
+                // 恢复页面状态
+                restorePageState();
+
+                console.log('✅ 数据编辑页面初始化完成');
+
+            } catch (error) {
+                console.error('❌ 页面初始化失败:', error);
+                showError('页面初始化失败: ' + error.message);
+            }
+        }
+
+        // 初始化全局组件
+        function initializeGlobalComponents() {
+            // 全局加载器
+            globalLoading = LoadingSpinner.createGlobal({
+                text: '正在处理...',
+                type: 'spinner',
+                size: 'large'
+            });
+
+            // 全局错误边界
+            globalErrorBoundary = ErrorBoundary.createGlobal({
+                showDetails: true,
+                allowRetry: true,
+                onError: (error, errorInfo) => {
+                    console.error('全局错误:', error, errorInfo);
+                }
+            });
+        }
+
+        // 初始化页面组件
+        async function initializePageComponents() {
+            // 初始化文件选择器
+            fileSelector = new FileSelector({
+                container: 'file-selector-container',
+                showUpload: true,
+                showActions: true,
+                onSelect: handleFileSelect,
+                onDelete: handleFileDelete,
+                onRefresh: handleFileRefresh
+            });
+        }
+
+        // 初始化Luckysheet
+        async function initializeLuckysheet() {
+            try {
+                // 等待Luckysheet加载
+                if (typeof luckysheet === 'undefined') {
+                    throw new Error('Luckysheet库未加载');
+                }
+
+                const options = {
+                    container: 'luckysheet',
+                    title: 'DaPlot数据编辑器',
+                    lang: 'zh',
+                    allowCopy: true,
+                    allowEdit: true,
+                    allowUpdate: true,
+                    showsheetbar: true,
+                    showstatisticBar: true,
+                    enableAddRow: true,
+                    enableAddCol: true,
+                    userInfo: false,
+                    myFolderUrl: '',
+                    devicePixelRatio: window.devicePixelRatio,
+                    functionButton: '',
+                    showConfigWindowResize: false,
+                    forceCalculation: false,
+                    
+                    // 工具栏配置
+                    showtoolbar: true,
+                    showinfobar: true,
+                    showsheetbarConfig: {
+                        add: true,
+                        menu: true,
+                        sheet: true
+                    },
+                    
+                    // 回调函数
+                    hook: {
+                        cellEditBefore: function(range) {
+                            console.log('开始编辑单元格:', range);
+                        },
+                        cellUpdated: function(r, c, oldValue, newValue, isRefresh) {
+                            if (!isRefresh) {
+                                handleDataChange();
+                            }
+                        },
+                        sheetActivate: function(index, isPivotInitial, isNewSheet) {
+                            console.log('切换工作表:', index);
+                            updateDataStats();
+                        },
+                        workbookCreateAfter: function() {
+                            console.log('✅ Luckysheet初始化完成');
+                            hideEmptyState();
+                            updateDataStats();
+                        }
+                    }
+                };
+
+                // 初始化Luckysheet
+                luckysheet.create(options);
+                luckysheetsInstance = luckysheet;
+
+                console.log('✅ Luckysheet初始化成功');
+
+            } catch (error) {
+                console.error('❌ Luckysheet初始化失败:', error);
+                throw error;
+            }
+        }
+
+        // 绑定事件监听器
+        function bindEventListeners() {
+            // 监听应用状态变化
+            if (window.appState) {
+                window.appState.subscribe('currentFileId', handleFileIdChange);
+            }
+
+            // 监听事件总线事件
+            if (window.eventBus) {
+                window.eventBus.on('file.selected', handleFileSelectedEvent);
+                window.eventBus.on('file.uploaded', handleFileUploadedEvent);
+            }
+
+            // 文件输入变化
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', handleFileInputChange);
+
+            // 键盘快捷键
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+
+            // 窗口关闭前保存
+            window.addEventListener('beforeunload', handleBeforeUnload);
+
+            // 全屏状态变化
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+        }
+
+        // 文件选择处理
+        async function handleFileSelect(file, fileId) {
+            try {
+                showLoading('正在加载文件数据...');
+
+                currentFileId = fileId;
+                currentFileName = file.filename;
+
+                // 更新应用状态
+                if (window.appState) {
+                    window.appState.setState({
+                        currentFileId: fileId,
+                        currentFileData: null
+                    });
+                }
+
+                // 加载文件数据到Luckysheet
+                await loadFileToLuckysheet(fileId);
+
+                // 更新UI
+                updateFileInfo(file);
+                enableSaveButton();
+
+                StatusMessage.notify(`文件 "${file.filename}" 加载成功`, 'success');
+
+            } catch (error) {
+                console.error('文件选择失败:', error);
+                showError('文件加载失败: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 加载文件到Luckysheet
+        async function loadFileToLuckysheet(fileId) {
+            try {
+                const fileData = await window.dataManager.getFileData(fileId);
+                
+                if (!fileData || !fileData.preview_data) {
+                    throw new Error('文件数据为空');
+                }
+
+                // 转换数据格式为Luckysheet格式
+                const sheetData = convertToLuckysheetsFormat(fileData);
+
+                // 清空现有数据
+                if (luckysheetsInstance) {
+                    luckysheet.destroy();
+                }
+
+                // 重新初始化Luckysheet with数据
+                const options = {
+                    container: 'luckysheet',
+                    title: currentFileName,
+                    lang: 'zh',
+                    data: sheetData,
+                    hook: {
+                        cellUpdated: function(r, c, oldValue, newValue, isRefresh) {
+                            if (!isRefresh) {
+                                handleDataChange();
+                            }
+                        },
+                        workbookCreateAfter: function() {
+                            hideEmptyState();
+                            updateDataStats();
+                        }
+                    }
+                };
+
+                luckysheet.create(options);
+                luckysheetsInstance = luckysheet;
+
+            } catch (error) {
+                console.error('加载文件到Luckysheet失败:', error);
+                throw error;
+            }
+        }
+
+        // 转换数据格式为Luckysheet格式
+        function convertToLuckysheetsFormat(fileData) {
+            const headers = fileData.headers || [];
+            const data = fileData.preview_data || [];
+
+            // 创建工作表数据
+            const cellData = [];
+
+            // 添加表头
+            if (headers.length > 0) {
+                const headerRow = [];
+                headers.forEach((header, colIndex) => {
+                    headerRow.push({
+                        r: 0,
+                        c: colIndex,
+                        v: {
+                            v: header,
+                            ct: { fa: 'General', t: 'g' },
+                            m: header,
+                            bg: '#f0f0f0',
+                            bl: 1
+                        }
+                    });
+                });
+                cellData.push(...headerRow);
+            }
+
+            // 添加数据行
+            data.forEach((row, rowIndex) => {
+                headers.forEach((header, colIndex) => {
+                    const value = row[header];
+                    if (value !== null && value !== undefined) {
+                        cellData.push({
+                            r: rowIndex + 1,
+                            c: colIndex,
+                            v: {
+                                v: value,
+                                ct: { fa: 'General', t: 'g' },
+                                m: String(value)
+                            }
+                        });
+                    }
+                });
+            });
+
+            return [{
+                name: currentFileName || '工作表1',
+                color: '',
+                index: 0,
+                status: 1,
+                order: 0,
+                hide: 0,
+                row: Math.max(data.length + 1, 20),
+                column: Math.max(headers.length, 10),
+                defaultRowHeight: 19,
+                defaultColWidth: 73,
+                celldata: cellData,
+                config: {
+                    merge: {},
+                    rowlen: {},
+                    columnlen: {},
+                    rowhidden: {},
+                    colhidden: {},
+                    borderInfo: [],
+                    authority: {}
+                },
+                scrollLeft: 0,
+                scrollTop: 0,
+                luckysheet_select_save: [],
+                calcChain: [],
+                isPivotTable: false,
+                pivotTable: {},
+                filter_select: {},
+                filter: null,
+                luckysheet_alternateformat_save: [],
+                luckysheet_alternateformat_save_modelCustom: [],
+                luckysheet_conditionformat_save: {},
+                frozen: {},
+                chart: [],
+                zoomRatio: 1,
+                image: [],
+                showGridLines: 1,
+                dataVerification: {}
+            }];
+        }
+
+        // 数据变更处理
+        function handleDataChange() {
+            isDataModified = true;
+            updateSyncIndicator('syncing');
+            
+            // 启用保存按钮
+            enableSaveButton();
+            
+            // 设置自动保存
+            if (autoSaveTimer) {
+                clearTimeout(autoSaveTimer);
+            }
+            
+            autoSaveTimer = setTimeout(() => {
+                if (isDataModified && currentFileId) {
+                    autoSaveData();
+                }
+            }, 5000); // 5秒后自动保存
+        }
+
+        // 自动保存数据
+        async function autoSaveData() {
+            try {
+                await saveCurrentFile();
+                console.log('✅ 数据自动保存成功');
+            } catch (error) {
+                console.error('❌ 自动保存失败:', error);
+            }
+        }
+
+        // 保存当前文件
+        async function saveCurrentFile() {
+            if (!currentFileId || !luckysheetsInstance) {
+                showError('没有可保存的文件');
+                return;
+            }
+
+            try {
+                showLoading('正在保存文件...');
+                updateSyncIndicator('syncing');
+
+                // 获取Luckysheet数据
+                const sheetData = luckysheet.getAllSheets();
+                
+                // 转换为标准格式
+                const convertedData = convertFromLuckysheetsFormat(sheetData);
+
+                // 保存到服务器
+                const response = await window.apiClient.post('/api/save', {
+                    file_id: currentFileId,
+                    data: convertedData
+                });
+
+                if (response.data.success) {
+                    isDataModified = false;
+                    updateSyncIndicator('synced');
+                    disableSaveButton();
+                    StatusMessage.notify('文件保存成功', 'success');
+                } else {
+                    throw new Error(response.data.message || '保存失败');
+                }
+
+            } catch (error) {
+                console.error('保存文件失败:', error);
+                updateSyncIndicator('error');
+                showError('保存失败: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 从Luckysheet格式转换
+        function convertFromLuckysheetsFormat(sheetsData) {
+            const result = [];
+            
+            sheetsData.forEach(sheet => {
+                const sheetResult = {
+                    name: sheet.name,
+                    data: []
+                };
+
+                // 获取数据范围
+                const maxRow = sheet.row || 0;
+                const maxCol = sheet.column || 0;
+
+                // 转换单元格数据
+                for (let r = 0; r < maxRow; r++) {
+                    const row = {};
+                    for (let c = 0; c < maxCol; c++) {
+                        const cellData = sheet.celldata?.find(cell => cell.r === r && cell.c === c);
+                        if (cellData && cellData.v && cellData.v.v !== null && cellData.v.v !== undefined) {
+                            row[`col_${c}`] = cellData.v.v;
+                        }
+                    }
+                    if (Object.keys(row).length > 0) {
+                        sheetResult.data.push(row);
+                    }
+                }
+
+                result.push(sheetResult);
+            });
+
+            return result;
+        }
+
+        // 文件上传处理
+        function triggerFileUpload() {
+            document.getElementById('fileInput').click();
+        }
+
+        async function handleFileInputChange(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            try {
+                showLoading('正在上传文件...');
+
+                for (const file of files) {
+                    // 验证文件类型
+                    if (!isValidFileType(file)) {
+                        showError(`不支持的文件类型: ${file.name}`);
+                        continue;
+                    }
+
+                    // 上传文件
+                    const response = await window.apiClient.upload('/api/upload', file);
+                    
+                    if (response.data) {
+                        StatusMessage.notify(`文件 "${file.name}" 上传成功`, 'success');
+                        
+                        // 刷新文件列表
+                        if (fileSelector) {
+                            await fileSelector.refresh();
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.error('文件上传失败:', error);
+                showError('文件上传失败: ' + error.message);
+            } finally {
+                hideLoading();
+                // 清空文件输入
+                event.target.value = '';
+            }
+        }
+
+        // 验证文件类型
+        function isValidFileType(file) {
+            const allowedTypes = [
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'text/csv'
+            ];
+            return allowedTypes.includes(file.type);
+        }
+
+        // 导出数据
+        async function exportData(format) {
+            if (!luckysheetsInstance) {
+                showError('没有可导出的数据');
+                return;
+            }
+
+            try {
+                showLoading(`正在导出${format.toUpperCase()}格式...`);
+
+                const sheetData = luckysheet.getAllSheets();
+                const convertedData = convertFromLuckysheetsFormat(sheetData);
+
+                // 调用导出API
+                const response = await window.apiClient.post('/api/export', {
+                    data: convertedData,
+                    format: format,
+                    filename: currentFileName || 'export'
+                });
+
+                if (response.data.download_url) {
+                    // 下载文件
+                    const link = document.createElement('a');
+                    link.href = response.data.download_url;
+                    link.download = response.data.filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    StatusMessage.notify(`数据已导出为${format.toUpperCase()}格式`, 'success');
+                }
+
+            } catch (error) {
+                console.error('导出失败:', error);
+                showError('导出失败: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 撤销操作
+        function undoAction() {
+            if (luckysheetsInstance && luckysheet.undo) {
+                luckysheet.undo();
+            }
+        }
+
+        // 重做操作
+        function redoAction() {
+            if (luckysheetsInstance && luckysheet.redo) {
+                luckysheet.redo();
+            }
+        }
+
+        // 清空工作表
+        async function clearSheet() {
+            const confirmed = await Modal.confirm(
+                '确定要清空当前工作表吗？此操作不可撤销。',
+                { title: '确认清空' }
+            );
+
+            if (confirmed && luckysheetsInstance) {
+                luckysheet.clearRange();
+                handleDataChange();
+                StatusMessage.notify('工作表已清空', 'info');
+            }
+        }
+
+        // 全屏切换
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error('无法进入全屏模式:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // UI更新函数
+        function updateFileInfo(file) {
+            document.getElementById('current-file-name').textContent = file.filename;
+            showDataStats();
+        }
+
+        function showDataStats() {
+            document.getElementById('data-stats').style.display = 'flex';
+        }
+
+        function hideDataStats() {
+            document.getElementById('data-stats').style.display = 'none';
+        }
+
+        function updateDataStats() {
+            if (!luckysheetsInstance) return;
+
+            try {
+                const sheets = luckysheet.getAllSheets();
+                const currentSheet = luckysheet.getSheet();
+                
+                if (currentSheet) {
+                    document.getElementById('row-count').textContent = currentSheet.row || 0;
+                    document.getElementById('col-count').textContent = currentSheet.column || 0;
+                }
+                
+                document.getElementById('sheet-count').textContent = sheets.length;
+            } catch (error) {
+                console.error('更新数据统计失败:', error);
+            }
+        }
+
+        function updateSyncIndicator(status) {
+            const indicator = document.getElementById('sync-indicator');
+            indicator.className = `sync-indicator ${status}`;
+            
+            const statusText = {
+                synced: '已同步',
+                syncing: '同步中...',
+                error: '同步失败'
+            };
+            
+            indicator.querySelector('span:last-child').textContent = statusText[status] || '未知状态';
+        }
+
+        function enableSaveButton() {
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = false;
+        }
+
+        function disableSaveButton() {
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+        }
+
+        function hideEmptyState() {
+            document.getElementById('empty-state').style.display = 'none';
+        }
+
+        function showEmptyState() {
+            document.getElementById('empty-state').style.display = 'flex';
+        }
+
+        // 事件处理函数
+        function handleFileDelete(fileId) {
+            if (fileId === currentFileId) {
+                // 清空当前编辑器
+                if (luckysheetsInstance) {
+                    luckysheet.destroy();
+                    luckysheetsInstance = null;
+                }
+                
+                currentFileId = null;
+                currentFileName = '';
+                isDataModified = false;
+                
+                showEmptyState();
+                hideDataStats();
+                disableSaveButton();
+                updateSyncIndicator('synced');
+            }
+            
+            StatusMessage.notify('文件删除成功', 'success');
+        }
+
+        function handleFileRefresh() {
+            StatusMessage.notify('文件列表已刷新', 'info');
+        }
+
+        function handleFileIdChange(newFileId, oldFileId) {
+            if (newFileId !== oldFileId) {
+                currentFileId = newFileId;
+            }
+        }
+
+        function handleFileSelectedEvent(data) {
+            console.log('文件选择事件:', data);
+        }
+
+        function handleFileUploadedEvent(data) {
+            console.log('文件上传事件:', data);
+        }
+
+        function handleKeyboardShortcuts(e) {
+            // Ctrl+S: 保存
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                if (currentFileId && !document.getElementById('saveBtn').disabled) {
+                    saveCurrentFile();
+                }
+            }
+            
+            // Ctrl+Z: 撤销
+            if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undoAction();
+            }
+            
+            // Ctrl+Y 或 Ctrl+Shift+Z: 重做
+            if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
+                e.preventDefault();
+                redoAction();
+            }
+        }
+
+        function handleBeforeUnload(e) {
+            if (isDataModified) {
+                e.preventDefault();
+                e.returnValue = '您有未保存的更改，确定要离开吗？';
+                return e.returnValue;
+            }
+        }
+
+        function handleFullscreenChange() {
+            // 全屏状态变化时调整Luckysheet大小
+            if (luckysheetsInstance) {
+                setTimeout(() => {
+                    luckysheet.resize();
+                }, 100);
+            }
+        }
+
+        // 工具函数
+        function showLoading(text = '加载中...') {
+            if (globalLoading) {
+                globalLoading.show(text);
+            }
+        }
+
+        function hideLoading() {
+            if (globalLoading) {
+                globalLoading.hide();
+            }
+        }
+
+        function showError(message) {
+            StatusMessage.error(message, { autoCloseDelay: 5000 });
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            
+            // 调整Luckysheet大小
+            setTimeout(() => {
+                if (luckysheetsInstance) {
+                    luckysheet.resize();
+                }
+            }, 300);
+        }
+
+        function restorePageState() {
+            // 从应用状态恢复页面状态
+            if (window.appState) {
+                const currentFileId = window.appState.getState('currentFileId');
+                if (currentFileId && fileSelector) {
+                    fileSelector.setSelectedFile(currentFileId);
+                }
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initializePage);
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', () => {
+            if (autoSaveTimer) {
+                clearTimeout(autoSaveTimer);
+            }
+            
+            if (fileSelector) fileSelector.destroy();
+            if (globalLoading) globalLoading.destroy();
+            if (globalErrorBoundary) globalErrorBoundary.destroy();
+            
+            if (luckysheetsInstance) {
+                luckysheet.destroy();
+            }
+        });
+    </script>
+</body>
+</html>

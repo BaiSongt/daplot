@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可视化页面测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 20px;
+            background: #f8f9fa;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        
+        .btn:hover { opacity: 0.8; }
+        
+        .status-display {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background: #e9ecef;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 800px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🧪 可视化页面重构测试</h1>
+            <p>测试新的模块化架构在可视化页面中的集成效果</p>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 测试检查清单</h3>
+            <div id="checklist">
+                <div class="check-item">
+                    <input type="checkbox" id="check1"> 
+                    <label for="check1">页面正常加载，无JavaScript错误</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="check2"> 
+                    <label for="check2">侧边栏导航正常工作</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="check3"> 
+                    <label for="check3">文件选择器组件正常显示</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="check4"> 
+                    <label for="check4">数据筛选器组件正常显示</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="check5"> 
+                    <label for="check5">图表配置组件正常显示</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="check6"> 
+                    <label for="check6">图表工具栏功能正常</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="check7"> 
+                    <label for="check7">响应式布局正常工作</label>
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="check8"> 
+                    <label for="check8">状态管理和事件系统正常</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎮 测试控制</h3>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="loadNewPage()">加载新版页面</button>
+                <button class="btn btn-secondary" onclick="loadOriginalPage()">加载原版页面</button>
+                <button class="btn btn-success" onclick="runAutoTest()">自动测试</button>
+                <button class="btn btn-warning" onclick="checkConsole()">检查控制台</button>
+                <button class="btn btn-danger" onclick="clearTest()">清除测试</button>
+            </div>
+            
+            <div class="status-display" id="status-display">
+                状态: 等待测试开始...
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 页面预览</h3>
+            <iframe id="test-frame" src="about:blank"></iframe>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 测试结果</h3>
+            <div id="test-results">
+                <p>测试结果将在这里显示...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testFrame = null;
+        let testResults = [];
+
+        function updateStatus(message) {
+            const statusDisplay = document.getElementById('status-display');
+            const timestamp = new Date().toLocaleTimeString();
+            statusDisplay.innerHTML += `[${timestamp}] ${message}\n`;
+            statusDisplay.scrollTop = statusDisplay.scrollHeight;
+        }
+
+        function loadNewPage() {
+            testFrame = document.getElementById('test-frame');
+            testFrame.src = 'visualization-new.html';
+            updateStatus('正在加载新版可视化页面...');
+            
+            testFrame.onload = function() {
+                updateStatus('✅ 新版页面加载完成');
+                setTimeout(checkPageLoad, 1000);
+            };
+            
+            testFrame.onerror = function() {
+                updateStatus('❌ 新版页面加载失败');
+            };
+        }
+
+        function loadOriginalPage() {
+            testFrame = document.getElementById('test-frame');
+            testFrame.src = 'visualization.html';
+            updateStatus('正在加载原版可视化页面...');
+            
+            testFrame.onload = function() {
+                updateStatus('✅ 原版页面加载完成');
+            };
+            
+            testFrame.onerror = function() {
+                updateStatus('❌ 原版页面加载失败');
+            };
+        }
+
+        function checkPageLoad() {
+            try {
+                const frameDoc = testFrame.contentDocument || testFrame.contentWindow.document;
+                
+                // 检查基本元素
+                const checks = [
+                    { id: 'sidebar', name: '侧边栏' },
+                    { id: 'file-selector-container', name: '文件选择器容器' },
+                    { id: 'data-filter-container', name: '数据筛选器容器' },
+                    { id: 'chart-config-container', name: '图表配置容器' },
+                    { id: 'chart-container', name: '图表容器' }
+                ];
+
+                let passedChecks = 0;
+                checks.forEach(check => {
+                    const element = frameDoc.getElementById(check.id);
+                    if (element) {
+                        updateStatus(`✅ ${check.name} 存在`);
+                        passedChecks++;
+                    } else {
+                        updateStatus(`❌ ${check.name} 不存在`);
+                    }
+                });
+
+                // 检查JavaScript对象
+                const frameWindow = testFrame.contentWindow;
+                const jsChecks = [
+                    { obj: 'window.appState', name: 'AppState' },
+                    { obj: 'window.dataManager', name: 'DataManager' },
+                    { obj: 'window.chartEngine', name: 'ChartEngine' },
+                    { obj: 'window.eventBus', name: 'EventBus' }
+                ];
+
+                jsChecks.forEach(check => {
+                    try {
+                        const obj = eval(`frameWindow.${check.obj}`);
+                        if (obj) {
+                            updateStatus(`✅ ${check.name} 已加载`);
+                            passedChecks++;
+                        } else {
+                            updateStatus(`❌ ${check.name} 未加载`);
+                        }
+                    } catch (error) {
+                        updateStatus(`❌ ${check.name} 检查失败: ${error.message}`);
+                    }
+                });
+
+                const totalChecks = checks.length + jsChecks.length;
+                const successRate = Math.round((passedChecks / totalChecks) * 100);
+                updateStatus(`📊 检查完成: ${passedChecks}/${totalChecks} (${successRate}%)`);
+
+            } catch (error) {
+                updateStatus(`❌ 页面检查失败: ${error.message}`);
+            }
+        }
+
+        function runAutoTest() {
+            updateStatus('🚀 开始自动测试...');
+            
+            // 清除之前的结果
+            testResults = [];
+            
+            // 加载新页面并运行测试
+            loadNewPage();
+            
+            setTimeout(() => {
+                runComponentTests();
+            }, 3000);
+        }
+
+        function runComponentTests() {
+            updateStatus('🧪 开始组件功能测试...');
+            
+            try {
+                const frameWindow = testFrame.contentWindow;
+                
+                // 测试文件选择器
+                if (frameWindow.fileSelector) {
+                    updateStatus('✅ FileSelector 组件可访问');
+                    testResults.push({ component: 'FileSelector', status: 'pass' });
+                } else {
+                    updateStatus('❌ FileSelector 组件不可访问');
+                    testResults.push({ component: 'FileSelector', status: 'fail' });
+                }
+                
+                // 测试数据筛选器
+                if (frameWindow.dataFilter) {
+                    updateStatus('✅ DataFilter 组件可访问');
+                    testResults.push({ component: 'DataFilter', status: 'pass' });
+                } else {
+                    updateStatus('❌ DataFilter 组件不可访问');
+                    testResults.push({ component: 'DataFilter', status: 'fail' });
+                }
+                
+                // 测试图表配置
+                if (frameWindow.chartConfig) {
+                    updateStatus('✅ ChartConfig 组件可访问');
+                    testResults.push({ component: 'ChartConfig', status: 'pass' });
+                } else {
+                    updateStatus('❌ ChartConfig 组件不可访问');
+                    testResults.push({ component: 'ChartConfig', status: 'fail' });
+                }
+                
+                // 显示测试结果
+                displayTestResults();
+                
+            } catch (error) {
+                updateStatus(`❌ 组件测试失败: ${error.message}`);
+            }
+        }
+
+        function displayTestResults() {
+            const resultsDiv = document.getElementById('test-results');
+            let html = '<h4>🎯 测试结果汇总</h4>';
+            
+            const passCount = testResults.filter(r => r.status === 'pass').length;
+            const totalCount = testResults.length;
+            const successRate = Math.round((passCount / totalCount) * 100);
+            
+            html += `<p><strong>总体成功率: ${successRate}% (${passCount}/${totalCount})</strong></p>`;
+            html += '<ul>';
+            
+            testResults.forEach(result => {
+                const icon = result.status === 'pass' ? '✅' : '❌';
+                const status = result.status === 'pass' ? '通过' : '失败';
+                html += `<li>${icon} ${result.component}: ${status}</li>`;
+            });
+            
+            html += '</ul>';
+            
+            if (successRate >= 80) {
+                html += '<p style="color: green;"><strong>🎉 测试通过！新版页面集成成功。</strong></p>';
+            } else if (successRate >= 60) {
+                html += '<p style="color: orange;"><strong>⚠️ 部分测试通过，需要进一步优化。</strong></p>';
+            } else {
+                html += '<p style="color: red;"><strong>❌ 测试失败，需要修复问题。</strong></p>';
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function checkConsole() {
+            updateStatus('🔍 检查控制台错误...');
+            
+            try {
+                const frameWindow = testFrame.contentWindow;
+                
+                // 重写console.error来捕获错误
+                const originalError = frameWindow.console.error;
+                let errorCount = 0;
+                
+                frameWindow.console.error = function(...args) {
+                    errorCount++;
+                    updateStatus(`❌ 控制台错误 ${errorCount}: ${args.join(' ')}`);
+                    originalError.apply(frameWindow.console, args);
+                };
+                
+                setTimeout(() => {
+                    if (errorCount === 0) {
+                        updateStatus('✅ 没有发现控制台错误');
+                    } else {
+                        updateStatus(`⚠️ 发现 ${errorCount} 个控制台错误`);
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                updateStatus(`❌ 控制台检查失败: ${error.message}`);
+            }
+        }
+
+        function clearTest() {
+            const statusDisplay = document.getElementById('status-display');
+            statusDisplay.innerHTML = '状态: 测试已清除...\n';
+            
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>测试结果将在这里显示...</p>';
+            
+            testResults = [];
+            
+            // 清除所有复选框
+            const checkboxes = document.querySelectorAll('#checklist input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            
+            updateStatus('🧹 测试环境已清理');
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStatus('📋 测试页面初始化完成');
+            updateStatus('💡 提示: 点击"加载新版页面"开始测试');
+        });
+    </script>
+</body>
+</html>
