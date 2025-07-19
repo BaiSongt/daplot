@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot 快速修复测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #chart {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #dee2e6;
+            margin: 10px 0;
+        }
+    </style>
+    
+    <!-- 加载快速修复脚本 -->
+    <script src="/assets/js/lib-loader.js"></script>
+    <script src="/assets/js/data-persistence.js"></script>
+    <script src="/assets/js/page-bridge.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 DaPlot 快速修复测试</h1>
+        
+        <div class="test-section">
+            <h3>1. Plotly 加载测试</h3>
+            <div id="plotly-status" class="status info">等待测试...</div>
+            <button onclick="testPlotlyLoading()">测试 Plotly 加载</button>
+            <div id="chart"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. 数据持久化测试</h3>
+            <div id="persistence-status" class="status info">等待测试...</div>
+            <button onclick="testDataPersistence()">测试数据保存</button>
+            <button onclick="testDataRetrieval()">测试数据读取</button>
+            <button onclick="clearTestData()">清除测试数据</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. 页面桥接测试</h3>
+            <div id="bridge-status" class="status info">等待测试...</div>
+            <button onclick="testPageBridge()">测试页面数据共享</button>
+            <button onclick="testNavigation()">测试页面导航</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. 存储信息</h3>
+            <div id="storage-info" class="status info">点击刷新查看存储信息</div>
+            <button onclick="showStorageInfo()">刷新存储信息</button>
+        </div>
+    </div>
+    
+    <script>
+        // Plotly 加载测试
+        async function testPlotlyLoading() {
+            const statusEl = document.getElementById('plotly-status');
+            statusEl.className = 'status info';
+            statusEl.textContent = '正在测试 Plotly 加载...';
+            
+            try {
+                const startTime = Date.now();
+                await window.libLoader.loadPlotly();
+                const loadTime = Date.now() - startTime;
+                
+                // 创建测试图表
+                const data = [{
+                    x: [1, 2, 3, 4, 5],
+                    y: [2, 4, 3, 5, 6],
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: '测试数据'
+                }];
+                
+                const layout = {
+                    title: 'Plotly 加载成功测试图表',
+                    xaxis: { title: 'X 轴' },
+                    yaxis: { title: 'Y 轴' }
+                };
+                
+                Plotly.newPlot('chart', data, layout);
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = `✅ Plotly 加载成功！耗时: ${loadTime}ms`;
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ Plotly 加载失败: ${error.message}`;
+            }
+        }
+        
+        // 数据持久化测试
+        function testDataPersistence() {
+            const statusEl = document.getElementById('persistence-status');
+            
+            try {
+                const testData = {
+                    id: 'test_file_' + Date.now(),
+                    name: '测试文件',
+                    data: [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+                    timestamp: new Date().toISOString()
+                };
+                
+                const success = window.dataPersistence.saveFileData(testData.id, testData);
+                
+                if (success) {
+                    statusEl.className = 'status success';
+                    statusEl.textContent = `✅ 数据保存成功！文件ID: ${testData.id}`;
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ 数据保存失败';
+                }
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 数据保存异常: ${error.message}`;
+            }
+        }
+        
+        function testDataRetrieval() {
+            const statusEl = document.getElementById('persistence-status');
+            
+            try {
+                const fileList = window.dataPersistence.getFileList();
+                
+                if (fileList.length > 0) {
+                    const latestFile = fileList[fileList.length - 1];
+                    const data = window.dataPersistence.getFileData(latestFile.id);
+                    
+                    if (data) {
+                        statusEl.className = 'status success';
+                        statusEl.textContent = `✅ 数据读取成功！找到 ${fileList.length} 个文件，最新文件: ${data.name}`;
+                    } else {
+                        statusEl.className = 'status error';
+                        statusEl.textContent = '❌ 数据读取失败';
+                    }
+                } else {
+                    statusEl.className = 'status info';
+                    statusEl.textContent = '📝 没有找到保存的数据，请先测试数据保存';
+                }
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 数据读取异常: ${error.message}`;
+            }
+        }
+        
+        function clearTestData() {
+            const statusEl = document.getElementById('persistence-status');
+            
+            try {
+                const fileList = window.dataPersistence.getFileList();
+                let deletedCount = 0;
+                
+                fileList.forEach(file => {
+                    if (file.id.startsWith('test_file_')) {
+                        window.dataPersistence.deleteFileData(file.id);
+                        deletedCount++;
+                    }
+                });
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = `✅ 清除完成！删除了 ${deletedCount} 个测试文件`;
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 清除失败: ${error.message}`;
+            }
+        }
+        
+        // 页面桥接测试
+        function testPageBridge() {
+            const statusEl = document.getElementById('bridge-status');
+            
+            try {
+                const testData = {
+                    testKey: 'test_value_' + Date.now(),
+                    currentPage: 'test_page',
+                    timestamp: new Date().toISOString()
+                };
+                
+                window.pageBridge.setSharedData('testData', testData);
+                const retrieved = window.pageBridge.getSharedData('testData');
+                
+                if (retrieved && retrieved.testKey === testData.testKey) {
+                    statusEl.className = 'status success';
+                    statusEl.textContent = `✅ 页面数据共享测试成功！数据: ${retrieved.testKey}`;
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ 页面数据共享测试失败';
+                }
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 页面桥接异常: ${error.message}`;
+            }
+        }
+        
+        function testNavigation() {
+            const statusEl = document.getElementById('bridge-status');
+            
+            try {
+                // 模拟导航（不实际跳转）
+                const testFileId = 'test_file_123';
+                window.pageBridge.setSharedData('currentFileId', testFileId);
+                window.pageBridge.setSharedData('source', 'test_navigation');
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = `✅ 导航数据设置成功！文件ID: ${testFileId}`;
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 导航测试异常: ${error.message}`;
+            }
+        }
+        
+        // 显示存储信息
+        function showStorageInfo() {
+            const statusEl = document.getElementById('storage-info');
+            
+            try {
+                const storageInfo = window.dataPersistence.getStorageInfo();
+                const sharedData = window.pageBridge.getSharedData();
+                
+                statusEl.className = 'status info';
+                statusEl.innerHTML = `
+                    <strong>本地存储信息:</strong><br>
+                    • 文件数量: ${storageInfo.fileCount}<br>
+                    • 存储大小: ${(storageInfo.totalSize / 1024).toFixed(2)} KB<br>
+                    • 使用率: ${storageInfo.usage}<br>
+                    <strong>共享数据:</strong><br>
+                    • 数据项: ${Object.keys(sharedData).length}<br>
+                    • 内容: ${JSON.stringify(sharedData, null, 2).substring(0, 100)}...
+                `;
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 获取存储信息失败: ${error.message}`;
+            }
+        }
+        
+        // 页面加载完成后自动运行基础测试
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🧪 DaPlot 快速修复测试页面已加载');
+            
+            // 检查脚本是否正确加载
+            if (window.libLoader && window.dataPersistence && window.pageBridge) {
+                console.log('✅ 所有快速修复脚本已正确加载');
+            } else {
+                console.error('❌ 部分快速修复脚本加载失败');
+            }
+        });
+    </script>
+</body>
+</html>
