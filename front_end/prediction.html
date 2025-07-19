@@ -1981,14 +1981,65 @@
             if (!currentPlot || !predictionData) return;
 
             try {
+                // 获取当前样式设置
+                const colorScheme = document.getElementById('colorScheme').value;
+                const lineWidth = parseInt(document.getElementById('lineWidth').value);
+                const markerSize = parseInt(document.getElementById('markerSize').value);
+                const markerStyle = document.getElementById('markerStyle').value;
+                const legendPosition = document.getElementById('legendPosition').value;
+                const chartTitle = document.getElementById('chartTitle').value || '数据可视化图表';
+                const xAxisTitle = document.getElementById('xAxisTitle').value || document.getElementById('xAxis').value;
+                const yAxisTitle = document.getElementById('yAxisTitle').value || document.getElementById('yAxis').value;
+
+                // 应用样式到原始数据traces
+                const colors = getColorScheme(colorScheme);
+                const styledOriginalTraces = currentPlot.traces.map((trace, index) => ({
+                    ...trace,
+                    line: {
+                        ...trace.line,
+                        color: colors[index % colors.length],
+                        width: lineWidth
+                    },
+                    marker: {
+                        ...trace.marker,
+                        color: colors[index % colors.length],
+                        size: markerSize,
+                        symbol: markerStyle
+                    }
+                }));
+
                 // 合并原始数据和预测数据
-                const allTraces = [...currentPlot.traces, ...predictionData];
+                const allTraces = [...styledOriginalTraces, ...predictionData];
+
+                // 获取图例配置
+                const legendConfig = getLegendConfig(legendPosition);
 
                 const layout = {
                     ...currentPlot.layout,
                     title: {
-                        text: (currentPlot.layout.title.text || '数据可视化图表') + ' (含预测)',
+                        text: chartTitle + ' (含预测)',
                         font: { size: 16, color: '#333' }
+                    },
+                    xaxis: {
+                        ...currentPlot.layout.xaxis,
+                        title: {
+                            text: xAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        }
+                    },
+                    yaxis: {
+                        ...currentPlot.layout.yaxis,
+                        title: {
+                            text: yAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        }
+                    },
+                    legend: {
+                        ...legendConfig,
+                        bgcolor: 'rgba(255,255,255,0.8)',
+                        bordercolor: '#d0d0d0',
+                        borderwidth: 1,
+                        font: { size: 10 }
                     }
                 };
 
@@ -2011,7 +2062,8 @@
             // 根据标签页显示不同内容
             if (tab === 'original') {
                 if (originalData && currentPlot) {
-                    Plotly.newPlot('plotDiv', currentPlot.traces, currentPlot.layout, currentPlot.config);
+                    // 应用当前样式设置到原始图表
+                    applyStyleToOriginalChart();
                 }
             } else if (tab === 'prediction') {
                 if (predictionData) {
@@ -2022,10 +2074,85 @@
             }
         }
 
+        // 应用样式到原始图表（不重新生成数据）
+        function applyStyleToOriginalChart() {
+            if (!currentPlot) return;
+
+            try {
+                // 获取当前样式设置
+                const colorScheme = document.getElementById('colorScheme').value;
+                const lineWidth = parseInt(document.getElementById('lineWidth').value);
+                const markerSize = parseInt(document.getElementById('markerSize').value);
+                const markerStyle = document.getElementById('markerStyle').value;
+                const legendPosition = document.getElementById('legendPosition').value;
+                const chartTitle = document.getElementById('chartTitle').value || '数据可视化图表';
+                const xAxisTitle = document.getElementById('xAxisTitle').value || document.getElementById('xAxis').value;
+                const yAxisTitle = document.getElementById('yAxisTitle').value || document.getElementById('yAxis').value;
+
+                // 应用样式到traces
+                const colors = getColorScheme(colorScheme);
+                const styledTraces = currentPlot.traces.map((trace, index) => ({
+                    ...trace,
+                    line: {
+                        ...trace.line,
+                        color: colors[index % colors.length],
+                        width: lineWidth
+                    },
+                    marker: {
+                        ...trace.marker,
+                        color: colors[index % colors.length],
+                        size: markerSize,
+                        symbol: markerStyle
+                    }
+                }));
+
+                // 获取图例配置
+                const legendConfig = getLegendConfig(legendPosition);
+
+                const layout = {
+                    ...currentPlot.layout,
+                    title: {
+                        text: chartTitle,
+                        font: { size: 16, color: '#333' }
+                    },
+                    xaxis: {
+                        ...currentPlot.layout.xaxis,
+                        title: {
+                            text: xAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        }
+                    },
+                    yaxis: {
+                        ...currentPlot.layout.yaxis,
+                        title: {
+                            text: yAxisTitle,
+                            font: { size: 14, color: '#666' }
+                        }
+                    },
+                    legend: {
+                        ...legendConfig,
+                        bgcolor: 'rgba(255,255,255,0.8)',
+                        bordercolor: '#d0d0d0',
+                        borderwidth: 1,
+                        font: { size: 10 }
+                    }
+                };
+
+                // 更新currentPlot以保存新的样式
+                currentPlot = { traces: styledTraces, layout, config: currentPlot.config };
+
+                Plotly.newPlot('plotDiv', styledTraces, layout, currentPlot.config);
+
+            } catch (error) {
+                console.error('应用样式失败:', error);
+                showMessage('应用样式失败: ' + error.message, 'error');
+            }
+        }
+
         // 应用样式到图表
         function applyStyleToChart() {
             if (currentTab === 'original') {
-                generateOriginalChart();
+                applyStyleToOriginalChart();
             } else if (currentTab === 'prediction') {
                 renderPredictionChart();
             }
