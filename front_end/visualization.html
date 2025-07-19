@@ -530,6 +530,48 @@
             padding: 50px;
             font-style: italic;
         }
+
+        .flexible-selector {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .flexible-selector h4 {
+            color: #1565c0;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .header-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .header-tag {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #bbdefb;
+        }
+
+        .header-tag:hover {
+            background: #bbdefb;
+        }
+
+        .header-tag.selected {
+            background: #1976d2;
+            color: white;
+            border-color: #1565c0;
+        }
     </style>
 </head>
 <body>
@@ -582,10 +624,22 @@
                         <div id="currentFileInfo" style="font-size: 10px; color: #666; margin-top: 3px; padding: 3px; background: #f8f9fa; border-radius: 2px;"></div>
                     </div>
 
-                    <div class="section">
-                        <h3 style="font-size: 13px; margin-bottom: 8px;">🎯 项目选择</h3>
-                        <div id="projectTags" class="tag-container">
-                            <!-- 项目标签将在这里动态生成 -->
+                    <div class="section flexible-selector">
+                        <h4>🎯 灵活表头选择</h4>
+                        <div class="form-group">
+                            <label for="headerColumn">选择要分析的表头列:</label>
+                            <select id="headerColumn" class="form-control" onchange="updateHeaderValues()">
+                                <option value="">请选择表头列</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>选择表头内容:</label>
+                            <div id="headerValueTags" class="tag-container">
+                                <!-- 表头内容标签将在这里动态生成 -->
+                            </div>
+                        </div>
+                        <div id="groupValueTags" class="header-tags">
+                            <!-- 分组值标签将在这里动态生成 -->
                         </div>
                     </div>
 
@@ -743,7 +797,8 @@
         // 全局变量
         let fileId = null;
         let headers = [];
-        let selectedProjects = [];
+        let selectedHeaderColumn = '';
+        let selectedHeaderValues = [];
         let selectedStatus = [];
         let selectedStatusColumn = '';
         let allData = [];
@@ -882,6 +937,7 @@
                 updateCurrentFileInfo();
                 populateAxisSelectors();
                 populateStatusColumnSelector();
+                populateHeaderColumnSelector();
                 clearVisualization();
 
                 // 重新初始化可视化
@@ -990,6 +1046,26 @@
             yAxisSelect.addEventListener('change', checkFormValidity);
         }
 
+        function populateHeaderColumnSelector() {
+            const headerColumnSelect = document.getElementById('headerColumn');
+
+            // 清空现有选项
+            headerColumnSelect.innerHTML = '<option value="">请选择表头列</option>';
+
+            if (headers && headers.length > 0) {
+                headers.forEach(header => {
+                    const option = document.createElement('option');
+                    option.value = header;
+                    option.textContent = header;
+                    headerColumnSelect.appendChild(option);
+                });
+            }
+
+            // 移除之前的事件监听器，避免重复添加
+            headerColumnSelect.removeEventListener('change', updateHeaderValues);
+            headerColumnSelect.addEventListener('change', updateHeaderValues);
+        }
+
         function populateStatusColumnSelector() {
             const statusColumnSelect = document.getElementById('statusColumn');
 
@@ -1006,6 +1082,61 @@
 
             // 添加变化监听器
             statusColumnSelect.addEventListener('change', onStatusColumnChange);
+        }
+
+        // 更新表头内容值
+        async function updateHeaderValues() {
+            const headerColumn = document.getElementById('headerColumn').value;
+            selectedHeaderColumn = headerColumn;
+            const headerValueTags = document.getElementById('headerValueTags');
+
+            if (!headerColumn || !fileId) {
+                headerValueTags.innerHTML = '';
+                selectedHeaderValues = [];
+                selectedHeaderColumn = '';
+                checkFormValidity();
+                return;
+            }
+
+            try {
+                showMessage('正在获取表头内容...', 'info');
+
+                const response = await fetch(`http://localhost:8001/api/unique_values/${fileId}/${encodeURIComponent(headerColumn)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                headerValueTags.innerHTML = '';
+
+                data.values.forEach(value => {
+                    const tag = document.createElement('div');
+                    tag.className = 'tag';
+                    tag.textContent = value;
+                    tag.onclick = () => toggleHeaderValue(value, tag);
+                    headerValueTags.appendChild(tag);
+                });
+
+                selectedHeaderValues = [];
+                checkFormValidity();
+
+            } catch (error) {
+                console.error('获取表头内容失败:', error);
+                showMessage('获取表头内容失败: ' + error.message, 'error');
+            }
+        }
+
+        // 切换表头内容值选择
+        function toggleHeaderValue(value, tagElement) {
+            const index = selectedHeaderValues.indexOf(value);
+            if (index > -1) {
+                selectedHeaderValues.splice(index, 1);
+                tagElement.classList.remove('selected');
+            } else {
+                selectedHeaderValues.push(value);
+                tagElement.classList.add('selected');
+            }
+            checkFormValidity();
         }
 
         function onStatusColumnChange() {
@@ -1026,7 +1157,7 @@
             try {
                 showMessage('正在加载数据...', 'info');
 
-                // 获取所有数据以提取唯一项目
+                // 获取所有数据
                 const response = await fetch('http://localhost:8001/api/filter', {
                     method: 'POST',
                     headers: {
@@ -1043,7 +1174,10 @@
                 }
 
                 allData = await response.json();
-                generateProjectTags();
+                
+                // 初始化表头列选择器
+                populateHeaderColumnSelector();
+                
                 showMessage('数据加载完成', 'success');
 
             } catch (error) {
@@ -1052,39 +1186,11 @@
             }
         }
 
-        function generateProjectTags() {
-            const projectColumn = 'Project'; // 根据实际数据调整
-            const uniqueProjects = [...new Set(allData.map(row => row[projectColumn]).filter(p => p !== null && p !== undefined))];
 
-            const projectTagsContainer = document.getElementById('projectTags');
-            projectTagsContainer.innerHTML = '';
-
-            uniqueProjects.forEach(project => {
-                const tag = document.createElement('div');
-                tag.className = 'tag';
-                tag.textContent = project;
-                tag.onclick = () => toggleProjectSelection(project, tag);
-                projectTagsContainer.appendChild(tag);
-            });
-        }
-
-        function toggleProjectSelection(project, tagElement) {
-            const index = selectedProjects.indexOf(project);
-            if (index > -1) {
-                selectedProjects.splice(index, 1);
-                tagElement.classList.remove('selected');
-            } else {
-                selectedProjects.push(project);
-                tagElement.classList.add('selected');
-            }
-
-            updateStatusTags();
-            checkFormValidity();
-        }
 
         async function updateStatusTags() {
-            if (selectedProjects.length === 0) {
-                document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择项目</p>';
+            if (!selectedHeaderColumn || selectedHeaderValues.length === 0) {
+                document.getElementById('statusTags').innerHTML = '<p style="color: #6c757d; font-style: italic;">请先选择表头内容</p>';
                 return;
             }
 
@@ -1094,7 +1200,7 @@
             }
 
             try {
-                // 根据选中的项目获取筛选后的数据
+                // 根据选中的表头内容获取筛选后的数据
                 const response = await fetch('http://localhost:8001/api/filter', {
                     method: 'POST',
                     headers: {
@@ -1103,7 +1209,7 @@
                     body: JSON.stringify({
                         file_id: fileId,
                         filters: {
-                            'Project': selectedProjects
+                            [selectedHeaderColumn]: selectedHeaderValues
                         }
                     })
                 });
@@ -1158,7 +1264,8 @@
             const generateBtn = document.getElementById('generateChart');
             const applyStyleBtn = document.getElementById('applyStyle');
 
-            const isValid = selectedProjects.length > 0 &&
+            const isValid = selectedHeaderColumn &&
+                           selectedHeaderValues.length > 0 &&
                            selectedStatusColumn &&
                            selectedStatus.length > 0 &&
                            xAxis && yAxis;
@@ -1192,7 +1299,8 @@
             console.log('=== 开始生成图表 ===');
             console.log('当前状态:', {
                 fileId,
-                selectedProjects,
+                selectedHeaderColumn,
+                selectedHeaderValues,
                 selectedStatus,
                 selectedStatusColumn
             });
@@ -1200,7 +1308,8 @@
             // 详细检查选择状态
             console.log('详细检查:');
             console.log('- 文件ID:', fileId);
-            console.log('- 选择的项目数量:', selectedProjects.length, '项目列表:', selectedProjects);
+            console.log('- 选择的表头列:', selectedHeaderColumn);
+            console.log('- 选择的表头值数量:', selectedHeaderValues.length, '表头值列表:', selectedHeaderValues);
             console.log('- 状态量列名:', selectedStatusColumn);
             console.log('- 选择的状态值数量:', selectedStatus.length, '状态值列表:', selectedStatus);
 
@@ -1215,8 +1324,8 @@
                 return;
             }
 
-            if (!selectedProjects || selectedProjects.length === 0) {
-                showMessage('请先选择项目', 'error');
+            if (!selectedHeaderColumn || selectedHeaderValues.length === 0) {
+                showMessage('请先选择表头内容', 'error');
                 return;
             }
 
@@ -1246,7 +1355,7 @@
                     body: JSON.stringify({
                         file_id: fileId,
                         filters: {
-                            'Project': selectedProjects,
+                            [selectedHeaderColumn]: selectedHeaderValues,
                             [selectedStatusColumn]: selectedStatus.map(String)
                         },
                         x_axis: xAxis,
@@ -1286,7 +1395,7 @@
                     body: JSON.stringify({
                         file_id: fileId,
                         filters: {
-                            'Project': selectedProjects,
+                            [selectedHeaderColumn]: selectedHeaderValues,
                             [selectedStatusColumn]: selectedStatus.map(String)
                         }
                     })
@@ -1305,7 +1414,7 @@
                 if (filteredData.length > 0) {
                     const sampleRow = filteredData[0];
                     console.log('数据列名:', Object.keys(sampleRow));
-                    console.log('Project列存在:', 'Project' in sampleRow);
+                    console.log('表头列存在:', selectedHeaderColumn in sampleRow);
                     console.log('状态量列存在:', selectedStatusColumn in sampleRow);
                     console.log('X轴列存在:', xAxis in sampleRow);
                     console.log('Y轴列存在:', yAxis in sampleRow);
@@ -1324,26 +1433,26 @@
                 console.log('=== 开始创建曲线 ===');
                 console.log('样式设置:', { colorScheme, lineWidth, markerSize, markerStyle });
 
-                // 为每个项目和状态值组合创建一条曲线
-                selectedProjects.forEach(project => {
+                // 为每个表头值和状态值组合创建一条曲线
+                selectedHeaderValues.forEach(headerValue => {
                     selectedStatus.forEach(statusValue => {
-                        console.log(`\n--- 处理组合: 项目=${project}, 状态=${statusValue} ---`);
+                        console.log(`\n--- 处理组合: ${selectedHeaderColumn}=${headerValue}, 状态=${statusValue} ---`);
 
-                        const projectStatusData = filteredData.filter(row =>
-                            row['Project'] === project && String(row[selectedStatusColumn]) === String(statusValue)
+                        const headerStatusData = filteredData.filter(row =>
+                            String(row[selectedHeaderColumn]) === String(headerValue) && String(row[selectedStatusColumn]) === String(statusValue)
                         );
 
-                        console.log(`筛选条件: Project='${project}' AND ${selectedStatusColumn}='${statusValue}'`);
-                        console.log(`匹配的数据行数:`, projectStatusData.length);
+                        console.log(`筛选条件: ${selectedHeaderColumn}='${headerValue}' AND ${selectedStatusColumn}='${statusValue}'`);
+                        console.log(`匹配的数据行数:`, headerStatusData.length);
 
-                        if (projectStatusData.length > 0) {
-                            console.log('匹配数据样本:', projectStatusData.slice(0, 2));
+                        if (headerStatusData.length > 0) {
+                            console.log('匹配数据样本:', headerStatusData.slice(0, 2));
 
-                            const xValues = projectStatusData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
-                            const yValues = projectStatusData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
+                            const xValues = headerStatusData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
+                            const yValues = headerStatusData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
 
                             console.log(`提取的数据:`, {
-                                原始行数: projectStatusData.length,
+                                原始行数: headerStatusData.length,
                                 X轴有效值数量: xValues.length,
                                 Y轴有效值数量: yValues.length,
                                 X轴样本: xValues.slice(0, 5),
@@ -1351,7 +1460,7 @@
                             });
 
                             if (xValues.length > 0 && yValues.length > 0) {
-                                const traceName = `${project}-${selectedStatusColumn}-${statusValue}`;
+                                const traceName = `${headerValue}-${selectedStatusColumn}-${statusValue}`;
 
                                 // 检查是否已有该曲线的个性化设置
                                 let existingTrace = null;
@@ -1379,7 +1488,7 @@
                                 console.log(`✓ 成功创建曲线: ${trace.name}, 数据点数: ${xValues.length}`);
                                 colorIndex++;
                             } else {
-                                console.log(`✗ 跳过曲线 ${project}-${statusValue}: X轴数据=${xValues.length}个, Y轴数据=${yValues.length}个`);
+                                console.log(`✗ 跳过曲线 ${headerValue}-${statusValue}: X轴数据=${xValues.length}个, Y轴数据=${yValues.length}个`);
                             }
                         }
                     });
