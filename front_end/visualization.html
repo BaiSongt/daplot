@@ -1394,8 +1394,8 @@
                 // 构建过滤器对象
                 const filters = {};
                 flexibleHeaderSelectors.forEach(selector => {
-                    if (selector.column && selector.selectedValues.length > 0) {
-                        filters[selector.column] = selector.selectedValues;
+                    if (selector.column && selector.values.length > 0) {
+                        filters[selector.column] = selector.values.map(value => String(value));
                     }
                 });
 
@@ -1441,8 +1441,8 @@
                 // 构建过滤器对象
                 const filters = {};
                 flexibleHeaderSelectors.forEach(selector => {
-                    if (selector.column && selector.selectedValues.length > 0) {
-                        filters[selector.column] = selector.selectedValues;
+                    if (selector.column && selector.values.length > 0) {
+                        filters[selector.column] = selector.values.map(value => String(value));
                     }
                 });
 
@@ -1548,7 +1548,7 @@
                         const selector = selectors[index];
                         const combinations = [];
                         
-                        selector.selectedValues.forEach(value => {
+                        selector.values.forEach(value => {
                             const newCombination = { ...currentCombination, [selector.column]: value };
                             combinations.push(...generateCombinations(selectors, newCombination, index + 1));
                         });
@@ -1556,7 +1556,7 @@
                         return combinations;
                     }
                     
-                    const validSelectors = flexibleHeaderSelectors.filter(s => s.column && s.selectedValues.length > 0);
+                    const validSelectors = flexibleHeaderSelectors.filter(s => s.column && s.values.length > 0);
                     const combinations = generateCombinations(validSelectors);
                     
                     console.log(`生成的组合数量: ${combinations.length}`);
