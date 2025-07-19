@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据预测 - DaPlot</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" defer></script>
     <style>
         * {
             margin: 0;
@@ -758,9 +758,29 @@
         let predictionData = null;
         let currentTab = 'original';
 
+        // 检查 Plotly 是否已加载
+        function waitForPlotly() {
+            return new Promise((resolve) => {
+                if (typeof Plotly !== 'undefined') {
+                    resolve();
+                } else {
+                    const checkInterval = setInterval(() => {
+                        if (typeof Plotly !== 'undefined') {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 50);
+                }
+            });
+        }
+
         // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             showMessage('正在初始化页面...', 'info');
+
+            // 等待 Plotly 加载完成
+            await waitForPlotly();
+            console.log('Plotly 已加载完成');
 
             checkFormValidity();
 
@@ -1408,8 +1428,12 @@
                     displaylogo: false
                 };
 
-                await Plotly.newPlot('plotDiv', traces, layout, config);
-                currentPlot = { traces, layout, config };
+                if (typeof Plotly !== 'undefined') {
+                    await Plotly.newPlot('plotDiv', traces, layout, config);
+                    currentPlot = { traces, layout, config };
+                } else {
+                    throw new Error('Plotly 库未加载');
+                }
 
                 // 显示图表控制区域
                 document.getElementById('chartControls').style.display = 'block';
@@ -2043,7 +2067,11 @@
                     }
                 };
 
-                await Plotly.newPlot('plotDiv', allTraces, layout, currentPlot.config);
+                if (typeof Plotly !== 'undefined') {
+                    await Plotly.newPlot('plotDiv', allTraces, layout, currentPlot.config);
+                } else {
+                    throw new Error('Plotly 库未加载');
+                }
 
             } catch (error) {
                 console.error('渲染预测图表失败:', error);
@@ -2141,7 +2169,11 @@
                 // 更新currentPlot以保存新的样式
                 currentPlot = { traces: styledTraces, layout, config: currentPlot.config };
 
-                Plotly.newPlot('plotDiv', styledTraces, layout, currentPlot.config);
+                if (typeof Plotly !== 'undefined') {
+                    Plotly.newPlot('plotDiv', styledTraces, layout, currentPlot.config);
+                } else {
+                    throw new Error('Plotly 库未加载');
+                }
 
             } catch (error) {
                 console.error('应用样式失败:', error);
@@ -2188,7 +2220,7 @@
 
         // 工具栏功能
         function resetZoom() {
-            if (currentPlot) {
+            if (currentPlot && typeof Plotly !== 'undefined') {
                 Plotly.relayout('plotDiv', {
                     'xaxis.autorange': true,
                     'yaxis.autorange': true
@@ -2197,7 +2229,7 @@
         }
 
         function downloadPNG() {
-            if (currentPlot) {
+            if (currentPlot && typeof Plotly !== 'undefined') {
                 Plotly.downloadImage('plotDiv', {
                     format: 'png',
                     width: 1200,
@@ -2208,7 +2240,7 @@
         }
 
         function downloadSVG() {
-            if (currentPlot) {
+            if (currentPlot && typeof Plotly !== 'undefined') {
                 Plotly.downloadImage('plotDiv', {
                     format: 'svg',
                     width: 1200,

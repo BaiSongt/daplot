@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 数据操作 (SheetJS + Luckysheet + 后端集成)</title>
 
-    <!-- Luckysheet CSS - 使用更稳定的CDN源 -->
-    <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/plugins/css/pluginsCss.css" />
-    <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/plugins/plugins.css" />
-    <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/css/luckysheet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/luckysheet@latest/dist/assets/iconfont/iconfont.css" />
+    <!-- Luckysheet CSS - 使用更稳定的CDN源，添加错误处理 -->
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css" onerror="console.warn('Luckysheet pluginsCss.css 加载失败')" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/plugins/plugins.css" onerror="console.warn('Luckysheet plugins.css 加载失败')" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/css/luckysheet.css" onerror="console.warn('Luckysheet luckysheet.css 加载失败')" />
+    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css" onerror="console.warn('Luckysheet iconfont.css 加载失败，将使用回退字体')" />
 
     <style>
         * {
@@ -392,9 +392,49 @@
             background: #f8d7da;
             color: #721c24;
         }
+
+        /* 字体加载失败的回退样式 */
+        @font-face {
+            font-family: 'FontAwesome';
+            src: local('Arial'), local('sans-serif');
+            font-display: swap;
+        }
+
+        /* Luckysheet 字体回退 */
+        .luckysheet-icon {
+            font-family: 'FontAwesome', Arial, sans-serif !important;
+        }
+
+        /* 网络慢时的加载提示 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <!-- 加载提示覆盖层 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div style="text-align: center;">
+            <div style="margin-bottom: 10px;">⏳ 正在加载 Luckysheet...</div>
+            <div style="font-size: 14px; color: #666;">网络较慢时可能需要等待几秒钟</div>
+        </div>
+    </div>
+
     <div class="page-wrapper">
         <div class="sidebar" id="sidebar">
             <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起/展开侧边栏">◀</button>
@@ -493,11 +533,11 @@
     </div>
 
     <!-- SheetJS - 使用更稳定的CDN源 -->
-    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js" onerror="console.error('SheetJS 加载失败')"></script>
 
-    <!-- Luckysheet JavaScript - 使用更稳定的CDN源 -->
-    <script src="https://unpkg.com/luckysheet@latest/dist/plugins/js/plugin.js"></script>
-    <script src="https://unpkg.com/luckysheet@latest/dist/luckysheet.umd.js"></script>
+    <!-- Luckysheet JavaScript - 使用固定版本，添加错误处理 -->
+    <script src="https://unpkg.com/luckysheet@2.1.13/dist/plugins/js/plugin.js" onerror="console.error('Luckysheet plugin.js 加载失败')"></script>
+    <script src="https://unpkg.com/luckysheet@2.1.13/dist/luckysheet.umd.js" onerror="console.error('Luckysheet 主文件加载失败')"></script>
 
     <script>
         // 全局变量
@@ -511,18 +551,75 @@
         // API配置
         const API_BASE_URL = 'http://localhost:8001';
 
+        // 等待 Luckysheet 加载完成
+        function waitForLuckysheet() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 50; // 最多等待5秒
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                
+                const checkLuckysheet = () => {
+                    attempts++;
+                    if (typeof luckysheet !== 'undefined' && luckysheet.create) {
+                        console.log('Luckysheet 加载完成');
+                        if (loadingOverlay) {
+                            loadingOverlay.classList.add('hidden');
+                        }
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        console.error('Luckysheet 加载超时');
+                        if (loadingOverlay) {
+                            loadingOverlay.innerHTML = '<div style="text-align: center; color: #dc3545;"><div>❌ Luckysheet 加载失败</div><div style="font-size: 14px; margin-top: 10px;">请检查网络连接并刷新页面重试</div></div>';
+                        }
+                        reject(new Error('Luckysheet 加载超时，请检查网络连接'));
+                    } else {
+                        setTimeout(checkLuckysheet, 100);
+                    }
+                };
+                
+                checkLuckysheet();
+            });
+        }
+
         // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
-            const fileInput = document.getElementById('fileInput');
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // 等待 Luckysheet 加载完成
+                await waitForLuckysheet();
+                
+                const fileInput = document.getElementById('fileInput');
 
-            // 文件选择事件
-            fileInput.addEventListener('change', handleFileSelect);
+                // 文件选择事件
+                fileInput.addEventListener('change', handleFileSelect);
 
-            // 加载文件列表
-            refreshFileList();
+                // 加载文件列表
+                refreshFileList();
 
-            // 设置自动保存
-            setupAutoSave();
+                // 设置自动保存
+                setupAutoSave();
+                
+                console.log('页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                showMessage('页面初始化失败: ' + error.message, 'error');
+            }
+        });
+
+        // 处理异步响应错误（Chrome 扩展相关）
+        window.addEventListener('error', function(event) {
+            if (event.message && event.message.includes('message channel closed')) {
+                console.warn('检测到 Chrome 扩展异步响应错误，这通常不影响页面功能:', event.message);
+                return true; // 阻止错误冒泡
+            }
+        });
+
+        // 处理未捕获的 Promise 拒绝
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event.reason && event.reason.message && event.reason.message.includes('message channel closed')) {
+                console.warn('检测到 Chrome 扩展 Promise 拒绝错误，这通常不影响页面功能:', event.reason.message);
+                event.preventDefault(); // 阻止错误显示
+                return;
+            }
         });
 
         function handleFileSelect(e) {
@@ -705,14 +802,23 @@
             }
 
             // 销毁现有的Luckysheet实例
-            if (isLuckysheetInitialized) {
-                luckysheet.destroy();
+            if (isLuckysheetInitialized && typeof luckysheet !== 'undefined' && luckysheet.destroy) {
+                try {
+                    luckysheet.destroy();
+                } catch (error) {
+                    console.warn('销毁 Luckysheet 实例时出错:', error);
+                }
             }
 
             // 清空容器
             const container = document.getElementById('luckysheet');
             container.innerHTML = '';
             container.className = '';
+
+            // 检查 Luckysheet 是否可用
+            if (typeof luckysheet === 'undefined' || !luckysheet.create) {
+                throw new Error('Luckysheet 未正确加载，请刷新页面重试');
+            }
 
             // 初始化Luckysheet
             const options = {
@@ -777,11 +883,16 @@
                 }
             };
 
-            luckysheet.create(options);
-            isLuckysheetInitialized = true;
-            hasUnsavedChanges = false;
-
-            showMessage('文件加载成功！', 'success');
+            try {
+                luckysheet.create(options);
+                isLuckysheetInitialized = true;
+                hasUnsavedChanges = false;
+                showMessage('文件加载成功！', 'success');
+            } catch (error) {
+                console.error('Luckysheet 创建失败:', error);
+                showMessage('表格创建失败: ' + error.message, 'error');
+                throw error;
+            }
         }
 
         async function deleteFileFromBackend(fileId) {

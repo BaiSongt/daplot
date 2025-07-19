@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 可视化绘图</title>
-    <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.26.0/plotly.min.js" defer></script>
+    <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" defer></script>
     <style>
         * {
             margin: 0;
@@ -880,10 +880,30 @@
         let allData = [];
         let currentPlot = null;
 
+        // 检查 Plotly 是否已加载
+        function waitForPlotly() {
+            return new Promise((resolve) => {
+                if (typeof Plotly !== 'undefined') {
+                    resolve();
+                } else {
+                    const checkInterval = setInterval(() => {
+                        if (typeof Plotly !== 'undefined') {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 50);
+                }
+            });
+        }
+
         // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // 显示加载指示器
             showMessage('正在初始化页面...', 'info');
+
+            // 等待 Plotly 加载完成
+            await waitForPlotly();
+            console.log('Plotly 已加载完成');
 
             // 初始化样式控制
             initializeStyleControls();
@@ -1688,9 +1708,11 @@
                     modeBarButtonsToAdd: [
                         {
                             name: 'Download PNG',
-                            icon: Plotly.Icons.camera,
+                            icon: (typeof Plotly !== 'undefined' && Plotly.Icons) ? Plotly.Icons.camera : undefined,
                             click: function(gd) {
-                                Plotly.downloadImage(gd, {format: 'png', width: 800, height: 600, filename: 'chart'});
+                                if (typeof Plotly !== 'undefined') {
+                                    Plotly.downloadImage(gd, {format: 'png', width: 800, height: 600, filename: 'chart'});
+                                }
                             }
                         }
                     ],
@@ -1718,7 +1740,7 @@
         }
 
         function resetZoom() {
-            if (currentPlot) {
+            if (currentPlot && typeof Plotly !== 'undefined') {
                 Plotly.relayout('plotDiv', {
                     'xaxis.autorange': true,
                     'yaxis.autorange': true
@@ -1871,12 +1893,16 @@
                 });
 
                 // 重新绘制图表
-                await Plotly.redraw('plotDiv');
-                await Plotly.restyle('plotDiv', {
-                    'line.color': updatedTraces.map(t => t.line.color),
-                    'marker.color': updatedTraces.map(t => t.marker.color),
-                    'marker.symbol': updatedTraces.map(t => t.marker.symbol)
-                });
+                if (typeof Plotly !== 'undefined') {
+                    await Plotly.redraw('plotDiv');
+                    await Plotly.restyle('plotDiv', {
+                        'line.color': updatedTraces.map(t => t.line.color),
+                        'marker.color': updatedTraces.map(t => t.marker.color),
+                        'marker.symbol': updatedTraces.map(t => t.marker.symbol)
+                    });
+                } else {
+                    throw new Error('Plotly 库未加载');
+                }
 
                 // 更新currentPlot
                 currentPlot.traces = updatedTraces;
