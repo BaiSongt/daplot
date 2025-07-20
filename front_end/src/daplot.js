@@ -51,36 +51,76 @@ async function initializeDaPlot() {
 
         console.log('✅ 浏览器兼容性检查通过');
 
-        // 2. 加载核心模块（如果还没有加载）
-        const coreModules = [
+        // 2. 优先加载性能优化模块
+        await loadScript('/src/utils/performance.js').catch(error => {
+            console.warn('⚠️ 性能优化模块加载失败:', error);
+        });
+
+        // 3. 分阶段加载核心模块
+        const essentialModules = [
             '/src/utils/constants.js',
             '/src/utils/helpers.js',
+            '/src/core/EventBus.js',
+            '/src/core/AppState.js'
+        ];
+
+        const secondaryModules = [
             '/src/utils/validators.js', 
             '/src/utils/formatters.js',
             '/src/core/ConfigManager.js',
-            '/src/core/EventBus.js',
             '/src/core/ApiClient.js',
-            '/src/core/AppState.js',
-            '/src/core/DataManager.js',
+            '/src/core/DataManager.js'
+        ];
+
+        const advancedModules = [
             '/src/core/ChartEngine.js',
             '/src/core/ModuleLoader.js'
         ];
 
-        console.log('📦 开始加载核心模块...');
+        console.log('📦 开始分阶段加载核心模块...');
         
-        // 并行加载所有模块
-        await Promise.all(coreModules.map(module => {
-            // 检查模块是否已经加载
+        // 第一阶段：加载必需模块
+        console.log('🔄 阶段1: 加载必需模块...');
+        await Promise.all(essentialModules.map(module => {
             const scriptExists = document.querySelector(`script[src="${module}"]`);
             if (scriptExists) {
                 return Promise.resolve();
             }
             return loadScript(module).catch(error => {
-                console.warn(`⚠️ 模块加载失败: ${module}`, error);
-                // 不阻断其他模块的加载
+                console.warn(`⚠️ 必需模块加载失败: ${module}`, error);
                 return Promise.resolve();
             });
         }));
+
+        // 第二阶段：延迟加载次要模块
+        setTimeout(async () => {
+            console.log('🔄 阶段2: 加载次要模块...');
+            await Promise.all(secondaryModules.map(module => {
+                const scriptExists = document.querySelector(`script[src="${module}"]`);
+                if (scriptExists) {
+                    return Promise.resolve();
+                }
+                return loadScript(module).catch(error => {
+                    console.warn(`⚠️ 次要模块加载失败: ${module}`, error);
+                    return Promise.resolve();
+                });
+            }));
+        }, 100);
+
+        // 第三阶段：按需加载高级模块
+        setTimeout(async () => {
+            console.log('🔄 阶段3: 加载高级模块...');
+            await Promise.all(advancedModules.map(module => {
+                const scriptExists = document.querySelector(`script[src="${module}"]`);
+                if (scriptExists) {
+                    return Promise.resolve();
+                }
+                return loadScript(module).catch(error => {
+                    console.warn(`⚠️ 高级模块加载失败: ${module}`, error);
+                    return Promise.resolve();
+                });
+            }));
+        }, 500);
 
         console.log('✅ 核心模块加载完成');
 

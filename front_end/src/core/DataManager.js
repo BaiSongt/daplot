@@ -4,12 +4,23 @@
  */
 class DataManager {
     constructor() {
-        this.cache = new Map();
+        // 使用新的智能缓存系统
+        this.cache = window.cacheManager?.getCache('data') || new Map();
+        this.apiCache = window.cacheManager?.getCache('api') || new Map();
         this.apiClient = window.apiClient;
         this.storage = window.dataPersistence;
         this.isOnline = navigator.onLine;
         
+        // 性能优化配置
+        this.performanceConfig = {
+            enablePreload: true,
+            batchSize: 50,
+            maxConcurrentRequests: 3,
+            requestTimeout: 30000
+        };
+        
         this.initEventListeners();
+        this.initPerformanceOptimizations();
     }
 
     // 初始化事件监听
@@ -17,6 +28,7 @@ class DataManager {
         window.addEventListener('online', () => {
             this.isOnline = true;
             console.log('🌐 网络连接已恢复');
+            this.syncOfflineData();
         });
         
         window.addEventListener('offline', () => {
@@ -25,21 +37,273 @@ class DataManager {
         });
     }
 
+    // 初始化性能优化
+    initPerformanceOptimizations() {
+        // 预加载常用数据
+        if (this.performanceConfig.enablePreload) {
+            this.preloadCommonData();
+        }
+
+        // 设置请求队列管理
+        this.requestQueue = [];
+        this.activeRequests = 0;
+        
+        // 启动后台数据同步
+        this.startBackgroundSync();
+    }
+
+    // 预加载常用数据
+    async preloadCommonData() {
+        try {
+            console.log('🔄 开始预加载常用数据...');
+            
+            // 预加载文件列表
+            this.getFileList(false).catch(error => {
+                console.warn('预加载文件列表失败:', error);
+            });
+            
+            // 预加载最近使用的文件数据
+            const recentFiles = this.getRecentFiles();
+            for (const fileId of recentFiles.slice(0, 3)) {
+                this.getFileData(fileId, false).catch(error => {
+                    console.warn(`预加载文件 ${fileId} 失败:`, error);
+                });
+            }
+            
+            console.log('✅ 常用数据预加载完成');
+        } catch (error) {
+            console.warn('预加载过程中出错:', error);
+        }
+    }
+
+    // 获取最近使用的文件
+    getRecentFiles() {
+        try {
+            const recent = localStorage.getItem('daplot_recent_files');
+            return recent ? JSON.parse(recent) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    // 记录文件使用
+    recordFileUsage(fileId) {
+        try {
+            const recent = this.getRecentFiles();
+            const filtered = recent.filter(id => id !== fileId);
+            filtered.unshift(fileId);
+            
+            // 保持最近10个文件
+            const updated = filtered.slice(0, 10);
+            localStorage.setItem('daplot_recent_files', JSON.stringify(updated));
+        } catch (error) {
+            console.warn('记录文件使用失败:', error);
+        }
+    }
+
+    // 启动后台同步
+    startBackgroundSync() {
+        setInterval(() => {
+            if (this.isOnline && this.requestQueue.length === 0) {
+                this.syncCacheWithServer();
+            }
+        }, 300000); // 每5分钟同步一次
+    }
+
+    // 同步缓存与服务器
+    async syncCacheWithServer() {
+        try {
+            console.log('🔄 开始后台数据同步...');
+            
+            // 检查文件列表是否需要更新
+            const cachedFileList = this.cache.get ? this.cache.get('fileList') : this.cache.get('fileList');
+            if (cachedFileList) {
+                const freshFileList = await this.getFileList(false);
+                if (JSON.stringify(cachedFileList) !== JSON.stringify(freshFileList)) {
+                    console.log('📄 文件列表已更新');
+                    window.eventBus?.emit('fileList.updated', freshFileList);
+                }
+            }
+            
+            console.log('✅ 后台数据同步完成');
+        } catch (error) {
+            console.warn('后台同步失败:', error);
+        }
+    }
+
+    // 同步离线数据
+    async syncOfflineData() {
+        try {
+            console.log('🔄 开始同步离线数据...');
+            
+            // 获取离线期间的操作记录
+            const offlineOperations = this.getOfflineOperations();
+            
+            for (const operation of offlineOperations) {
+                try {
+                    await this.executeOperation(operation);
+                    this.removeOfflineOperation(operation.id);
+                } catch (error) {
+                    console.warn('同步离线操作失败:', operation, error);
+                }
+            }
+            
+            console.log('✅ 离线数据同步完成');
+        } catch (error) {
+            console.warn('离线数据同步失败:', error);
+        }
+    }
+
+    // 智能请求管理
+    async makeRequest(url, options = {}) {
+        return new Promise((resolve, reject) => {
+            const request = {
+                url,
+                options,
+                resolve,
+                reject,
+                timestamp: Date.now()
+            };
+
+            // 如果当前活跃请求数超过限制，加入队列
+            if (this.activeRequests >= this.performanceConfig.maxConcurrentRequests) {
+                this.requestQueue.push(request);
+                return;
+            }
+
+            this.executeRequest(request);
+        });
+    }
+
+    // 执行请求
+    async executeRequest(request) {
+        this.activeRequests++;
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, request.options.timeout || this.performanceConfig.requestTimeout);
+
+            const response = await fetch(request.url, {
+                ...request.options,
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+            request.resolve(response);
+        } catch (error) {
+            request.reject(error);
+        } finally {
+            this.activeRequests--;
+            this.processRequestQueue();
+        }
+    }
+
+    // 处理请求队列
+    processRequestQueue() {
+        while (this.requestQueue.length > 0 && this.activeRequests < this.performanceConfig.maxConcurrentRequests) {
+            const request = this.requestQueue.shift();
+            this.executeRequest(request);
+        }
+    }
+
+    // 批量数据处理
+    async processBatchData(data, processor, batchSize = this.performanceConfig.batchSize) {
+        const results = [];
+        
+        for (let i = 0; i < data.length; i += batchSize) {
+            const batch = data.slice(i, i + batchSize);
+            const batchResults = await Promise.all(
+                batch.map(item => processor(item))
+            );
+            results.push(...batchResults);
+            
+            // 让出控制权，避免阻塞UI
+            if (i + batchSize < data.length) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        }
+        
+        return results;
+    }
+
+    // 获取离线操作记录
+    getOfflineOperations() {
+        try {
+            const operations = localStorage.getItem('daplot_offline_operations');
+            return operations ? JSON.parse(operations) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    // 移除离线操作记录
+    removeOfflineOperation(operationId) {
+        try {
+            const operations = this.getOfflineOperations();
+            const filtered = operations.filter(op => op.id !== operationId);
+            localStorage.setItem('daplot_offline_operations', JSON.stringify(filtered));
+        } catch (error) {
+            console.warn('移除离线操作记录失败:', error);
+        }
+    }
+
+    // 执行操作
+    async executeOperation(operation) {
+        switch (operation.type) {
+            case 'upload':
+                return await this.uploadFile(operation.data);
+            case 'delete':
+                return await this.deleteFile(operation.data.fileId);
+            case 'update':
+                return await this.updateFileData(operation.data.fileId, operation.data.data);
+            default:
+                throw new Error(`未知操作类型: ${operation.type}`);
+        }
+    }
+
     // 获取文件列表
     async getFileList(useCache = true) {
+        const startTime = performance.now();
+        
         try {
-            if (useCache && this.cache.has('fileList')) {
-                return this.cache.get('fileList');
+            // 使用智能缓存系统
+            const cacheKey = 'fileList';
+            
+            if (useCache) {
+                const cached = this.cache.get ? this.cache.get(cacheKey) : this.cache.get(cacheKey);
+                if (cached) {
+                    console.log(`📋 文件列表缓存命中 (${(performance.now() - startTime).toFixed(2)}ms)`);
+                    return cached;
+                }
             }
 
             let fileList = [];
             
             if (this.isOnline) {
-                const response = await fetch(`${window.appState.getState('settings').apiBaseUrl}/api/files`);
-                if (response.ok) {
-                    const data = await response.json();
-                    fileList = data.files || [];
-                    this.cache.set('fileList', fileList);
+                try {
+                    const apiUrl = `${window.appState?.getState('settings')?.apiBaseUrl || 'http://localhost:8001'}/api/files`;
+                    const response = await this.makeRequest(apiUrl, {
+                        timeout: this.performanceConfig.requestTimeout
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        fileList = data.files || [];
+                        
+                        // 使用智能缓存存储
+                        if (this.cache.set) {
+                            this.cache.set(cacheKey, fileList, 300000); // 5分钟TTL
+                        } else {
+                            this.cache.set(cacheKey, fileList);
+                        }
+                        
+                        // 同时保存到本地存储作为备份
+                        this.storage?.saveFileList?.(fileList);
+                    }
+                } catch (error) {
+                    console.warn('在线获取文件列表失败:', error);
                 }
             }
             
