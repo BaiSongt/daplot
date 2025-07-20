@@ -278,7 +278,8 @@ class EventBus {
     }
 }
 
-// 全局实例
+// 导出类和全局实例
+window.EventBus = EventBus;
 window.eventBus = new EventBus();
 
 // 开发环境启用调试

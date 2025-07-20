@@ -408,5 +408,6 @@ class ConfigManager {
     }
 }
 
-// 全局实例
+// 导出类和全局实例
+window.ConfigManager = ConfigManager;
 window.configManager = new ConfigManager();

@@ -133,11 +133,14 @@ class ChartEngine {
 
     // 加载本地Plotly
     async loadLocalPlotly() {
+        // 如果Plotly已经通过script标签加载，直接返回true
+        if (window.Plotly) {
+            return true;
+        }
+        
         return new Promise((resolve) => {
             const script = document.createElement('script');
-            script.src = '/assets/libs/plotly.min.js';
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
+            script.src = 'assets/libs/plotly.min.js';
             
             // 设置超时
             const timeout = setTimeout(() => {
@@ -148,6 +151,11 @@ class ChartEngine {
             script.onload = () => {
                 clearTimeout(timeout);
                 resolve(true);
+            };
+            
+            script.onerror = () => {
+                clearTimeout(timeout);
+                resolve(false);
             };
             
             document.head.appendChild(script);
@@ -585,5 +593,6 @@ class ChartEngine {
     }
 }
 
-// 全局实例
+// 导出类和全局实例
+window.ChartEngine = ChartEngine;
 window.chartEngine = new ChartEngine();

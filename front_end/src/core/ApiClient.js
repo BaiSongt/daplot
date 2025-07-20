@@ -48,12 +48,19 @@ class ApiClient {
         return finalResponse;
     }
 
+    // 设置基础URL
+    setBaseURL(baseURL) {
+        this.baseURL = baseURL;
+    }
+
     // 构建完整URL
     buildURL(url) {
         if (url.startsWith('http')) {
             return url;
         }
-        return `${this.baseURL}${url.startsWith('/') ? url : '/' + url}`;
+        // 如果没有设置baseURL，使用默认值
+        const base = this.baseURL || 'http://localhost:8001';
+        return `${base}${url.startsWith('/') ? url : '/' + url}`;
     }
 
     // 创建AbortController用于取消请求
@@ -68,13 +75,18 @@ class ApiClient {
 
     // 核心请求方法
     async request(url, options = {}) {
+        // 特殊处理FormData请求，不设置默认的Content-Type
+        const isFormData = options.body instanceof FormData;
+        
         const config = {
             ...this.defaultOptions,
             ...options,
-            headers: {
-                ...this.defaultOptions.headers,
-                ...options.headers
-            }
+            headers: isFormData ? 
+                { ...options.headers } : // FormData请求不使用默认headers
+                {
+                    ...this.defaultOptions.headers,
+                    ...options.headers
+                }
         };
 
         // 应用请求拦截器
@@ -180,8 +192,25 @@ class ApiClient {
 
     // 文件上传
     async upload(url, file, options = {}) {
+        console.log('🔄 ApiClient.upload 开始');
+        console.log('📁 文件信息:', {
+            name: file?.name,
+            size: file?.size,
+            type: file?.type,
+            lastModified: file?.lastModified
+        });
+        
+        if (!file) {
+            throw new Error('文件对象为空');
+        }
+        
         const formData = new FormData();
         formData.append('file', file);
+        
+        console.log('📦 FormData 内容:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`  ${key}:`, value);
+        }
 
         // 添加额外的表单字段
         if (options.fields) {
@@ -190,14 +219,19 @@ class ApiClient {
             });
         }
 
+        // 创建新的headers对象，排除Content-Type
+        const headers = { ...options.headers };
+        delete headers['Content-Type']; // 让浏览器自动设置multipart/form-data
+        delete headers['content-type']; // 确保删除小写版本
+
+        console.log('🌐 请求头:', headers);
+        console.log('🚀 发送上传请求到:', this.buildURL(url));
+
         return this.request(url, {
             ...options,
             method: 'POST',
             body: formData,
-            headers: {
-                // 不设置Content-Type，让浏览器自动设置multipart/form-data
-                ...options.headers
-            }
+            headers: headers
         });
     }
 
@@ -232,7 +266,7 @@ class ApiClient {
 }
 
 // 创建默认实例
-const apiClient = new ApiClient(window.appState?.getState('settings')?.apiBaseUrl || 'http://localhost:8001');
+const apiClient = new ApiClient('http://localhost:8001');
 
 // 添加默认的请求拦截器
 apiClient.addRequestInterceptor(async (config) => {
@@ -253,5 +287,6 @@ apiClient.addResponseInterceptor(async (response) => {
     return response;
 });
 
-// 全局实例
+// 导出类和全局实例
+window.ApiClient = ApiClient;
 window.apiClient = apiClient;

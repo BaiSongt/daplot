@@ -139,5 +139,6 @@ class AppState {
     }
 }
 
-// 全局实例
+// 导出类和全局实例
+window.AppState = AppState;
 window.appState = new AppState();

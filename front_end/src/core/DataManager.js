@@ -545,5 +545,6 @@ class DataManager {
     }
 }
 
-// 全局实例
+// 导出类和全局实例
+window.DataManager = DataManager;
 window.dataManager = new DataManager();
