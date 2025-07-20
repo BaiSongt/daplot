@@ -4,63 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 可视化绘图</title>
-    <!-- 快速修复脚本 -->
-    <script src="assets/js/lib-loader.js"></script>
-    <script src="assets/js/data-persistence.js"></script>
-    <script src="assets/js/page-bridge.js"></script>
-    <script src="assets/js/page-state-manager.js"></script>
-    <script>
-        // Plotly备用加载机制
-        function loadPlotlyFallback() {
-            console.warn('⚠️ 主要Plotly CDN加载失败，尝试备用CDN...');
-
-            // 移除失败的脚本
-            const failedScript = document.getElementById('plotlyMainScript');
-            if (failedScript) {
-                failedScript.remove();
-            }
-
-            // 尝试备用CDN列表
-            const fallbackCDNs = [
-                'https://unpkg.com/plotly.js@2.26.0/dist/plotly.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js',
-                'https://cdn.jsdelivr.net/npm/plotly.js@2.26.0/dist/plotly.min.js'
-            ];
-
-            let currentIndex = 0;
-
-            function tryNextCDN() {
-                if (currentIndex >= fallbackCDNs.length) {
-                    console.error('❌ 所有Plotly CDN都加载失败');
-                    if (typeof updateLoadingText === 'function') {
-                        updateLoadingText('Plotly加载失败，请检查网络连接');
-                    }
-                    return;
-                }
-
-                const script = document.createElement('script');
-                script.src = fallbackCDNs[currentIndex];
-                script.id = `plotlyFallback${currentIndex}`;
-
-                script.onload = function() {
-                    console.log(`✅ 备用CDN加载成功: ${fallbackCDNs[currentIndex]}`);
-                };
-
-                script.onerror = function() {
-                    console.warn(`⚠️ 备用CDN ${currentIndex + 1} 加载失败: ${fallbackCDNs[currentIndex]}`);
-                    script.remove();
-                    currentIndex++;
-                    setTimeout(tryNextCDN, 1000); // 1秒后尝试下一个
-                };
-
-                document.head.appendChild(script);
-                console.log(`🔄 尝试备用CDN ${currentIndex + 1}: ${fallbackCDNs[currentIndex]}`);
-            }
-
-            // 延迟1秒后开始尝试备用CDN
-            setTimeout(tryNextCDN, 1000);
-        }
-    </script>
+    
+    <!-- 新的模块化架构 -->
+    <script src="src/utils/constants.js"></script>
+    <script src="src/utils/helpers.js"></script>
+    <script src="src/utils/validators.js"></script>
+    <script src="src/utils/formatters.js"></script>
+    <script src="src/core/ConfigManager.js"></script>
+    <script src="src/core/EventBus.js"></script>
+    <script src="src/core/ApiClient.js"></script>
+    <script src="src/core/AppState.js"></script>
+    <script src="src/core/DataManager.js"></script>
+    <script src="src/core/ChartEngine.js"></script>
+    <script src="src/components/LoadingSpinner.js"></script>
+    <script src="src/components/StatusMessage.js"></script>
+    <script src="src/components/ErrorBoundary.js"></script>
+    <script src="src/components/FileSelector.js"></script>
+    <script src="src/components/DataFilter.js"></script>
+    <script src="src/components/ChartConfig.js"></script>
+    <script src="src/daplot.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -72,49 +35,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #333;
             background: #f8f9fa;
-        }
-
-        /* 加载覆盖层 */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(248, 249, 250, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            font-size: 14px;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e9ecef;
-            border-top: 4px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #6c757d;
-            margin-bottom: 10px;
-        }
-
-        .loading-tip {
-            color: #868e96;
-            font-size: 12px;
-            text-align: center;
-            max-width: 300px;
+            overflow-x: hidden;
         }
 
         .page-wrapper {
@@ -178,49 +99,11 @@
             font-weight: 600;
         }
 
-        .content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .navbar {
-            background: #343a40;
-            color: white;
-            padding: 10px 15px;
-            border-bottom: 1px solid #dee2e6;
-            font-size: 14px;
-        }
-
-        .control-panel {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            border-bottom: 1px solid #dee2e6;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            font-size: 11px;
-        }
-
-        .main-content {
-            width: 100%;
-            padding: 15px;
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 15px;
-        }
-
         .nav-bar {
-            background: none;
-            border-radius: 0;
-            padding: 0;
-            margin-bottom: 0;
-            box-shadow: none;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            flex-grow: 1;
+            margin-bottom: 20px;
         }
 
         .nav-btn {
@@ -231,7 +114,6 @@
             text-decoration: none;
             border-radius: 8px;
             transition: all 0.3s ease;
-            margin-bottom: 8px;
             background: rgba(255, 255, 255, 0.8);
             border: none;
             cursor: pointer;
@@ -256,163 +138,40 @@
             text-align: center;
         }
 
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
         .controls-panel {
             background: white;
-            border-radius: 6px;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            height: fit-content;
+            border-radius: 8px;
             border: 1px solid #e9ecef;
+            overflow: hidden;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
         }
 
         .chart-area {
-            flex: 1;
             background: white;
-            border-radius: 6px;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 8px;
             border: 1px solid #e9ecef;
+            padding: 20px;
             min-height: 600px;
-        }
-
-        .toolbar {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
-        }
-
-        .toolbar-btn {
-            padding: 6px 12px;
-            border: 1px solid #dee2e6;
-            border-radius: 3px;
-            background: white;
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.2s;
-        }
-
-        .toolbar-btn:hover {
-            background: #e9ecef;
-            border-color: #adb5bd;
-        }
-
-        .section {
-            background: #f8f9fa;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #e9ecef;
-        }
-
-        .section h3 {
-            margin-bottom: 12px;
-            color: #495057;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .form-group {
-            margin-bottom: 10px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 3px;
-            color: #495057;
-            font-weight: 500;
-            font-size: 11px;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 5px 8px;
-            border: 1px solid #ced4da;
-            border-radius: 3px;
-            font-size: 11px;
-            background: white;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #4a90e2;
-            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
-        }
-
-        .tag-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .tag {
-            background: #e9ecef;
-            color: #495057;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-
-        .tag:hover {
-            background: #dee2e6;
-        }
-
-        .tag.selected {
-            background: #4a90e2;
-            color: white;
-            border-color: #357abd;
-        }
-
-        .btn {
-            background: #4a90e2;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 11px;
-            transition: background 0.3s ease;
-            width: 100%;
-        }
-
-        .btn:hover {
-            background: #357abd;
-        }
-
-        .btn:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-
-        .status-message {
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            display: none;
-        }
-
-        .status-message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status-message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .status-message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            flex-direction: column;
         }
 
         .chart-toolbar {
@@ -421,559 +180,177 @@
             margin-bottom: 15px;
             padding: 10px;
             background: #f8f9fa;
-            border-radius: 4px;
+            border-radius: 6px;
             border: 1px solid #e9ecef;
         }
 
         .toolbar-btn {
-            background: white;
-            border: 1px solid #ced4da;
             padding: 6px 12px;
+            border: 1px solid #dee2e6;
             border-radius: 4px;
+            background: white;
             cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
+            font-size: 12px;
+            transition: all 0.2s;
+            color: #495057;
         }
 
         .toolbar-btn:hover {
             background: #e9ecef;
+            border-color: #adb5bd;
         }
 
-        .toolbar-btn.active {
-            background: #4a90e2;
-            color: white;
-            border-color: #357abd;
-        }
-
-        .curve-control-panel {
-            display: none;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .curve-control-panel h4 {
-            margin: 0 0 15px 0;
-            color: #495057;
-            font-size: 0.9rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .curve-control-panel h4:hover {
-            color: #007bff;
-        }
-
-        .curve-control-toggle {
-            font-size: 0.8rem;
-            transition: transform 0.2s ease;
-        }
-
-        .curve-control-toggle.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        .curve-control-content {
-            max-height: 300px;
-            overflow-y: auto;
-            transition: max-height 0.3s ease;
-        }
-
-        .curve-control-content.collapsed {
-            max-height: 0;
-            overflow: hidden;
-        }
-
-        .curve-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            margin-bottom: 8px;
-            transition: background-color 0.2s ease;
-        }
-
-        .curve-item:hover {
-            background: #f8f9fa;
-        }
-
-        .curve-name {
+        .chart-container {
             flex: 1;
-            font-size: 0.8rem;
-            color: #495057;
-            font-weight: 500;
-            min-width: 120px;
-        }
-
-        .curve-color-picker {
-            width: 30px;
-            height: 25px;
-            border: 1px solid #ced4da;
-            border-radius: 3px;
-            cursor: pointer;
-            padding: 0;
-            transition: border-color 0.2s ease;
-        }
-
-        .curve-color-picker:hover {
-            border-color: #007bff;
-        }
-
-        .curve-marker-select {
-            width: 100px;
-            padding: 3px 6px;
-            border: 1px solid #ced4da;
-            border-radius: 3px;
-            font-size: 0.75rem;
-            transition: border-color 0.2s ease;
-        }
-
-        .curve-marker-select:hover,
-        .curve-marker-select:focus {
-            border-color: #007bff;
-            outline: none;
-        }
-
-        .curve-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .curve-control-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #dee2e6;
-        }
-
-        .curve-control-buttons .btn {
-            font-size: 0.8rem;
-            padding: 4px 8px;
-        }
-
-        /* 灵活表头选择管理器样式 */
-        .flexible-header-manager {
-            background: white;
+            min-height: 500px;
             border: 1px solid #e9ecef;
-            border-radius: 4px;
-            padding: 10px;
-        }
-
-        .manager-header {
+            border-radius: 6px;
+            background: #fafafa;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .manager-header span {
-            font-size: 11px;
-            color: #495057;
-            font-weight: 500;
-        }
-
-        .btn-small {
-            padding: 4px 8px;
-            font-size: 11px;
-            width: auto;
-        }
-
-        .flexible-header-list {
-            min-height: 20px;
-        }
-
-        .flexible-header-item {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 8px;
+            justify-content: center;
             position: relative;
         }
 
-        .flexible-header-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .header-item-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .header-item-controls select {
-            flex: 1;
-            min-width: 120px;
-        }
-
-        .remove-header-btn {
-            background: #dc3545;
-            border-color: #dc3545;
-            color: white;
-            padding: 4px 8px;
-            font-size: 10px;
-            border-radius: 3px;
-            cursor: pointer;
-            border: none;
-            transition: background 0.3s ease;
-        }
-
-        .remove-header-btn:hover {
-            background: #c82333;
-        }
-
-        .header-values-container {
-            margin-top: 8px;
-        }
-
-        .header-values-label {
-            font-size: 10px;
-            color: #6c757d;
-            margin-bottom: 4px;
-            display: block;
-        }
-
-        .global-indicator {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border: 1px dashed #dee2e6;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-
-        /* 图表上方控制区域样式 */
-        .chart-controls {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
-            padding: 12px;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .style-controls {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .style-group {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .style-group label {
-            font-size: 0.8rem;
-            margin: 0;
-            white-space: nowrap;
-        }
-
-        .style-group select,
-        .style-group input {
-            font-size: 0.8rem;
-            padding: 2px 6px;
-            border: 1px solid #ced4da;
-            border-radius: 3px;
-            min-width: 80px;
-        }
-
-        .style-group input[type="number"] {
-            width: 60px;
-        }
-
-        .apply-buttons {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .apply-buttons .btn {
-            font-size: 0.8rem;
-            padding: 4px 12px;
-        }
-
-        #plotDiv {
-            width: 100%;
-            height: 500px;
-        }
-
-        .no-data-message {
+        .no-chart-message {
             text-align: center;
             color: #6c757d;
-            padding: 50px;
-            font-style: italic;
+            padding: 40px;
         }
 
-        .flexible-selector {
-            background: #e3f2fd;
-            border: 1px solid #bbdefb;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .flexible-selector h4 {
-            color: #1565c0;
+        .no-chart-message h3 {
             margin-bottom: 10px;
-            font-size: 13px;
+            font-size: 18px;
         }
 
-        .header-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
+        .no-chart-message p {
+            font-size: 14px;
+            line-height: 1.5;
         }
 
-        .header-tag {
-            background: #e3f2fd;
-            color: #1565c0;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid #bbdefb;
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 300px 1fr;
+                gap: 15px;
+            }
         }
 
-        .header-tag:hover {
-            background: #bbdefb;
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+            
+            .sidebar:not(.collapsed) {
+                width: 250px;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+                padding: 15px;
+            }
+            
+            .controls-panel {
+                position: static;
+            }
         }
 
-        .header-tag.selected {
-            background: #1976d2;
-            color: white;
-            border-color: #1565c0;
+        /* 加载状态样式 */
+        .loading-state {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* 错误状态样式 */
+        .error-state {
+            border-color: #dc3545;
+            background: #f8d7da;
         }
     </style>
-    <!-- DaPlot 快速修复脚本 -->
-    <script src="/assets/js/lib-loader.js"></script>
-    <script src="/assets/js/data-persistence.js"></script>
-    <script src="/assets/js/page-bridge.js"></script>
 </head>
 <body>
-    <!-- 加载覆盖层 -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">正在加载可视化页面...</div>
-        <div class="loading-tip">正在加载Plotly图表库和文件数据，请稍候</div>
-    </div>
+    <!-- 全局加载遮罩 -->
+    <div id="global-loading" style="display: none;"></div>
+    
+    <!-- 全局错误边界 -->
+    <div id="global-error-boundary" style="display: none;"></div>
 
     <div class="page-wrapper">
+        <!-- 侧边栏 -->
         <div class="sidebar" id="sidebar">
-            <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起/展开侧边栏">◀</button>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+            
             <div class="sidebar-content">
                 <div class="sidebar-header">
                     <h1>DaPlot</h1>
                 </div>
-                <nav class="nav-bar">
-                <a href="index.html" class="nav-btn">
-                    <i>🏠</i>
-                    <span>首页</span>
-                </a>
-                <a href="data_integrated.html" class="nav-btn">
-                    <i>📊</i>
-                    <span>数据操作</span>
-                </a>
-                <a href="visualization.html" class="nav-btn active">
-                    <i>📈</i>
-                    <span>可视化绘图</span>
-                </a>
-                <a href="prediction.html" class="nav-btn">
-                    <i>🔮</i>
-                    <span>数据预测</span>
-                </a>
-                <a href="donate.html" class="nav-btn">
-                    <i>❤️</i>
-                    <span>捐赠支持</span>
-                </a>
-            </nav>
 
+                <nav class="nav-bar">
+                    <a href="index.html" class="nav-btn">
+                        <i>🏠</i>
+                        <span>首页</span>
+                    </a>
+                    <a href="data_integrated.html" class="nav-btn">
+                        <i>📊</i>
+                        <span>数据操作</span>
+                    </a>
+                    <a href="visualization.html" class="nav-btn active">
+                        <i>📈</i>
+                        <span>可视化绘图</span>
+                    </a>
+                    <a href="prediction.html" class="nav-btn">
+                        <i>🔮</i>
+                        <span>数据预测</span>
+                    </a>
+                    <a href="donate.html" class="nav-btn">
+                        <i>❤️</i>
+                        <span>捐赠支持</span>
+                    </a>
+                </nav>
+
+                <!-- 文件选择器组件容器 -->
+                <div id="file-selector-container"></div>
+
+                <!-- 数据筛选器组件容器 -->
+                <div id="data-filter-container"></div>
             </div>
         </div>
 
+        <!-- 主内容区 -->
         <div class="content">
             <div class="main-content">
+                <!-- 控制面板 -->
                 <div class="controls-panel">
-                    <div class="status-message" id="statusMessage"></div>
-
-                    <div class="section">
-                        <h3 style="font-size: 13px; margin-bottom: 8px;">📁 文件选择</h3>
-                        <div class="form-group">
-                            <label for="fileSelector">选择数据文件:</label>
-                            <select id="fileSelector" class="form-control" onchange="switchFile()">
-                                <option value="">请选择数据文件</option>
-                            </select>
-                        </div>
-                        <div id="currentFileInfo" style="font-size: 10px; color: #666; margin-top: 3px; padding: 3px; background: #f8f9fa; border-radius: 2px;"></div>
-                    </div>
-
-                    <div class="section">
-                        <h3 style="font-size: 13px; margin-bottom: 8px;">🎯 灵活表头选择管理</h3>
-                        <div class="flexible-header-manager">
-                            <div class="manager-header">
-                                <span>当前筛选条件 (不选择则默认全局)</span>
-                                <button class="btn btn-small" onclick="addFlexibleHeaderSelector()" style="background-color: #28a745; border-color: #28a745; font-size: 11px; padding: 4px 8px;">+ 添加筛选</button>
-                            </div>
-                            <div id="flexibleHeaderList" class="flexible-header-list">
-                                <!-- 动态生成的灵活表头选择器将在这里显示 -->
-                            </div>
-                            <div class="global-indicator" id="globalIndicator" style="display: block;">
-                                <span style="color: #6c757d; font-size: 11px;">📊 当前为全局模式 - 显示所有数据</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="section">
-                        <h3 style="font-size: 13px; margin-bottom: 8px;">📊 坐标轴设置</h3>
-                        <div class="form-group">
-                            <label for="xAxis">X轴:</label>
-                            <select id="xAxis" class="form-control">
-                                <option value="">请选择X轴变量</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="yAxis">Y轴:</label>
-                            <select id="yAxis" class="form-control">
-                                <option value="">请选择Y轴变量</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button class="btn" id="generateChart" onclick="generateChart()" disabled>
-                            生成图表
-                        </button>
-                    </div>
+                    <!-- 图表配置组件容器 -->
+                    <div id="chart-config-container"></div>
                 </div>
 
+                <!-- 图表区域 -->
                 <div class="chart-area">
-                    <div id="chartToolbar" class="toolbar">
-                        <button class="toolbar-btn" onclick="resetZoom()">🔍 重置缩放</button>
-                        <button class="toolbar-btn" onclick="downloadPNG()">📷 保存PNG</button>
-                        <button class="toolbar-btn" onclick="downloadSVG()">🎨 保存SVG</button>
+                    <!-- 图表工具栏 -->
+                    <div class="chart-toolbar">
+                        <button class="toolbar-btn" onclick="resetZoom()" title="重置缩放">
+                            🔍 重置缩放
+                        </button>
+                        <button class="toolbar-btn" onclick="downloadChart('png')" title="保存为PNG">
+                            📷 保存PNG
+                        </button>
+                        <button class="toolbar-btn" onclick="downloadChart('svg')" title="保存为SVG">
+                            🎨 保存SVG
+                        </button>
+                        <button class="toolbar-btn" onclick="downloadChart('html')" title="保存为HTML">
+                            📄 保存HTML
+                        </button>
+                        <button class="toolbar-btn" onclick="toggleFullscreen()" title="全屏显示">
+                            ⛶ 全屏
+                        </button>
                     </div>
 
-                    <!-- 图表控制区域 -->
-                    <div id="chartControls" class="chart-controls" style="display: none;">
-                        <div class="style-controls">
-                            <!-- 标题和轴标签设置 -->
-                            <div class="style-group">
-                                <label for="chartTitle">图表标题:</label>
-                                <input type="text" id="chartTitle" placeholder="请输入图表标题" style="min-width: 150px;">
-                            </div>
-
-                            <div class="style-group">
-                                <label for="xAxisTitle">X轴标题:</label>
-                                <input type="text" id="xAxisTitle" placeholder="请输入X轴标题" style="min-width: 120px;">
-                            </div>
-
-                            <div class="style-group">
-                                <label for="yAxisTitle">Y轴标题:</label>
-                                <input type="text" id="yAxisTitle" placeholder="请输入Y轴标题" style="min-width: 120px;">
-                            </div>
-
-                            <div class="style-group">
-                                <label for="legendPosition">图例:</label>
-                                <select id="legendPosition">
-                                    <option value="outside-right">右侧外部</option>
-                                    <option value="inside-topright">内部右上</option>
-                                    <option value="inside-topleft">内部左上</option>
-                                    <option value="inside-bottomright">内部右下</option>
-                                    <option value="inside-bottomleft">内部左下</option>
-                                    <option value="top">顶部</option>
-                                    <option value="bottom">底部</option>
-                                </select>
-                            </div>
-
-                            <div class="style-group">
-                                <label for="lineWidth">线条:</label>
-                                <input type="number" id="lineWidth" min="1" max="8" value="2" step="1">
-                            </div>
-
-                            <div class="style-group">
-                                <label for="markerSize">标记:</label>
-                                <input type="number" id="markerSize" min="3" max="15" value="6" step="1">
-                            </div>
-
-                            <div class="style-group">
-                                <label for="markerStyle">样式:</label>
-                                <select id="markerStyle">
-                                    <option value="circle">圆形 ●</option>
-                                    <option value="square">方形 ■</option>
-                                    <option value="diamond">菱形 ♦</option>
-                                    <option value="triangle-up">上三角 ▲</option>
-                                    <option value="triangle-down">下三角 ▼</option>
-                                    <option value="cross">十字 +</option>
-                                    <option value="x">X形 ×</option>
-                                </select>
-                            </div>
-
-                            <div class="style-group">
-                                <label for="colorScheme">配色:</label>
-                                <select id="colorScheme">
-                                    <option value="default">默认配色</option>
-                                    <option value="warm">暖色调</option>
-                                    <option value="cool">冷色调</option>
-                                    <option value="pastel">柔和色</option>
-                                    <option value="bright">鲜艳色</option>
-                                    <option value="monochrome">单色调</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="apply-buttons">
-                            <button class="btn" onclick="applyStyleToChart()" style="background-color: #17a2b8; border-color: #17a2b8;">
-                                应用样式
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 曲线控制面板 -->
-                    <div id="curveControlPanel" class="curve-control-panel">
-                        <h4 onclick="toggleCurveControlPanel()">
-                            🎨 曲线样式控制
-                            <span class="curve-control-toggle" id="curveControlToggle">▼</span>
-                        </h4>
-                        <div id="curveControlContent" class="curve-control-content">
-                            <div id="curveControlList">
-                                <!-- 动态生成的曲线控制项 -->
-                            </div>
-                            <div class="curve-control-buttons">
-                                <button class="btn" onclick="applyCurveStyles()" style="background-color: #28a745; border-color: #28a745;">
-                                    应用曲线样式
-                                </button>
-                                <button class="btn" onclick="resetAllCurveStyles()" style="background-color: #6c757d; border-color: #6c757d;">
-                                    重置样式
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="plotDiv">
-                        <div class="no-data-message">
-                            <h3 style="font-size: 13px; margin-bottom: 8px;">📈 图表区域</h3>
-                            <p>请先选择项目、状态变量和坐标轴，然后点击"生成图表"</p>
+                    <!-- 图表容器 -->
+                    <div class="chart-container" id="chart-container">
+                        <div class="no-chart-message">
+                            <h3>📈 图表区域</h3>
+                            <p>请选择数据文件和配置参数，然后生成图表</p>
                         </div>
                     </div>
                 </div>
@@ -983,1397 +360,570 @@
 
     <script>
         // 全局变量
-        let fileId = null;
-        let headers = [];
-        let flexibleHeaderSelectors = []; // 灵活表头选择器数组
-        let nextSelectorId = 1; // 下一个选择器的ID
-        let allData = [];
-        let currentPlot = null;
+        let fileSelector = null;
+        let dataFilter = null;
+        let chartConfig = null;
+        let globalLoading = null;
+        let globalErrorBoundary = null;
+        let currentChart = null;
 
-        // 等待 Plotly 加载完成（使用统一的lib-loader）
-        function waitForPlotly() {
-            return new Promise(async (resolve, reject) => {
-                console.log('🔍 开始检查Plotly加载状态...');
+        // 页面初始化
+        async function initializePage() {
+            try {
+                console.log('🚀 开始初始化可视化页面...');
 
-                // 如果已经加载，直接返回
-                if (typeof Plotly !== 'undefined') {
-                    console.log('✅ Plotly已经加载完成');
-                    resolve();
-                    return;
+                // 等待DaPlot核心模块加载完成
+                if (typeof window.initializeDaPlot === 'function') {
+                    await window.initializeDaPlot();
                 }
 
-                try {
-                    // 使用lib-loader加载Plotly（优先本地，回退CDN）
-                    if (window.libLoader) {
-                        console.log('⏳ 使用lib-loader加载Plotly...');
-                        await window.libLoader.loadPlotly();
+                // 初始化全局组件
+                initializeGlobalComponents();
 
-                        // 再次检查是否加载成功
-                        if (typeof Plotly !== 'undefined') {
-                            console.log('✅ Plotly通过lib-loader加载成功');
-                            resolve();
-                        } else {
-                            throw new Error('lib-loader完成但Plotly仍未定义');
-                        }
-                    } else {
-                        // 备用方案：直接等待
-                        console.warn('⚠️ lib-loader不可用，使用备用等待机制...');
-                        let attempts = 0;
-                        const maxAttempts = 200; // 10秒超时
+                // 初始化页面组件
+                await initializePageComponents();
 
-                        const checkInterval = setInterval(() => {
-                            attempts++;
+                // 绑定事件监听器
+                bindEventListeners();
 
-                            if (typeof Plotly !== 'undefined') {
-                                clearInterval(checkInterval);
-                                console.log('✅ Plotly加载成功（备用机制）');
-                                resolve();
-                            } else if (attempts >= maxAttempts) {
-                                clearInterval(checkInterval);
-                                reject(new Error('Plotly加载超时，请刷新页面重试'));
-                            }
-                        }, 50);
-                    }
-                } catch (error) {
-                    console.error('❌ Plotly加载失败:', error);
-                    reject(error);
+                // 恢复页面状态
+                restorePageState();
+
+                console.log('✅ 可视化页面初始化完成');
+
+            } catch (error) {
+                console.error('❌ 页面初始化失败:', error);
+                showError('页面初始化失败: ' + error.message);
+            }
+        }
+
+        // 初始化全局组件
+        function initializeGlobalComponents() {
+            // 全局加载器
+            globalLoading = LoadingSpinner.createGlobal({
+                text: '正在加载...',
+                type: 'spinner',
+                size: 'large'
+            });
+
+            // 全局错误边界
+            globalErrorBoundary = ErrorBoundary.createGlobal({
+                showDetails: true,
+                allowRetry: true,
+                onError: (error, errorInfo) => {
+                    console.error('全局错误:', error, errorInfo);
                 }
             });
         }
 
-        // 更新加载提示
-        function updateLoadingText(text) {
-            const loadingText = document.querySelector('.loading-text');
-            if (loadingText) {
-                loadingText.textContent = text;
-            }
-        }
-
-        // 隐藏加载覆盖层
-        function hideLoadingOverlay() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.opacity = '0';
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                }, 300);
-            }
-        }
-
-        // 初始化页面
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                console.log('=== 开始初始化可视化页面 ===');
-
-                // 更新加载提示
-                updateLoadingText('正在加载本地数据...');
-
-                // 先从localStorage加载数据
-                loadDataFromStorage();
-                console.log('✓ localStorage数据加载完成');
-
-                // 更新加载提示
-                updateLoadingText('正在加载Plotly图表库（优先本地）...');
-
-                // 等待 Plotly 加载完成
-                await waitForPlotly();
-                console.log('✓ Plotly 已加载完成（优先本地，回退CDN）');
-
-                // 更新加载提示
-                updateLoadingText('正在初始化界面...');
-
-                // 初始化样式控制
-                initializeStyleControls();
-
-                // 初始化表单验证状态
-                checkFormValidity();
-
-                // 更新加载提示
-                updateLoadingText('正在加载文件列表...');
-
-                // 加载文件列表（这会选中localStorage中的fileId）
-                await loadFileList();
-                console.log('✓ 文件列表加载完成');
-
-                // 如果有fileId，初始化可视化
-                if (fileId && headers.length > 0) {
-                    updateLoadingText('正在初始化数据可视化...');
-                    await initializeVisualization();
-                    console.log('✓ 可视化初始化完成');
-                    showMessage('页面加载完成，可以开始制作图表', 'success');
-                } else {
-                    console.log('! 没有可用的文件数据');
-                    showMessage('请选择数据文件或先在数据页面上传数据', 'info');
-                }
-
-                // 隐藏加载覆盖层
-                hideLoadingOverlay();
-                console.log('=== 页面初始化完成 ===');
-
-            } catch (error) {
-                console.error('页面初始化失败:', error);
-                updateLoadingText('加载失败: ' + error.message);
-                showMessage('页面初始化失败: ' + error.message, 'error');
-
-                // 即使失败也要隐藏加载覆盖层
-                setTimeout(() => {
-                    hideLoadingOverlay();
-                }, 2000);
-            }
-        });
-
-        // 初始化样式控制
-        function initializeStyleControls() {
-            // 样式控制已改为数字输入框，无需额外初始化
-        }
-
-        // 获取配色方案
-        function getColorScheme(scheme) {
-            const colorSchemes = {
-                'default': ['#4a90e2', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'],
-                'warm': ['#ff6b6b', '#ffa726', '#ff7043', '#d32f2f', '#f57c00', '#e65100', '#bf360c', '#8d6e63'],
-                'cool': ['#42a5f5', '#26c6da', '#66bb6a', '#29b6f6', '#26a69a', '#5c6bc0', '#7e57c2', '#ab47bc'],
-                'pastel': ['#ffcdd2', '#f8bbd9', '#e1bee7', '#d1c4e9', '#c5cae9', '#bbdefb', '#b3e5fc', '#b2dfdb'],
-                'bright': ['#ff1744', '#ff6d00', '#76ff03', '#00e676', '#00bcd4', '#3f51b5', '#9c27b0', '#e91e63'],
-                'monochrome': ['#212121', '#424242', '#616161', '#757575', '#9e9e9e', '#bdbdbd', '#e0e0e0', '#f5f5f5']
-            };
-            return colorSchemes[scheme] || colorSchemes['default'];
-        }
-
-        // 获取图例配置
-        function getLegendConfig(position) {
-            const legendConfigs = {
-                'outside-right': { x: 1.02, y: 1, xanchor: 'left', yanchor: 'top' },
-                'inside-topright': { x: 0.98, y: 0.98, xanchor: 'right', yanchor: 'top' },
-                'inside-topleft': { x: 0.02, y: 0.98, xanchor: 'left', yanchor: 'top' },
-                'inside-bottomright': { x: 0.98, y: 0.02, xanchor: 'right', yanchor: 'bottom' },
-                'inside-bottomleft': { x: 0.02, y: 0.02, xanchor: 'left', yanchor: 'bottom' },
-                'top': { x: 0.5, y: 1.02, xanchor: 'center', yanchor: 'bottom', orientation: 'h' },
-                'bottom': { x: 0.5, y: -0.1, xanchor: 'center', yanchor: 'top', orientation: 'h' }
-            };
-            return legendConfigs[position] || legendConfigs['outside-right'];
-        }
-
-        async function loadFileList() {
-             try {
-                 console.log('🔄 开始加载文件列表...');
-                 console.log('📡 API端点:', window.pageBridge.getApiUrl('/files'));
-
-                 const startTime = Date.now();
-                 const response = await fetch(window.pageBridge.getApiUrl('/files'), {
-                     method: 'GET',
-                     headers: {
-                         'Content-Type': 'application/json',
-                         'Accept': 'application/json'
-                     },
-                     cache: 'no-cache'
-                 });
-
-                 const requestTime = Date.now() - startTime;
-                 console.log(`📡 请求完成 - 状态: ${response.status}, 耗时: ${requestTime}ms`);
-
-                 if (!response.ok) {
-                     const errorText = await response.text();
-                     console.error('❌ 请求失败详情:', {
-                         status: response.status,
-                         statusText: response.statusText,
-                         errorText: errorText
-                     });
-                     throw new Error(`HTTP ${response.status}: ${response.statusText}${errorText ? ' - ' + errorText : ''}`);
-                 }
-
-                 const responseText = await response.text();
-                 console.log('📄 原始响应内容:', responseText);
-
-                 let data;
-                 try {
-                     data = JSON.parse(responseText);
-                 } catch (parseError) {
-                     console.error('❌ JSON解析失败:', parseError);
-                     throw new Error('服务器返回的数据格式不正确');
-                 }
-
-                 console.log('📋 解析后的数据:', data);
-                 console.log('📊 数据结构分析:', {
-                     hasFiles: 'files' in data,
-                     filesType: typeof data.files,
-                     isArray: Array.isArray(data.files),
-                     length: data.files ? data.files.length : 'N/A'
-                 });
-
-                 const fileSelector = document.getElementById('fileSelector');
-                 if (!fileSelector) {
-                     console.error('❌ 找不到文件选择器元素');
-                     throw new Error('页面元素缺失');
-                 }
-
-                 // 清空现有选项
-                 fileSelector.innerHTML = '<option value="">请选择数据文件</option>';
-
-                 // 添加文件选项
-                 if (data.files && Array.isArray(data.files) && data.files.length > 0) {
-                     console.log(`✅ 找到 ${data.files.length} 个文件`);
-                     data.files.forEach((file, index) => {
-                         console.log(`📁 处理文件 ${index + 1}:`, file);
-
-                         if (!file.file_id) {
-                             console.warn('⚠️ 文件缺少file_id:', file);
-                             return;
-                         }
-
-                         const option = document.createElement('option');
-                         option.value = file.file_id;
-                         const displayName = file.filename || file.original_filename || `文件 ${file.file_id.substring(0, 8)}...`;
-                         const sizeInfo = (file.rows && file.columns) ? ` (${file.rows}行×${file.columns}列)` : '';
-                         option.textContent = `${displayName}${sizeInfo}`;
-                         fileSelector.appendChild(option);
-                     });
-                 } else {
-                     console.warn('⚠️ 文件列表为空或格式不正确:', data);
-                     const option = document.createElement('option');
-                     option.value = '';
-                     option.textContent = '暂无可用文件 - 请先在数据页面上传文件';
-                     option.disabled = true;
-                     fileSelector.appendChild(option);
-
-                     if (fileId) {
-                         console.log('🧹 清除无效的localStorage数据');
-                         showMessage('未找到之前选择的文件，请重新上传数据', 'warning');
-                         localStorage.removeItem('fileId');
-                         localStorage.removeItem('headers');
-                         fileId = null;
-                         headers = [];
-                     }
-                     return;
-                 }
-
-                 // 如果有当前文件ID，选中它
-                 if (fileId) {
-                     console.log('🔍 检查localStorage中的fileId:', fileId);
-                     const foundFile = data.files.find(file => file.file_id === fileId);
-                     if (foundFile) {
-                         fileSelector.value = fileId;
-                         updateCurrentFileInfo();
-                         console.log('✅ 已选中文件:', foundFile.filename || foundFile.original_filename);
-                     } else {
-                         console.warn('⚠️ localStorage中的fileId在文件列表中未找到:', fileId);
-                         showMessage('之前选择的文件已不存在，请重新选择', 'warning');
-                         localStorage.removeItem('fileId');
-                         localStorage.removeItem('headers');
-                         fileId = null;
-                         headers = [];
-                     }
-                 }
-
-                 console.log(`✅ 文件列表加载完成，共 ${data.files.length} 个文件`);
-
-             } catch (error) {
-                 console.error('❌ 加载文件列表失败:', error);
-
-                 // 显示更详细的错误信息
-                 if (error.message.includes('Failed to fetch')) {
-                     console.error('🔌 网络连接问题: 无法连接到后端服务');
-                     showMessage('无法连接到后端服务 (http://localhost:8001)，请确认服务是否正常运行', 'error');
-                 } else if (error.message.includes('JSON')) {
-                     console.error('📄 数据格式问题:', error.message);
-                     showMessage('服务器返回数据格式错误: ' + error.message, 'error');
-                 } else {
-                     console.error('🚫 其他错误:', error.message);
-                     showMessage('加载文件列表失败: ' + error.message, 'error');
-                 }
-
-                 // 在错误情况下也要设置基本的选项
-                 const fileSelector = document.getElementById('fileSelector');
-                 if (fileSelector) {
-                     fileSelector.innerHTML = '<option value="">加载失败 - 请刷新页面重试</option>';
-                 }
-
-                 throw error;
-             }
-         }
-
-        async function switchFile() {
-            const fileSelector = document.getElementById('fileSelector');
-            const selectedFileId = fileSelector.value;
-
-            if (!selectedFileId) {
-                fileId = null;
-                headers = [];
-                clearVisualization();
-                return;
-            }
-
-            try {
-                showMessage('正在切换文件...', 'info');
-
-                // 获取文件数据
-                const response = await fetch(window.pageBridge.getApiUrl(`/file/${selectedFileId}`));
-                if (!response.ok) {
-                    throw new Error('获取文件数据失败');
-                }
-
-                const fileData = await response.json();
-
-                // 更新全局变量
-                fileId = selectedFileId;
-                headers = fileData.headers || [];
-
-                // 保存到localStorage
-                localStorage.setItem('fileId', fileId);
-                localStorage.setItem('headers', JSON.stringify(headers));
-
-                // 更新界面
-                updateCurrentFileInfo();
-                populateAxisSelectors();
-                initializeFlexibleHeaderManager();
-                clearVisualization();
-
-                // 重新初始化可视化
-                if (fileId) {
-                    await initializeVisualization();
-                }
-
-                showMessage('文件切换成功', 'success');
-
-            } catch (error) {
-                console.error('切换文件失败:', error);
-                showMessage('切换文件失败: ' + error.message, 'error');
-            }
-        }
-
-        function updateCurrentFileInfo() {
-            const fileSelector = document.getElementById('fileSelector');
-            const currentFileInfo = document.getElementById('currentFileInfo');
-
-            if (fileSelector.value && headers.length > 0) {
-                const selectedOption = fileSelector.options[fileSelector.selectedIndex];
-                currentFileInfo.textContent = `已选择: ${selectedOption.textContent}`;
-                currentFileInfo.style.color = '#28a745';
-            } else {
-                currentFileInfo.textContent = '未选择文件';
-                currentFileInfo.style.color = '#6c757d';
-            }
-        }
-
-        function clearVisualization() {
-            // 清空灵活表头选择器
-            flexibleHeaderSelectors = [];
-            nextSelectorId = 1;
-            allData = [];
-
-            // 清空界面
-            document.getElementById('xAxis').value = '';
-            document.getElementById('yAxis').value = '';
-
-            // 重新渲染灵活表头选择器
-            renderFlexibleHeaderSelectors();
-            updateGlobalIndicator();
-
-            // 清空图表
-            const plotDiv = document.getElementById('plotDiv');
-            plotDiv.innerHTML = `
-                <div class="no-data-message">
-                    <h3 style="font-size: 13px; margin-bottom: 8px;">📈 图表区域</h3>
-                    <p>请先选择坐标轴，然后点击"生成图表"</p>
-                </div>
-            `;
-
-            document.getElementById('chartToolbar').style.display = 'none';
-            document.getElementById('chartControls').style.display = 'none';
-            document.getElementById('curveControlPanel').style.display = 'none';
-            document.getElementById('generateChart').disabled = true;
-        }
-
-        function loadDataFromStorage() {
-            console.log('开始从localStorage加载数据...');
-
-            fileId = localStorage.getItem('fileId');
-            const headersStr = localStorage.getItem('headers');
-
-            console.log('localStorage数据:');
-            console.log('- fileId:', fileId);
-            console.log('- headersStr:', headersStr);
-
-            if (fileId && headersStr) {
-                try {
-                    headers = JSON.parse(headersStr);
-                    console.log('- 解析后的headers:', headers);
-
-                    if (Array.isArray(headers) && headers.length > 0) {
-                        console.log(`成功加载 ${headers.length} 个表头`);
-                        populateAxisSelectors();
-                        initializeFlexibleHeaderManager();
-                    } else {
-                        console.warn('headers数组为空或格式不正确');
-                        headers = [];
-                        showMessage('表头数据格式不正确，请重新选择文件', 'warning');
-                    }
-                } catch (error) {
-                    console.error('解析headers失败:', error);
-                    headers = [];
-                    showMessage('解析表头数据失败: ' + error.message, 'error');
-                }
-            } else {
-                console.log('localStorage中没有完整的文件数据');
-                fileId = null;
-                headers = [];
-
-                if (!fileId && !headersStr) {
-                    console.log('这是首次访问或数据已清空');
-                } else if (!fileId) {
-                    console.warn('缺少fileId');
-                    showMessage('文件ID丢失，请重新选择文件', 'warning');
-                } else if (!headersStr) {
-                    console.warn('缺少headers数据');
-                    showMessage('表头数据丢失，请重新选择文件', 'warning');
-                }
-            }
-
-            console.log('localStorage数据加载完成:', { fileId, headersCount: headers.length });
-        }
-
-        function populateAxisSelectors() {
-            const xAxisSelect = document.getElementById('xAxis');
-            const yAxisSelect = document.getElementById('yAxis');
-
-            // 清空现有选项
-            xAxisSelect.innerHTML = '<option value="">请选择X轴变量</option>';
-            yAxisSelect.innerHTML = '<option value="">请选择Y轴变量</option>';
-
-            // 添加列选项
-            headers.forEach(header => {
-                const xOption = document.createElement('option');
-                xOption.value = header;
-                xOption.textContent = header;
-                xAxisSelect.appendChild(xOption);
-
-                const yOption = document.createElement('option');
-                yOption.value = header;
-                yOption.textContent = header;
-                yAxisSelect.appendChild(yOption);
+        // 初始化页面组件
+        async function initializePageComponents() {
+            // 初始化文件选择器
+            fileSelector = new FileSelector({
+                container: 'file-selector-container',
+                showUpload: true,
+                showActions: true,
+                onSelect: handleFileSelect,
+                onDelete: handleFileDelete,
+                onRefresh: handleFileRefresh
             });
 
-            // 添加变化监听器
-            xAxisSelect.addEventListener('change', checkFormValidity);
-            yAxisSelect.addEventListener('change', checkFormValidity);
-        }
+            // 初始化数据筛选器
+            dataFilter = new DataFilter({
+                container: 'data-filter-container',
+                showPreview: true,
+                showClear: true,
+                onChange: handleFilterChange,
+                onApply: handleFilterApply
+            });
 
-        // 灵活表头选择管理功能
-        function addFlexibleHeaderSelector() {
-            const selectorId = nextSelectorId++;
-            const selector = {
-                id: selectorId,
-                column: '',
-                values: []
-            };
-
-            flexibleHeaderSelectors.push(selector);
-            renderFlexibleHeaderSelectors();
-            updateGlobalIndicator();
-        }
-
-        function removeFlexibleHeaderSelector(selectorId) {
-            flexibleHeaderSelectors = flexibleHeaderSelectors.filter(s => s.id !== selectorId);
-            renderFlexibleHeaderSelectors();
-            updateGlobalIndicator();
-            checkFormValidity();
-        }
-
-        function renderFlexibleHeaderSelectors() {
-            const container = document.getElementById('flexibleHeaderList');
-            container.innerHTML = '';
-
-            flexibleHeaderSelectors.forEach(selector => {
-                const item = document.createElement('div');
-                item.className = 'flexible-header-item';
-                item.innerHTML = `
-                    <div class="header-item-controls">
-                        <select class="form-control" onchange="updateSelectorColumn(${selector.id}, this.value)">
-                            <option value="">请选择表头列</option>
-                            ${headers.map(header =>
-                                `<option value="${header}" ${selector.column === header ? 'selected' : ''}>${header}</option>`
-                            ).join('')}
-                        </select>
-                        <button class="remove-header-btn" onclick="removeFlexibleHeaderSelector(${selector.id})">删除</button>
-                    </div>
-                    <div class="header-values-container">
-                        <span class="header-values-label">选择筛选值:</span>
-                        <div id="headerValues_${selector.id}" class="tag-container">
-                            ${selector.column ? '' : '<span style="color: #6c757d; font-size: 10px;">请先选择表头列</span>'}
-                        </div>
-                    </div>
-                `;
-                container.appendChild(item);
-
-                // 如果已选择列，加载对应的值
-                if (selector.column) {
-                    loadHeaderValues(selector.id, selector.column);
-                }
+            // 初始化图表配置
+            chartConfig = new ChartConfig({
+                container: 'chart-config-container',
+                showPreview: false, // 在主图表区域显示
+                showPresets: true,
+                onChange: handleChartConfigChange,
+                onApply: handleChartConfigApply
             });
         }
 
-        async function updateSelectorColumn(selectorId, column) {
-            const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
-            if (selector) {
-                selector.column = column;
-                selector.values = []; // 重置选择的值
-
-                if (column) {
-                    await loadHeaderValues(selectorId, column);
-                } else {
-                    const container = document.getElementById(`headerValues_${selectorId}`);
-                    container.innerHTML = '<span style="color: #6c757d; font-size: 10px;">请先选择表头列</span>';
-                }
-
-                checkFormValidity();
+        // 绑定事件监听器
+        function bindEventListeners() {
+            // 监听应用状态变化
+            if (window.appState) {
+                window.appState.subscribe('currentFileId', handleFileIdChange);
+                window.appState.subscribe('chartConfig', handleChartConfigStateChange);
+                window.appState.subscribe('filters', handleFiltersStateChange);
             }
+
+            // 监听事件总线事件
+            if (window.eventBus) {
+                window.eventBus.on('file.selected', handleFileSelectedEvent);
+                window.eventBus.on('dataFilter.changed', handleDataFilterChangedEvent);
+                window.eventBus.on('chartConfig.applied', handleChartConfigAppliedEvent);
+                window.eventBus.on('chart.created', handleChartCreatedEvent);
+                window.eventBus.on('chart.updated', handleChartUpdatedEvent);
+            }
+
+            // 窗口大小变化
+            window.addEventListener('resize', debounce(handleWindowResize, 300));
+
+            // 键盘快捷键
+            document.addEventListener('keydown', handleKeyboardShortcuts);
         }
 
-        async function loadHeaderValues(selectorId, column) {
-            const container = document.getElementById(`headerValues_${selectorId}`);
-
-            if (!column || !fileId) {
-                container.innerHTML = '<span style="color: #6c757d; font-size: 10px;">请先选择表头列</span>';
-                return;
-            }
-
+        // 文件选择处理
+        async function handleFileSelect(file, fileId) {
             try {
-                container.innerHTML = '<span style="color: #6c757d; font-size: 10px;">加载中...</span>';
+                showLoading('正在加载文件数据...');
 
-                const response = await fetch(window.pageBridge.getApiUrl(`/unique_values/${fileId}/${encodeURIComponent(column)}`));
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // 更新应用状态
+                if (window.appState) {
+                    window.appState.setState({
+                        currentFileId: fileId,
+                        currentFileData: null
+                    });
                 }
 
-                const data = await response.json();
-                container.innerHTML = '';
+                // 更新数据筛选器
+                if (dataFilter) {
+                    dataFilter.setFileId(fileId);
+                }
 
-                const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
-
-                data.values.forEach(value => {
-                    const tag = document.createElement('div');
-                    tag.className = 'tag';
-                    tag.textContent = value;
-
-                    // 检查是否已选中
-                    if (selector && selector.values.includes(value)) {
-                        tag.classList.add('selected');
-                    }
-
-                    tag.onclick = () => toggleSelectorValue(selectorId, value, tag);
-                    container.appendChild(tag);
-                });
+                // 显示成功消息
+                StatusMessage.notify(`文件 "${file.filename}" 加载成功`, 'success');
 
             } catch (error) {
-                console.error('获取表头内容失败:', error);
-                container.innerHTML = '<span style="color: #dc3545; font-size: 10px;">加载失败</span>';
+                console.error('文件选择失败:', error);
+                showError('文件加载失败: ' + error.message);
+            } finally {
+                hideLoading();
             }
         }
 
-        function toggleSelectorValue(selectorId, value, tagElement) {
-            const selector = flexibleHeaderSelectors.find(s => s.id === selectorId);
-            if (!selector) return;
-
-            const index = selector.values.indexOf(value);
-            if (index > -1) {
-                selector.values.splice(index, 1);
-                tagElement.classList.remove('selected');
-            } else {
-                selector.values.push(value);
-                tagElement.classList.add('selected');
-            }
-
-            checkFormValidity();
-        }
-
-        function updateGlobalIndicator() {
-            const indicator = document.getElementById('globalIndicator');
-            if (flexibleHeaderSelectors.length === 0) {
-                indicator.style.display = 'block';
-            } else {
-                indicator.style.display = 'none';
-            }
-        }
-
-        function initializeFlexibleHeaderManager() {
-            renderFlexibleHeaderSelectors();
-            updateGlobalIndicator();
-        }
-
-        // 原有的函数已被灵活表头选择管理功能替代
-
-        async function initializeVisualization() {
-            try {
-                showMessage('正在加载数据...', 'info');
-
-                // 获取所有数据
-                const response = await fetch(window.pageBridge.getApiUrl('/filter'), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        file_id: fileId,
-                        filters: {} // 不应用任何过滤器以获取所有数据
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        // 文件删除处理
+        function handleFileDelete(fileId) {
+            // 如果删除的是当前文件，清除相关状态
+            const currentFileId = window.appState?.getState('currentFileId');
+            if (fileId === currentFileId) {
+                if (window.appState) {
+                    window.appState.setState({
+                        currentFileId: null,
+                        currentFileData: null,
+                        filters: {}
+                    });
                 }
 
-                allData = await response.json();
+                // 清除图表
+                clearChart();
+            }
 
-                // 初始化灵活表头选择管理器
-                initializeFlexibleHeaderManager();
+            StatusMessage.notify('文件删除成功', 'success');
+        }
 
-                showMessage('数据加载完成', 'success');
+        // 文件刷新处理
+        function handleFileRefresh() {
+            StatusMessage.notify('文件列表已刷新', 'info');
+        }
+
+        // 筛选条件变化处理
+        function handleFilterChange(filters) {
+            // 更新应用状态
+            if (window.appState) {
+                window.appState.setState({ filters });
+            }
+        }
+
+        // 应用筛选处理
+        async function handleFilterApply(filters) {
+            try {
+                showLoading('正在应用筛选条件...');
+
+                // 如果有图表，重新生成
+                if (currentChart) {
+                    await generateChart();
+                }
+
+                StatusMessage.notify('筛选条件已应用', 'success');
 
             } catch (error) {
-                console.error('Error loading data:', error);
-                showMessage('数据加载失败: ' + error.message, 'error');
+                console.error('应用筛选失败:', error);
+                showError('应用筛选失败: ' + error.message);
+            } finally {
+                hideLoading();
             }
         }
 
-
-
-
-
-        function checkFormValidity() {
-            const xAxis = document.getElementById('xAxis').value;
-            const yAxis = document.getElementById('yAxis').value;
-            const generateBtn = document.getElementById('generateChart');
-            const applyStyleBtn = document.getElementById('applyStyle');
-
-            // 检查是否有有效的灵活表头选择器（至少有一个选择器有选中的值，或者没有选择器表示全局模式）
-            const hasValidSelectors = flexibleHeaderSelectors.length === 0 ||
-                                    flexibleHeaderSelectors.some(selector =>
-                                        selector.column && selector.values.length > 0
-                                    );
-
-            const isValid = hasValidSelectors && xAxis && yAxis;
-
-            generateBtn.disabled = !isValid;
-
-            // 应用样式按钮只有在图表已生成后才能使用
-            const plotDiv = document.getElementById('plotDiv');
-            const hasChart = plotDiv && plotDiv.querySelector('.js-plotly-plot');
-            if (applyStyleBtn) {
-                applyStyleBtn.disabled = !hasChart;
+        // 图表配置变化处理
+        function handleChartConfigChange(config, key, value) {
+            // 实时更新图表（如果存在）
+            if (currentChart && key !== 'title') {
+                debounce(updateChartStyle, 500)();
             }
         }
 
-        async function applyStyleToChart() {
+        // 应用图表配置处理
+        async function handleChartConfigApply(config) {
             try {
-                showMessage('正在应用样式并重新生成图表...', 'info');
+                showLoading('正在应用图表配置...');
 
-                // 直接调用生成图表函数，它会使用当前的样式设置
+                // 生成或更新图表
                 await generateChart();
 
-                showMessage('样式应用成功', 'success');
+                StatusMessage.notify('图表配置已应用', 'success');
 
             } catch (error) {
-                console.error('应用样式失败:', error);
-                showMessage('应用样式失败: ' + error.message, 'error');
+                console.error('应用图表配置失败:', error);
+                showError('应用图表配置失败: ' + error.message);
+            } finally {
+                hideLoading();
             }
         }
 
+        // 生成图表
         async function generateChart() {
-            console.log('=== 开始生成图表 ===');
-            console.log('当前状态:', {
-                fileId,
-                flexibleHeaderSelectors
-            });
-
-            // 详细检查选择状态
-            console.log('详细检查:');
-            console.log('- 文件ID:', fileId);
-            console.log('- 灵活表头选择器数量:', flexibleHeaderSelectors.length);
-            flexibleHeaderSelectors.forEach((selector, index) => {
-                console.log(`- 选择器${index + 1}: 列=${selector.column}, 值数量=${selector.values.length}, 值列表=`, selector.values);
-            });
-
-            const xAxis = document.getElementById('xAxis').value;
-            const yAxis = document.getElementById('yAxis').value;
-
-            console.log('- X轴变量:', xAxis);
-            console.log('- Y轴变量:', yAxis);
-
-            if (!fileId) {
-                showMessage('请先选择数据文件', 'error');
-                return;
-            }
-
-            // 检查是否有有效的选择器或者是全局模式
-            const hasValidSelectors = flexibleHeaderSelectors.length === 0 ||
-                                    flexibleHeaderSelectors.some(selector =>
-                                        selector.column && selector.values.length > 0
-                                    );
-
-            if (!hasValidSelectors) {
-                showMessage('请添加至少一个有效的筛选条件或使用全局模式', 'error');
-                return;
-            }
-
-            if (!xAxis) {
-                showMessage('请选择X轴变量', 'error');
-                return;
-            }
-
-            if (!yAxis) {
-                showMessage('请选择Y轴变量', 'error');
-                return;
-            }
-
             try {
-                showMessage('正在生成图表...', 'info');
-
-                // 构建过滤器对象
-                const filters = {};
-                flexibleHeaderSelectors.forEach(selector => {
-                    if (selector.column && selector.values.length > 0) {
-                        filters[selector.column] = selector.values.map(value => String(value));
-                    }
-                });
-
-                console.log('构建的过滤器:', filters);
-
-                const response = await fetch(window.pageBridge.getApiUrl('/plot_data'), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        file_id: fileId,
-                        filters: filters,
-                        x_axis: xAxis,
-                        y_axis: yAxis
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('API响应错误:', response.status, errorText);
-                    throw new Error(`HTTP error! status: ${response.status} ${errorText}`);
+                const currentFileId = window.appState?.getState('currentFileId');
+                if (!currentFileId) {
+                    throw new Error('请先选择数据文件');
                 }
 
-                const plotData = await response.json();
-                console.log('获取到的绘图数据:', plotData);
-                renderChart(plotData);
-                showMessage('图表生成成功', 'success');
+                const config = chartConfig?.getConfig() || {};
+                if (!config.xAxis || !config.yAxis) {
+                    throw new Error('请设置X轴和Y轴');
+                }
+
+                showLoading('正在生成图表...');
+
+                // 获取筛选后的数据
+                const filters = window.appState?.getState('filters') || {};
+                const plotData = await window.dataManager.getPlotData(
+                    currentFileId,
+                    filters,
+                    config.xAxis,
+                    config.yAxis
+                );
+
+                // 准备Plotly数据
+                const chartData = prepareChartData(plotData, config);
+                const layout = prepareChartLayout(config);
+
+                // 创建或更新图表
+                if (currentChart) {
+                    await window.chartEngine.updateChart('chart-container', chartData, layout);
+                } else {
+                    await window.chartEngine.createChart('chart-container', chartData, layout);
+                    currentChart = true;
+                }
+
+                // 隐藏无图表消息
+                const noChartMessage = document.querySelector('.no-chart-message');
+                if (noChartMessage) {
+                    noChartMessage.style.display = 'none';
+                }
 
             } catch (error) {
-                console.error('Error generating chart:', error);
-                showMessage('图表生成失败: ' + error.message, 'error');
+                console.error('生成图表失败:', error);
+                showError('生成图表失败: ' + error.message);
+            } finally {
+                hideLoading();
             }
         }
 
-        async function renderChart(plotData) {
-            // 获取当前选择的轴变量
-            const xAxis = document.getElementById('xAxis').value;
-            const yAxis = document.getElementById('yAxis').value;
-
-            // 获取详细数据以生成多条曲线
-            try {
-                // 构建过滤器对象
-                const filters = {};
-                flexibleHeaderSelectors.forEach(selector => {
-                    if (selector.column && selector.values.length > 0) {
-                        filters[selector.column] = selector.values.map(value => String(value));
-                    }
-                });
-
-                const response = await fetch(window.pageBridge.getApiUrl('/filter'), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        file_id: fileId,
-                        filters: filters
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        // 准备图表数据
+        function prepareChartData(plotData, config) {
+            const data = [{
+                x: plotData.x_values,
+                y: plotData.y_values,
+                mode: getPlotMode(config.chartType),
+                type: getPlotType(config.chartType),
+                name: config.title || '数据系列',
+                marker: {
+                    color: config.colors?.[0] || '#1f77b4',
+                    size: config.markerSize || 6,
+                    symbol: config.markers || 'circle'
+                },
+                line: {
+                    color: config.colors?.[0] || '#1f77b4',
+                    width: config.lineWidth || 2
                 }
+            }];
 
-                const filteredData = await response.json();
-                console.log('=== API筛选结果 ===');
-                console.log('筛选后的数据总行数:', filteredData.length);
-                console.log('筛选后的数据样本 (前3行):', filteredData.slice(0, 3));
+            return data;
+        }
 
-                // 检查数据中是否包含所需的列
-                if (filteredData.length > 0) {
-                    const sampleRow = filteredData[0];
-                    console.log('数据列名:', Object.keys(sampleRow));
-                    flexibleHeaderSelectors.forEach((selector, index) => {
-                        console.log(`选择器${index + 1}列存在:`, selector.column in sampleRow);
-                    });
-                    console.log('X轴列存在:', xAxis in sampleRow);
-                    console.log('Y轴列存在:', yAxis in sampleRow);
-                }
+        // 准备图表布局
+        function prepareChartLayout(config) {
+            return {
+                title: {
+                    text: config.title || '',
+                    font: { size: 16 }
+                },
+                xaxis: {
+                    title: config.xAxis || 'X轴',
+                    showgrid: config.gridLines !== false
+                },
+                yaxis: {
+                    title: config.yAxis || 'Y轴',
+                    showgrid: config.gridLines !== false
+                },
+                showlegend: config.showLegend !== false,
+                legend: {
+                    orientation: getLegendOrientation(config.legendPosition),
+                    x: getLegendX(config.legendPosition),
+                    y: getLegendY(config.legendPosition)
+                },
+                margin: { t: 50, r: 50, b: 50, l: 50 },
+                autosize: true
+            };
+        }
 
-                // 获取用户选择的样式设置
-                const colorScheme = document.getElementById('colorScheme').value;
-                const lineWidth = parseInt(document.getElementById('lineWidth').value);
-                const markerSize = parseInt(document.getElementById('markerSize').value);
-                const markerStyle = document.getElementById('markerStyle').value;
-
-                const traces = [];
-                const colors = getColorScheme(colorScheme);
-                let colorIndex = 0;
-
-                console.log('=== 开始创建曲线 ===');
-                console.log('样式设置:', { colorScheme, lineWidth, markerSize, markerStyle });
-
-                // 根据灵活表头选择器创建曲线
-                if (flexibleHeaderSelectors.length === 0) {
-                    // 全局模式：创建一条包含所有数据的曲线
-                    console.log('\n--- 全局模式：创建单一曲线 ---');
-
-                    const xValues = filteredData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
-                    const yValues = filteredData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
-
-                    console.log(`全局数据:`, {
-                        总行数: filteredData.length,
-                        X轴有效值数量: xValues.length,
-                        Y轴有效值数量: yValues.length,
-                        X轴样本: xValues.slice(0, 5),
-                        Y轴样本: yValues.slice(0, 5)
-                    });
-
-                    if (xValues.length > 0 && yValues.length > 0) {
-                        const traceName = '全局数据';
-
-                        // 检查是否已有该曲线的个性化设置
-                        let existingTrace = null;
-                        if (currentPlot && currentPlot.traces) {
-                            existingTrace = currentPlot.traces.find(t => t.name === traceName);
-                        }
-
-                        const trace = {
-                            x: xValues,
-                            y: yValues,
-                            mode: 'lines+markers',
-                            type: 'scatter',
-                            name: traceName,
-                            line: {
-                                color: existingTrace ? existingTrace.line.color : colors[0],
-                                width: lineWidth
-                            },
-                            marker: {
-                                color: existingTrace ? existingTrace.marker.color : colors[0],
-                                size: markerSize,
-                                symbol: existingTrace ? existingTrace.marker.symbol : markerStyle
-                            }
-                        };
-                        traces.push(trace);
-                        console.log(`✓ 成功创建全局曲线: ${trace.name}, 数据点数: ${xValues.length}`);
-                        colorIndex++;
-                    }
-                } else {
-                    // 基于选择器的模式：为每个选择器的值组合创建曲线
-                    console.log('\n--- 基于选择器模式：创建多条曲线 ---');
-
-                    // 生成所有可能的组合
-                    function generateCombinations(selectors, currentCombination = {}, index = 0) {
-                        if (index >= selectors.length) {
-                            return [currentCombination];
-                        }
-
-                        const selector = selectors[index];
-                        const combinations = [];
-
-                        selector.values.forEach(value => {
-                            const newCombination = { ...currentCombination, [selector.column]: value };
-                            combinations.push(...generateCombinations(selectors, newCombination, index + 1));
-                        });
-
-                        return combinations;
-                    }
-
-                    const validSelectors = flexibleHeaderSelectors.filter(s => s.column && s.values.length > 0);
-                    const combinations = generateCombinations(validSelectors);
-
-                    console.log(`生成的组合数量: ${combinations.length}`);
-
-                    combinations.forEach((combination, combIndex) => {
-                        console.log(`\n--- 处理组合 ${combIndex + 1}: ${JSON.stringify(combination)} ---`);
-
-                        // 根据组合筛选数据
-                        const combinationData = filteredData.filter(row => {
-                            return Object.keys(combination).every(column =>
-                                String(row[column]) === String(combination[column])
-                            );
-                        });
-
-                        console.log(`匹配的数据行数:`, combinationData.length);
-
-                        if (combinationData.length > 0) {
-                            const xValues = combinationData.map(row => row[xAxis]).filter(v => v !== null && v !== undefined);
-                            const yValues = combinationData.map(row => row[yAxis]).filter(v => v !== null && v !== undefined);
-
-                            console.log(`提取的数据:`, {
-                                原始行数: combinationData.length,
-                                X轴有效值数量: xValues.length,
-                                Y轴有效值数量: yValues.length,
-                                X轴样本: xValues.slice(0, 5),
-                                Y轴样本: yValues.slice(0, 5)
-                            });
-
-                            if (xValues.length > 0 && yValues.length > 0) {
-                                // 生成曲线名称
-                                const traceName = Object.keys(combination)
-                                    .map(column => `${column}=${combination[column]}`)
-                                    .join('-');
-
-                                // 检查是否已有该曲线的个性化设置
-                                let existingTrace = null;
-                                if (currentPlot && currentPlot.traces) {
-                                    existingTrace = currentPlot.traces.find(t => t.name === traceName);
-                                }
-
-                                const trace = {
-                                    x: xValues,
-                                    y: yValues,
-                                    mode: 'lines+markers',
-                                    type: 'scatter',
-                                    name: traceName,
-                                    line: {
-                                        color: existingTrace ? existingTrace.line.color : colors[colorIndex % colors.length],
-                                        width: lineWidth
-                                    },
-                                    marker: {
-                                        color: existingTrace ? existingTrace.marker.color : colors[colorIndex % colors.length],
-                                        size: markerSize,
-                                        symbol: existingTrace ? existingTrace.marker.symbol : markerStyle
-                                    }
-                                };
-                                traces.push(trace);
-                                console.log(`✓ 成功创建曲线: ${trace.name}, 数据点数: ${xValues.length}`);
-                                colorIndex++;
-                            } else {
-                                console.log(`✗ 跳过组合 ${JSON.stringify(combination)}: X轴数据=${xValues.length}个, Y轴数据=${yValues.length}个`);
-                            }
-                        }
-                    });
-                }
-
-                console.log('=== 绘图前最终检查 ===');
-                console.log('创建的曲线数量:', traces.length);
-                if (traces.length > 0) {
-                    console.log('曲线详情:');
-                    traces.forEach((trace, index) => {
-                        console.log(`  ${index + 1}. ${trace.name}: ${trace.x.length} 个数据点`);
-                    });
-                } else {
-                    console.log('⚠️ 没有创建任何曲线!');
-                }
-
-                if (traces.length === 0) {
-                    showMessage('没有找到匹配的数据进行绘图', 'warning');
-                    return;
-                }
-
-                // 获取图例位置配置
-                const legendPosition = document.getElementById('legendPosition').value;
-                const legendConfig = getLegendConfig(legendPosition);
-
-                // 根据图例位置调整边距
-                let margins = { t: 50, r: 50, b: 50, l: 50 };
-                if (legendPosition === 'outside-right') {
-                    margins.r = 150; // 为右侧图例留出更多空间
-                } else if (legendPosition === 'top') {
-                    margins.t = 100; // 为顶部图例留出更多空间
-                } else if (legendPosition === 'bottom') {
-                    margins.b = 100; // 为底部图例留出更多空间
-                }
-
-                // 获取用户自定义的标题
-                const chartTitle = document.getElementById('chartTitle').value || `${xAxis}-${yAxis} 曲线图`;
-                const xAxisTitle = document.getElementById('xAxisTitle').value || xAxis;
-                const yAxisTitle = document.getElementById('yAxisTitle').value || yAxis;
-
-                const layout = {
-                    title: {
-                        text: chartTitle,
-                        font: { size: 16, color: '#333' }
-                    },
-                    xaxis: {
-                        title: {
-                            text: xAxisTitle,
-                            font: { size: 14, color: '#666' }
-                        },
-                        showgrid: true,
-                        gridcolor: '#e9ecef',
-                        linecolor: '#d0d0d0'
-                    },
-                    yaxis: {
-                        title: {
-                            text: yAxisTitle,
-                            font: { size: 14, color: '#666' }
-                        },
-                        showgrid: true,
-                        gridcolor: '#e9ecef',
-                        linecolor: '#d0d0d0'
-                    },
-                    plot_bgcolor: 'white',
-                    paper_bgcolor: 'white',
-                    margin: margins,
-                    legend: legendConfig,
-                    hovermode: 'closest'
-                };
-
-                console.log('图例配置:', legendConfig);
-                console.log('边距配置:', margins);
-
-                const config = {
-                    responsive: true,
-                    displayModeBar: true,
-                    modeBarButtonsToAdd: [
-                        {
-                            name: 'Download PNG',
-                            icon: (typeof Plotly !== 'undefined' && Plotly.Icons) ? Plotly.Icons.camera : undefined,
-                            click: function(gd) {
-                                if (typeof Plotly !== 'undefined') {
-                                    Plotly.downloadImage(gd, {format: 'png', width: 800, height: 600, filename: 'chart'});
-                                }
-                            }
-                        }
-                    ],
-                    modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
-                };
-
-                // 添加动画效果
-                await Plotly.newPlot('plotDiv', traces, layout, config);
-
-                // 添加曲线绘制动画
-                await animateTraces('plotDiv', traces);
-
-                currentPlot = { traces, layout, config };
-
-                // 显示工具栏、样式控制区域和曲线控制面板
-                document.getElementById('chartToolbar').style.display = 'flex';
-                document.getElementById('chartControls').style.display = 'flex';
-                document.getElementById('curveControlPanel').style.display = 'block';
-
-                // 生成曲线控制项
-                generateCurveControls(traces);
-
-                // 更新按钮状态
-                checkFormValidity();
-
-            } catch (error) {
-                console.error('Error rendering chart:', error);
-                showMessage('图表渲染失败: ' + error.message, 'error');
+        // 获取绘图模式
+        function getPlotMode(chartType) {
+            switch (chartType) {
+                case 'scatter': return 'markers';
+                case 'line': return 'lines+markers';
+                case 'bar': return 'markers';
+                default: return 'markers';
             }
         }
 
+        // 获取绘图类型
+        function getPlotType(chartType) {
+            switch (chartType) {
+                case 'bar': return 'bar';
+                case 'histogram': return 'histogram';
+                default: return 'scatter';
+            }
+        }
+
+        // 获取图例方向
+        function getLegendOrientation(position) {
+            return (position === 'top' || position === 'bottom') ? 'h' : 'v';
+        }
+
+        // 获取图例X位置
+        function getLegendX(position) {
+            switch (position) {
+                case 'inside-topleft':
+                case 'inside-bottomleft': return 0;
+                case 'inside-topright':
+                case 'inside-bottomright': return 1;
+                case 'outside-right': return 1.02;
+                default: return 0.5;
+            }
+        }
+
+        // 获取图例Y位置
+        function getLegendY(position) {
+            switch (position) {
+                case 'inside-topleft':
+                case 'inside-topright': return 1;
+                case 'inside-bottomleft':
+                case 'inside-bottomright': return 0;
+                case 'top': return 1.02;
+                case 'bottom': return -0.1;
+                default: return 0.5;
+            }
+        }
+
+        // 工具栏功能
         function resetZoom() {
-            if (currentPlot && typeof Plotly !== 'undefined') {
-                Plotly.relayout('plotDiv', {
-                    'xaxis.autorange': true,
-                    'yaxis.autorange': true
-                });
+            if (currentChart && window.chartEngine) {
+                const chartInfo = window.chartEngine.getChartInfo('chart-container');
+                if (chartInfo) {
+                    window.Plotly.relayout(chartInfo.container, {
+                        'xaxis.autorange': true,
+                        'yaxis.autorange': true
+                    });
+                }
             }
         }
 
-        /**
-         * 生成曲线控制项
-         * @param {Array} traces - 图表曲线数据
-         */
-        function generateCurveControls(traces) {
-            const controlList = document.getElementById('curveControlList');
-            controlList.innerHTML = '';
-
-            if (traces.length === 0) {
-                controlList.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px; font-style: italic;">暂无曲线数据</div>';
+        async function downloadChart(format) {
+            if (!currentChart || !window.chartEngine) {
+                showError('没有可下载的图表');
                 return;
             }
 
-            traces.forEach((trace, index) => {
-                const curveItem = document.createElement('div');
-                curveItem.className = 'curve-item';
-                curveItem.innerHTML = `
-                    <div class="curve-name" title="${trace.name}">${trace.name}</div>
-                    <div class="curve-controls">
-                        <input type="color"
-                               class="curve-color-picker"
-                               value="${trace.line.color}"
-                               data-curve-index="${index}"
-                               title="选择颜色">
-                        <select class="curve-marker-select"
-                                data-curve-index="${index}"
-                                title="选择标记样式">
-                            <option value="circle" ${trace.marker.symbol === 'circle' ? 'selected' : ''}>圆形 ●</option>
-                            <option value="square" ${trace.marker.symbol === 'square' ? 'selected' : ''}>方形 ■</option>
-                            <option value="diamond" ${trace.marker.symbol === 'diamond' ? 'selected' : ''}>菱形 ♦</option>
-                            <option value="triangle-up" ${trace.marker.symbol === 'triangle-up' ? 'selected' : ''}>上三角 ▲</option>
-                            <option value="triangle-down" ${trace.marker.symbol === 'triangle-down' ? 'selected' : ''}>下三角 ▼</option>
-                            <option value="cross" ${trace.marker.symbol === 'cross' ? 'selected' : ''}>十字 +</option>
-                            <option value="x" ${trace.marker.symbol === 'x' ? 'selected' : ''}>X形 ×</option>
-                        </select>
-                    </div>
-                `;
-                controlList.appendChild(curveItem);
-            });
+            try {
+                showLoading(`正在导出${format.toUpperCase()}格式...`);
 
-            // 默认展开曲线控制面板（如果之前是折叠状态）
-            const content = document.getElementById('curveControlContent');
-            const toggle = document.getElementById('curveControlToggle');
-            if (content.classList.contains('collapsed')) {
-                content.classList.remove('collapsed');
-                toggle.textContent = '▼';
-                toggle.classList.remove('collapsed');
+                await window.chartEngine.downloadChart('chart-container', {
+                    format: format,
+                    filename: `chart-${Date.now()}`,
+                    width: 800,
+                    height: 600
+                });
+
+                StatusMessage.notify(`图表已导出为${format.toUpperCase()}格式`, 'success');
+
+            } catch (error) {
+                console.error('导出图表失败:', error);
+                showError('导出图表失败: ' + error.message);
+            } finally {
+                hideLoading();
             }
         }
 
-        /**
-         * 切换曲线控制面板的展开/折叠状态
-         */
-        function toggleCurveControlPanel() {
-            const content = document.getElementById('curveControlContent');
-            const toggle = document.getElementById('curveControlToggle');
-
-            if (content.classList.contains('collapsed')) {
-                content.classList.remove('collapsed');
-                toggle.textContent = '▼';
-                toggle.classList.remove('collapsed');
+        function toggleFullscreen() {
+            const chartContainer = document.getElementById('chart-container');
+            if (!document.fullscreenElement) {
+                chartContainer.requestFullscreen().catch(err => {
+                    console.error('无法进入全屏模式:', err);
+                });
             } else {
-                content.classList.add('collapsed');
-                toggle.textContent = '▶';
-                toggle.classList.add('collapsed');
+                document.exitFullscreen();
             }
         }
 
-        /**
-         * 重置所有曲线样式为默认值
-         */
-        async function resetAllCurveStyles() {
-            try {
-                if (!currentPlot || !currentPlot.traces) {
-                    showMessage('请先生成图表', 'error');
-                    return;
+        // 清除图表
+        function clearChart() {
+            if (currentChart && window.chartEngine) {
+                window.chartEngine.destroyChart('chart-container');
+                currentChart = null;
+            }
+
+            // 显示无图表消息
+            const noChartMessage = document.querySelector('.no-chart-message');
+            if (noChartMessage) {
+                noChartMessage.style.display = 'block';
+            }
+        }
+
+        // 事件处理函数
+        function handleFileIdChange(newFileId, oldFileId) {
+            if (newFileId !== oldFileId) {
+                clearChart();
+            }
+        }
+
+        function handleChartConfigStateChange(newConfig, oldConfig) {
+            if (chartConfig && JSON.stringify(newConfig) !== JSON.stringify(oldConfig)) {
+                chartConfig.setConfig(newConfig);
+            }
+        }
+
+        function handleFiltersStateChange(newFilters, oldFilters) {
+            if (dataFilter && JSON.stringify(newFilters) !== JSON.stringify(oldFilters)) {
+                dataFilter.setFilters(newFilters);
+            }
+        }
+
+        function handleFileSelectedEvent(data) {
+            console.log('文件选择事件:', data);
+        }
+
+        function handleDataFilterChangedEvent(data) {
+            console.log('数据筛选变更事件:', data);
+        }
+
+        function handleChartConfigAppliedEvent(data) {
+            console.log('图表配置应用事件:', data);
+        }
+
+        function handleChartCreatedEvent(data) {
+            console.log('图表创建事件:', data);
+        }
+
+        function handleChartUpdatedEvent(data) {
+            console.log('图表更新事件:', data);
+        }
+
+        function handleWindowResize() {
+            if (currentChart && window.chartEngine) {
+                window.chartEngine.resizeChart('chart-container');
+            }
+        }
+
+        function handleKeyboardShortcuts(e) {
+            // Ctrl+S: 保存图表
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                downloadChart('png');
+            }
+            
+            // Ctrl+R: 刷新数据
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                if (fileSelector) {
+                    fileSelector.refresh();
                 }
-
-                showMessage('正在重置曲线样式...', 'info');
-
-                // 获取默认配色方案
-                const colorScheme = document.getElementById('colorScheme').value;
-                const colors = getColorScheme(colorScheme);
-                const markerStyle = document.getElementById('markerStyle').value;
-
-                // 重置所有曲线控制项
-                const colorPickers = document.querySelectorAll('.curve-color-picker');
-                const markerSelects = document.querySelectorAll('.curve-marker-select');
-
-                colorPickers.forEach((picker, index) => {
-                    picker.value = colors[index % colors.length];
-                });
-
-                markerSelects.forEach(select => {
-                    select.value = markerStyle;
-                });
-
-                // 应用重置后的样式
-                await applyCurveStyles();
-
-                showMessage('曲线样式重置成功', 'success');
-
-            } catch (error) {
-                console.error('重置曲线样式失败:', error);
-                showMessage('重置曲线样式失败: ' + error.message, 'error');
             }
         }
 
-        /**
-         * 应用曲线样式
-         */
-        async function applyCurveStyles() {
-            try {
-                showMessage('正在应用曲线样式...', 'info');
-
-                if (!currentPlot || !currentPlot.traces) {
-                    showMessage('请先生成图表', 'error');
-                    return;
-                }
-
-                // 获取曲线控制面板中的设置
-                const colorPickers = document.querySelectorAll('.curve-color-picker');
-                const markerSelects = document.querySelectorAll('.curve-marker-select');
-
-                // 更新traces数据
-                const updatedTraces = currentPlot.traces.map((trace, index) => {
-                    const newTrace = { ...trace };
-
-                    // 应用颜色设置
-                    if (colorPickers[index]) {
-                        const newColor = colorPickers[index].value;
-                        newTrace.line = { ...newTrace.line, color: newColor };
-                        newTrace.marker = { ...newTrace.marker, color: newColor };
-                    }
-
-                    // 应用标记样式设置
-                    if (markerSelects[index]) {
-                        const newMarker = markerSelects[index].value;
-                        newTrace.marker = { ...newTrace.marker, symbol: newMarker };
-                    }
-
-                    return newTrace;
-                });
-
-                // 重新绘制图表
-                if (typeof Plotly !== 'undefined') {
-                    await Plotly.redraw('plotDiv');
-                    await Plotly.restyle('plotDiv', {
-                        'line.color': updatedTraces.map(t => t.line.color),
-                        'marker.color': updatedTraces.map(t => t.marker.color),
-                        'marker.symbol': updatedTraces.map(t => t.marker.symbol)
-                    });
-                } else {
-                    throw new Error('Plotly 库未加载');
-                }
-
-                // 更新currentPlot
-                currentPlot.traces = updatedTraces;
-
-                showMessage('曲线样式应用成功', 'success');
-
-            } catch (error) {
-                console.error('应用曲线样式失败:', error);
-                showMessage('应用曲线样式失败: ' + error.message, 'error');
+        // 工具函数
+        function showLoading(text = '加载中...') {
+            if (globalLoading) {
+                globalLoading.show(text);
             }
         }
 
-        function downloadPNG() {
-            if (currentPlot) {
-                Plotly.downloadImage('plotDiv', {
-                    format: 'png',
-                    width: 1200,
-                    height: 800,
-                    filename: 'daplot_chart'
-                });
+        function hideLoading() {
+            if (globalLoading) {
+                globalLoading.hide();
             }
         }
 
-        function downloadSVG() {
-            if (currentPlot) {
-                Plotly.downloadImage('plotDiv', {
-                    format: 'svg',
-                    width: 1200,
-                    height: 800,
-                    filename: 'daplot_chart'
-                });
-            }
-        }
-
-        function showMessage(message, type) {
-            const statusMessage = document.getElementById('statusMessage');
-            statusMessage.textContent = message;
-            statusMessage.className = `status-message ${type}`;
-            statusMessage.style.display = 'block';
-
-            if (type === 'success' || type === 'info') {
-                setTimeout(() => {
-                    statusMessage.style.display = 'none';
-                }, 3000);
-            }
+        function showError(message) {
+            StatusMessage.error(message, { autoCloseDelay: 5000 });
         }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            const toggleBtn = document.querySelector('.sidebar-toggle');
-
             sidebar.classList.toggle('collapsed');
-
-            if (sidebar.classList.contains('collapsed')) {
-                toggleBtn.textContent = '▶';
-                toggleBtn.title = '展开侧边栏';
-            } else {
-                toggleBtn.textContent = '◀';
-                toggleBtn.title = '收起侧边栏';
-            }
         }
 
-        /**
-         * 为图表添加曲线绘制动画
-         * @param {string} plotId - 图表容器ID
-         * @param {Array} traces - 曲线数据
-         */
-        async function animateTraces(plotId, traces) {
-            if (!traces || traces.length === 0) return;
-
-            try {
-                // 首先隐藏所有曲线
-                const hiddenTraces = traces.map(trace => ({
-                    ...trace,
-                    x: [],
-                    y: []
-                }));
-
-                await Plotly.react(plotId, hiddenTraces);
-
-                // 所有曲线一起动画绘制
-                const animationDuration = 400; // 总动画时长缩短到400ms
-                const steps = 10; // 减少步数到10步
-
-                for (let step = 1; step <= steps; step++) {
-                    const progress = step / steps;
-
-                    // 为所有曲线同时更新数据
-                    const updatedTraces = traces.map(trace => {
-                        const endIndex = Math.ceil(trace.x.length * progress);
-                        return {
-                            ...trace,
-                            x: trace.x.slice(0, endIndex),
-                            y: trace.y.slice(0, endIndex)
-                        };
-                    });
-
-                    await Plotly.react(plotId, updatedTraces);
-
-                    // 等待一小段时间
-                    if (step < steps) {
-                        await new Promise(resolve => setTimeout(resolve, animationDuration / steps));
-                    }
+        function restorePageState() {
+            // 从应用状态恢复页面状态
+            if (window.appState) {
+                const currentFileId = window.appState.getState('currentFileId');
+                if (currentFileId && fileSelector) {
+                    fileSelector.setSelectedFile(currentFileId);
                 }
 
-            } catch (error) {
-                console.error('动画播放失败:', error);
-                // 如果动画失败，直接显示完整图表
-                await Plotly.react(plotId, traces);
+                const filters = window.appState.getState('filters');
+                if (filters && dataFilter) {
+                    dataFilter.setFilters(filters);
+                }
+
+                const chartConfigState = window.appState.getState('chartConfig');
+                if (chartConfigState && chartConfig) {
+                    chartConfig.setConfig(chartConfigState);
+                }
             }
         }
 
-        // 页面状态管理初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 设置当前页面为可视化页面
-            if (window.pageStateManager) {
-                window.pageStateManager.setCurrentPage('visualization');
+        function updateChartStyle() {
+            if (currentChart) {
+                generateChart();
             }
+        }
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initializePage);
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', () => {
+            if (fileSelector) fileSelector.destroy();
+            if (dataFilter) dataFilter.destroy();
+            if (chartConfig) chartConfig.destroy();
+            if (globalLoading) globalLoading.destroy();
+            if (globalErrorBoundary) globalErrorBoundary.destroy();
         });
-
-        // 在关键操作后保存状态
-        function savePageState() {
-            if (window.pageStateManager) {
-                window.pageStateManager.saveState();
-            }
-        }
-
-        // 重写一些关键函数，在操作后保存状态
-        const originalSwitchFile = switchFile;
-        switchFile = function() {
-            originalSwitchFile.apply(this, arguments);
-            setTimeout(savePageState, 500); // 延迟保存，确保操作完成
-        };
-
-        const originalRenderChart = renderChart;
-        renderChart = async function() {
-            const result = await originalRenderChart.apply(this, arguments);
-            setTimeout(savePageState, 500);
-            return result;
-        };
     </script>
 </body>
 </html>
