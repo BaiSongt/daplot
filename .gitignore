@@ -66,6 +66,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Node.js testing
+.nyc_output/
+coverage/
+*.lcov
+.coverage/
+
 # Testing
 coverage/
 .nyc_output
@@ -73,6 +79,37 @@ coverage/
 cypress/videos/
 cypress/screenshots/
 cypress/downloads/
+cypress/fixtures/downloads/
+test-results/
+test-output/
+junit.xml
+test-report.html
+mochawesome-report/
+allure-results/
+allure-report/
+
+# Jest specific
+jest-coverage/
+jest-results/
+jest-html-reporters-attach/
+
+# Cypress specific
+cypress/reports/
+cypress/results/
+cypress.env.json
+
+# Test artifacts
+*.test.log
+test-*.log
+test_*.log
+screenshots/
+videos/
+reports/
+
+# Playwright (if used in future)
+playwright-report/
+test-results/
+playwright/.cache/
 
 # Build outputs
 dist/
@@ -153,6 +190,15 @@ site/
 # Temporary files
 .tmp/
 tmp/
+temp/
+*.tmp
+*.temp
+
+# Test temporary files
+test-temp/
+test-fixtures-temp/
+mock-data-temp/
+test-uploads/
 
 # Security
 .env.local
@@ -170,3 +216,35 @@ tmp/
 
 # Keep Kiro configuration
 # .kiro/
+
+# Project-specific test files
+front_end/tests/temp/
+front_end/tests/fixtures/temp/
+front_end/tests/downloads/
+front_end/tests/uploads/
+front_end/tests/screenshots/
+front_end/tests/videos/
+front_end/tests/reports/
+front_end/tests/coverage/
+front_end/tests/results/
+
+# Test data files (temporary)
+test_data/temp/
+test_data/generated/
+test_data/*.temp.*
+
+# Backend test artifacts
+back_end/tests/temp/
+back_end/tests/fixtures/temp/
+back_end/tests/uploads/
+back_end/tests/downloads/
+
+# Performance test results
+performance-results/
+benchmark-results/
+load-test-results/
+
+# Visual regression test results
+visual-diff/
+screenshot-diff/
+image-diff/
