@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot 项目文档</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .breadcrumb {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .breadcrumb a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .doc-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .doc-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .doc-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .doc-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .doc-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .doc-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .doc-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-complete {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-updated {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .quick-nav {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .quick-nav h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .toc h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .toc li:before {
+            content: "📄";
+            position: absolute;
+            left: 0;
+        }
+
+        .toc a {
+            color: #495057;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: #007bff;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../index.html">🏠 首页</a> / 📚 项目文档
+        </div>
+
+        <div class="header">
+            <h1>📚 DaPlot 项目文档</h1>
+            <p>完整的项目文档和技术资料</p>
+        </div>
+
+        <div class="toc">
+            <h3>📋 文档目录</h3>
+            <ul>
+                <li><a href="#refactor-summary">重构总结文档</a></li>
+                <li><a href="#completion-report">第四阶段完成报告</a></li>
+                <li><a href="#project-readme">项目说明文档</a></li>
+                <li><a href="#architecture-docs">架构设计文档</a></li>
+            </ul>
+        </div>
+
+        <div class="doc-grid">
+            <!-- 重构总结 -->
+            <div class="doc-card" id="refactor-summary">
+                <div class="doc-icon">📋</div>
+                <div class="doc-title">重构总结文档</div>
+                <div class="doc-meta">
+                    <span class="status-badge status-complete">✅ 已完成</span>
+                    <span>最后更新: 今天</span>
+                </div>
+                <div class="doc-description">
+                    详细记录了可视化页面重构的完整过程，包括技术改进、架构升级和功能增强等内容。
+                </div>
+                <div class="doc-actions">
+                    <a href="REFACTOR_SUMMARY.md" class="btn btn-primary">📖 查看文档</a>
+                    <button class="btn btn-secondary" onclick="previewDoc('REFACTOR_SUMMARY.md')">👁️ 预览</button>
+                </div>
+            </div>
+
+            <!-- 完成报告 -->
+            <div class="doc-card" id="completion-report">
+                <div class="doc-icon">🎉</div>
+                <div class="doc-title">第四阶段完成报告</div>
+                <div class="doc-meta">
+                    <span class="status-badge status-complete">✅ 已完成</span>
+                    <span>最后更新: 今天</span>
+                </div>
+                <div class="doc-description">
+                    第四阶段"页面重构和集成"的完整执行报告，包含任务完成情况、技术成果和质量验证。
+                </div>
+                <div class="doc-actions">
+                    <a href="PHASE4_COMPLETION_REPORT.md" class="btn btn-primary">📊 查看报告</a>
+                    <button class="btn btn-secondary" onclick="previewDoc('PHASE4_COMPLETION_REPORT.md')">👁️
+                        预览</button>
+                </div>
+            </div>
+
+            <!-- 项目说明 -->
+            <div class="doc-card" id="project-readme">
+                <div class="doc-icon">📖</div>
+                <div class="doc-title">项目说明文档</div>
+                <div class="doc-meta">
+                    <span class="status-badge status-updated">🔄 已更新</span>
+                    <span>最后更新: 今天</span>
+                </div>
+                <div class="doc-description">
+                    项目的整体说明文档，包含目录结构、快速开始指南、架构说明和开发指南。
+                </div>
+                <div class="doc-actions">
+                    <a href="../README.md" class="btn btn-primary">📚 查看说明</a>
+                    <button class="btn btn-secondary" onclick="previewDoc('../README.md')">👁️ 预览</button>
+                </div>
+            </div>
+
+            <!-- 架构文档 -->
+            <div class="doc-card" id="architecture-docs">
+                <div class="doc-icon">🏗️</div>
+                <div class="doc-title">架构设计文档</div>
+                <div class="doc-meta">
+                    <span class="status-badge status-complete">✅ 可用</span>
+                    <span>位置: 规格目录</span>
+                </div>
+                <div class="doc-description">
+                    详细的架构设计文档，包含需求分析、设计方案和实施计划，位于项目规格目录中。
+                </div>
+                <div class="doc-actions">
+                    <a href="../../.kiro/specs/daplot-modular-refactoring/" class="btn btn-primary">🔍 查看规格</a>
+                    <button class="btn btn-secondary" onclick="showArchitectureInfo()">ℹ️ 详情</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-nav">
+            <h2>🚀 快速导航</h2>
+            <div class="nav-links">
+                <a href="../index.html" class="btn btn-primary">🏠 返回主页</a>
+                <a href="../tests/" class="btn btn-secondary">🧪 测试中心</a>
+                <a href="../src/" class="btn btn-secondary">📦 源代码</a>
+                <a href="../archive/" class="btn btn-secondary">📁 归档文件</a>
+                <button class="btn btn-secondary" onclick="generateDocIndex()">📋 生成索引</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 预览文档功能
+        function previewDoc(docPath) {
+            // 在新窗口中打开文档预览
+            const previewWindow = window.open('', '_blank', 'width=800,height=600');
+            previewWindow.document.write(`
+                <html>
+                <head>
+                    <title>文档预览 - ${docPath}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                        .header { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+                        .content { max-width: 800px; }
+                        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+                        code { background: #f8f9fa; padding: 2px 4px; border-radius: 2px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>📄 文档预览</h2>
+                        <p><strong>文件:</strong> ${docPath}</p>
+                        <p><strong>说明:</strong> 这是文档的预览窗口，实际内容请点击"查看文档"按钮。</p>
+                    </div>
+                    <div class="content">
+                        <p>🔄 正在加载文档内容...</p>
+                        <p>由于安全限制，无法直接在预览窗口中显示Markdown文件内容。</p>
+                        <p>请点击主页面中的"查看文档"按钮来访问完整文档。</p>
+                        <br>
+                        <button onclick="window.close()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">关闭预览</button>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+
+        // 显示架构信息
+        function showArchitectureInfo() {
+            alert(`
+🏗️ 架构设计文档信息
+
+📁 位置: .kiro/specs/daplot-modular-refactoring/
+📄 包含文件:
+  • requirements.md - 需求文档
+  • design.md - 设计文档  
+  • tasks.md - 任务列表
+
+🎯 当前状态:
+  • 第四阶段已完成 (4/4 任务)
+  • 总体进度: 67% (4/6 阶段)
+
+📊 重构成果:
+  • 19个模块和组件
+  • 4个页面完全重构
+  • 100%架构迁移完成
+            `);
+        }
+
+        // 生成文档索引
+        function generateDocIndex() {
+            const docs = [
+                { name: 'REFACTOR_SUMMARY.md', desc: '重构总结文档', status: '✅ 完成' },
+                { name: 'PHASE4_COMPLETION_REPORT.md', desc: '第四阶段完成报告', status: '✅ 完成' },
+                { name: '../README.md', desc: '项目说明文档', status: '🔄 更新' },
+                { name: '../../.kiro/specs/', desc: '架构设计规格', status: '📋 可用' }
+            ];
+
+            const indexContent = `
+📚 DaPlot 项目文档索引
+
+生成时间: ${new Date().toLocaleString('zh-CN')}
+
+📄 文档列表:
+${docs.map(doc => `  • ${doc.name} - ${doc.desc} [${doc.status}]`).join('\n')}
+
+📊 统计信息:
+  • 总文档数: ${docs.length}
+  • 完成文档: ${docs.filter(d => d.status.includes('完成')).length}
+  • 更新文档: ${docs.filter(d => d.status.includes('更新')).length}
+
+🔗 快速链接:
+  • 测试中心: ../tests/
+  • 源代码: ../src/
+  • 归档文件: ../archive/
+            `;
+
+            // 显示索引内容
+            const indexWindow = window.open('', '_blank');
+            indexWindow.document.write(`
+                <html>
+                <head>
+                    <title>文档索引</title>
+                    <style>
+                        body { font-family: monospace; margin: 20px; line-height: 1.6; }
+                        pre { background: #f8f9fa; padding: 15px; border-radius: 4px; }
+                    </style>
+                </head>
+                <body>
+                    <pre>${indexContent}</pre>
+                    <button onclick="window.close()" style="margin-top: 15px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">关闭</button>
+                </body>
+                </html>
+            `);
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📚 DaPlot 文档中心已加载');
+            console.log('📄 可用文档:', document.querySelectorAll('.doc-card').length, '个');
+        });
+    </script>
+</body>
+
+</html>
