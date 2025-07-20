@@ -1,10 +1,10 @@
 /**
- * 辅助函数工具库
- * 提供常用的辅助函数和工具方法
+ * 工具函数集合
+ * 提供常用的工具函数，提高开发效率
  */
 
 // 防抖函数
-export const debounce = (func, wait, immediate = false) => {
+const debounce = (func, wait, immediate = false) => {
     let timeout;
     return function executedFunction(...args) {
         const later = () => {
@@ -19,7 +19,7 @@ export const debounce = (func, wait, immediate = false) => {
 };
 
 // 节流函数
-export const throttle = (func, limit) => {
+const throttle = (func, limit) => {
     let inThrottle;
     return function executedFunction(...args) {
         if (!inThrottle) {
@@ -31,7 +31,7 @@ export const throttle = (func, limit) => {
 };
 
 // 深拷贝
-export const deepClone = (obj) => {
+const deepClone = (obj) => {
     if (obj === null || typeof obj !== 'object') return obj;
     if (obj instanceof Date) return new Date(obj.getTime());
     if (obj instanceof Array) return obj.map(item => deepClone(item));
@@ -47,7 +47,7 @@ export const deepClone = (obj) => {
 };
 
 // 深度合并对象
-export const deepMerge = (target, ...sources) => {
+const deepMerge = (target, ...sources) => {
     if (!sources.length) return target;
     const source = sources.shift();
 
@@ -61,68 +61,63 @@ export const deepMerge = (target, ...sources) => {
             }
         }
     }
-
     return deepMerge(target, ...sources);
 };
 
 // 判断是否为对象
-export const isObject = (item) => {
+const isObject = (item) => {
     return item && typeof item === 'object' && !Array.isArray(item);
 };
 
 // 获取嵌套对象属性
-export const getNestedProperty = (obj, path, defaultValue = undefined) => {
+const getNestedProperty = (obj, path, defaultValue = undefined) => {
     const keys = path.split('.');
     let result = obj;
     
     for (const key of keys) {
-        if (result === null || result === undefined || !result.hasOwnProperty(key)) {
+        if (result === null || result === undefined || !(key in result)) {
             return defaultValue;
         }
         result = result[key];
     }
-    
     return result;
 };
 
 // 设置嵌套对象属性
-export const setNestedProperty = (obj, path, value) => {
+const setNestedProperty = (obj, path, value) => {
     const keys = path.split('.');
     const lastKey = keys.pop();
     let current = obj;
     
     for (const key of keys) {
-        if (!current[key] || typeof current[key] !== 'object') {
+        if (!(key in current) || !isObject(current[key])) {
             current[key] = {};
         }
         current = current[key];
     }
-    
     current[lastKey] = value;
-    return obj;
 };
 
 // 数组去重
-export const uniqueArray = (arr, key = null) => {
+const uniqueArray = (arr, key = null) => {
     if (!Array.isArray(arr)) return arr;
     
     if (key) {
         const seen = new Set();
         return arr.filter(item => {
-            const value = typeof key === 'function' ? key(item) : item[key];
-            if (seen.has(value)) {
+            const keyValue = typeof key === 'function' ? key(item) : item[key];
+            if (seen.has(keyValue)) {
                 return false;
             }
-            seen.add(value);
+            seen.add(keyValue);
             return true;
         });
     }
-    
     return [...new Set(arr)];
 };
 
 // 数组分组
-export const groupBy = (arr, key) => {
+const groupBy = (arr, key) => {
     if (!Array.isArray(arr)) return {};
     
     return arr.reduce((groups, item) => {
@@ -136,46 +131,49 @@ export const groupBy = (arr, key) => {
 };
 
 // 数组排序
-export const sortBy = (arr, key, order = 'asc') => {
+const sortBy = (arr, key, order = 'asc') => {
     if (!Array.isArray(arr)) return arr;
     
     return [...arr].sort((a, b) => {
         const aVal = typeof key === 'function' ? key(a) : a[key];
         const bVal = typeof key === 'function' ? key(b) : b[key];
         
-        if (aVal < bVal) return order === 'asc' ? -1 : 1;
-        if (aVal > bVal) return order === 'asc' ? 1 : -1;
-        return 0;
+        if (order === 'desc') {
+            return bVal > aVal ? 1 : bVal < aVal ? -1 : 0;
+        }
+        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
     });
 };
 
 // 数组分页
-export const paginate = (arr, page, pageSize) => {
+const paginate = (arr, page, pageSize) => {
     if (!Array.isArray(arr)) return { data: [], total: 0, page, pageSize };
     
+    const total = arr.length;
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
+    const data = arr.slice(startIndex, endIndex);
     
     return {
-        data: arr.slice(startIndex, endIndex),
-        total: arr.length,
+        data,
+        total,
         page,
         pageSize,
-        totalPages: Math.ceil(arr.length / pageSize)
+        totalPages: Math.ceil(total / pageSize)
     };
 };
 
 // 随机数生成
-export const randomInt = (min, max) => {
+const randomInt = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-export const randomFloat = (min, max, decimals = 2) => {
+const randomFloat = (min, max, decimals = 2) => {
     const random = Math.random() * (max - min) + min;
     return parseFloat(random.toFixed(decimals));
 };
 
-export const randomString = (length = 8, chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') => {
+const randomString = (length = 8, chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') => {
     let result = '';
     for (let i = 0; i < length; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -183,12 +181,12 @@ export const randomString = (length = 8, chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcd
     return result;
 };
 
-export const randomId = () => {
+const randomId = () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
 // UUID生成
-export const generateUUID = () => {
+const generateUUID = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -197,7 +195,7 @@ export const generateUUID = () => {
 };
 
 // 颜色工具
-export const hexToRgb = (hex) => {
+const hexToRgb = (hex) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
         r: parseInt(result[1], 16),
@@ -206,43 +204,42 @@ export const hexToRgb = (hex) => {
     } : null;
 };
 
-export const rgbToHex = (r, g, b) => {
+const rgbToHex = (r, g, b) => {
     return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 };
 
-export const getContrastColor = (hexColor) => {
+const getContrastColor = (hexColor) => {
     const rgb = hexToRgb(hexColor);
     if (!rgb) return '#000000';
-    
     const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
     return brightness > 128 ? '#000000' : '#ffffff';
 };
 
 // 数学工具
-export const clamp = (value, min, max) => {
+const clamp = (value, min, max) => {
     return Math.min(Math.max(value, min), max);
 };
 
-export const lerp = (start, end, factor) => {
+const lerp = (start, end, factor) => {
     return start + (end - start) * factor;
 };
 
-export const roundTo = (value, decimals) => {
+const roundTo = (value, decimals) => {
     const factor = Math.pow(10, decimals);
     return Math.round(value * factor) / factor;
 };
 
-export const average = (arr) => {
+const average = (arr) => {
     if (!Array.isArray(arr) || arr.length === 0) return 0;
     return arr.reduce((sum, val) => sum + val, 0) / arr.length;
 };
 
-export const sum = (arr) => {
+const sum = (arr) => {
     if (!Array.isArray(arr)) return 0;
     return arr.reduce((sum, val) => sum + val, 0);
 };
 
-export const median = (arr) => {
+const median = (arr) => {
     if (!Array.isArray(arr) || arr.length === 0) return 0;
     const sorted = [...arr].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
@@ -250,7 +247,7 @@ export const median = (arr) => {
 };
 
 // 字符串工具
-export const slugify = (str) => {
+const slugify = (str) => {
     return str
         .toLowerCase()
         .trim()
@@ -259,49 +256,49 @@ export const slugify = (str) => {
         .replace(/^-+|-+$/g, '');
 };
 
-export const capitalize = (str) => {
+const capitalize = (str) => {
     if (typeof str !== 'string') return str;
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
-export const removeAccents = (str) => {
+const removeAccents = (str) => {
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 };
 
 // 日期工具
-export const addDays = (date, days) => {
+const addDays = (date, days) => {
     const result = new Date(date);
     result.setDate(result.getDate() + days);
     return result;
 };
 
-export const diffDays = (date1, date2) => {
+const diffDays = (date1, date2) => {
     const timeDiff = Math.abs(date2.getTime() - date1.getTime());
     return Math.ceil(timeDiff / (1000 * 3600 * 24));
 };
 
-export const isToday = (date) => {
+const isToday = (date) => {
     const today = new Date();
     return date.toDateString() === today.toDateString();
 };
 
-export const isYesterday = (date) => {
+const isYesterday = (date) => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     return date.toDateString() === yesterday.toDateString();
 };
 
 // URL工具
-export const getUrlParams = (url = window.location.href) => {
+const getUrlParams = (url = window.location.href) => {
     const urlObj = new URL(url);
     const params = {};
-    for (const [key, value] of urlObj.searchParams) {
+    urlObj.searchParams.forEach((value, key) => {
         params[key] = value;
-    }
+    });
     return params;
 };
 
-export const buildUrl = (baseUrl, params = {}) => {
+const buildUrl = (baseUrl, params = {}) => {
     const url = new URL(baseUrl);
     Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
@@ -312,7 +309,7 @@ export const buildUrl = (baseUrl, params = {}) => {
 };
 
 // 存储工具
-export const storage = {
+const storage = {
     set: (key, value, expiry = null) => {
         const item = {
             value,
@@ -321,21 +318,19 @@ export const storage = {
         localStorage.setItem(key, JSON.stringify(item));
     },
     
-    get: (key, defaultValue = null) => {
+    get: (key) => {
+        const itemStr = localStorage.getItem(key);
+        if (!itemStr) return null;
+        
         try {
-            const itemStr = localStorage.getItem(key);
-            if (!itemStr) return defaultValue;
-            
             const item = JSON.parse(itemStr);
-            
             if (item.expiry && Date.now() > item.expiry) {
                 localStorage.removeItem(key);
-                return defaultValue;
+                return null;
             }
-            
             return item.value;
-        } catch (error) {
-            return defaultValue;
+        } catch (e) {
+            return null;
         }
     },
     
@@ -349,22 +344,21 @@ export const storage = {
 };
 
 // 性能工具
-export const measureTime = (fn, label = 'Operation') => {
+const measureTime = (fn, label = 'Operation') => {
     return async (...args) => {
         const start = performance.now();
         const result = await fn(...args);
         const end = performance.now();
-        console.log(`${label} took ${(end - start).toFixed(2)} milliseconds`);
+        console.log(`${label} took ${end - start} milliseconds`);
         return result;
     };
 };
 
-export const memoize = (fn, keyGenerator = (...args) => JSON.stringify(args)) => {
+const memoize = (fn, keyGenerator = (...args) => JSON.stringify(args)) => {
     const cache = new Map();
     
     return (...args) => {
         const key = keyGenerator(...args);
-        
         if (cache.has(key)) {
             return cache.get(key);
         }
@@ -376,11 +370,11 @@ export const memoize = (fn, keyGenerator = (...args) => JSON.stringify(args)) =>
 };
 
 // 异步工具
-export const sleep = (ms) => {
+const sleep = (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 };
 
-export const retry = async (fn, maxAttempts = 3, delay = 1000) => {
+const retry = async (fn, maxAttempts = 3, delay = 1000) => {
     let lastError;
     
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -388,17 +382,15 @@ export const retry = async (fn, maxAttempts = 3, delay = 1000) => {
             return await fn();
         } catch (error) {
             lastError = error;
-            
-            if (attempt === maxAttempts) {
-                throw lastError;
-            }
-            
-            await sleep(delay * attempt);
+            if (attempt === maxAttempts) break;
+            await sleep(delay);
         }
     }
+    
+    throw lastError;
 };
 
-export const timeout = (promise, ms) => {
+const timeout = (promise, ms) => {
     return Promise.race([
         promise,
         new Promise((_, reject) => 
@@ -408,7 +400,7 @@ export const timeout = (promise, ms) => {
 };
 
 // 事件工具
-export const once = (fn) => {
+const once = (fn) => {
     let called = false;
     return (...args) => {
         if (!called) {
@@ -418,7 +410,7 @@ export const once = (fn) => {
     };
 };
 
-export const createEventEmitter = () => {
+const createEventEmitter = () => {
     const events = {};
     
     return {
@@ -426,34 +418,34 @@ export const createEventEmitter = () => {
             if (!events[event]) events[event] = [];
             events[event].push(callback);
         },
-        
         off: (event, callback) => {
-            if (!events[event]) return;
-            events[event] = events[event].filter(cb => cb !== callback);
+            if (events[event]) {
+                events[event] = events[event].filter(cb => cb !== callback);
+            }
         },
-        
         emit: (event, ...args) => {
-            if (!events[event]) return;
-            events[event].forEach(callback => callback(...args));
+            if (events[event]) {
+                events[event].forEach(callback => callback(...args));
+            }
         }
     };
 };
 
 // 类型检查工具
-export const getType = (value) => {
+const getType = (value) => {
     return Object.prototype.toString.call(value).slice(8, -1).toLowerCase();
 };
 
-export const isPromise = (value) => {
+const isPromise = (value) => {
     return value && typeof value.then === 'function';
 };
 
-export const isElement = (value) => {
+const isElement = (value) => {
     return value instanceof Element || value instanceof HTMLDocument;
 };
 
-// 默认导出
-export default {
+// 全局导出
+const helpers = {
     // 函数工具
     debounce, throttle, once, memoize,
     
@@ -493,6 +485,14 @@ export default {
     // 事件工具
     createEventEmitter,
     
-    // 类型检查
+    // 类型检查工具
     getType, isPromise, isElement
 };
+
+// 导出到全局
+window.helpers = helpers;
+
+// 为了向后兼容，也导出各个函数
+Object.assign(window, helpers);
+
+console.log('🔧 工具函数模块已加载');

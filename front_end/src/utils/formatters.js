@@ -4,7 +4,7 @@
  */
 
 // 数字格式化
-export const formatNumber = (value, options = {}) => {
+const formatNumber = (value, options = {}) => {
     const {
         decimals = 2,
         thousandsSeparator = ',',
@@ -33,7 +33,7 @@ export const formatNumber = (value, options = {}) => {
     return prefix + formatted + suffix;
 };
 
-export const formatCurrency = (value, currency = 'CNY', locale = 'zh-CN') => {
+const formatCurrency = (value, currency = 'CNY', locale = 'zh-CN') => {
     if (typeof value !== 'number' || isNaN(value)) {
         return value;
     }
@@ -48,7 +48,7 @@ export const formatCurrency = (value, currency = 'CNY', locale = 'zh-CN') => {
     }
 };
 
-export const formatPercentage = (value, decimals = 1) => {
+const formatPercentage = (value, decimals = 1) => {
     if (typeof value !== 'number' || isNaN(value)) {
         return value;
     }
@@ -56,7 +56,7 @@ export const formatPercentage = (value, decimals = 1) => {
     return formatNumber(value * 100, { decimals, suffix: '%' });
 };
 
-export const formatFileSize = (bytes, decimals = 2) => {
+const formatFileSize = (bytes, decimals = 2) => {
     if (typeof bytes !== 'number' || bytes === 0) return '0 B';
 
     const k = 1024;
@@ -67,7 +67,7 @@ export const formatFileSize = (bytes, decimals = 2) => {
 };
 
 // 日期时间格式化
-export const formatDate = (date, format = 'YYYY-MM-DD') => {
+const formatDate = (date, format = 'YYYY-MM-DD') => {
     if (!date) return '';
     
     const d = new Date(date);
@@ -92,15 +92,15 @@ export const formatDate = (date, format = 'YYYY-MM-DD') => {
     return format.replace(/YYYY|MM|DD|HH|mm|ss/g, match => formatMap[match]);
 };
 
-export const formatDateTime = (date) => {
+const formatDateTime = (date) => {
     return formatDate(date, 'YYYY-MM-DD HH:mm:ss');
 };
 
-export const formatTime = (date) => {
+const formatTime = (date) => {
     return formatDate(date, 'HH:mm:ss');
 };
 
-export const formatRelativeTime = (date) => {
+const formatRelativeTime = (date) => {
     if (!date) return '';
     
     const now = new Date();
@@ -120,42 +120,42 @@ export const formatRelativeTime = (date) => {
 };
 
 // 字符串格式化
-export const formatString = (template, values) => {
+const formatString = (template, values) => {
     return template.replace(/\{(\w+)\}/g, (match, key) => {
         return values.hasOwnProperty(key) ? values[key] : match;
     });
 };
 
-export const truncateString = (str, maxLength, suffix = '...') => {
+const truncateString = (str, maxLength, suffix = '...') => {
     if (typeof str !== 'string') return str;
     if (str.length <= maxLength) return str;
     
     return str.substring(0, maxLength - suffix.length) + suffix;
 };
 
-export const capitalizeFirst = (str) => {
+const capitalizeFirst = (str) => {
     if (typeof str !== 'string' || str.length === 0) return str;
     return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
-export const capitalizeWords = (str) => {
+const capitalizeWords = (str) => {
     if (typeof str !== 'string') return str;
     return str.replace(/\b\w/g, char => char.toUpperCase());
 };
 
-export const camelCase = (str) => {
+const camelCase = (str) => {
     if (typeof str !== 'string') return str;
     return str.replace(/[-_\s]+(.)?/g, (_, char) => char ? char.toUpperCase() : '');
 };
 
-export const kebabCase = (str) => {
+const kebabCase = (str) => {
     if (typeof str !== 'string') return str;
     return str.replace(/([a-z])([A-Z])/g, '$1-$2')
               .replace(/[\s_]+/g, '-')
               .toLowerCase();
 };
 
-export const snakeCase = (str) => {
+const snakeCase = (str) => {
     if (typeof str !== 'string') return str;
     return str.replace(/([a-z])([A-Z])/g, '$1_$2')
               .replace(/[\s-]+/g, '_')
@@ -163,7 +163,7 @@ export const snakeCase = (str) => {
 };
 
 // 数组格式化
-export const formatArray = (arr, options = {}) => {
+const formatArray = (arr, options = {}) => {
     if (!Array.isArray(arr)) return arr;
     
     const {
@@ -195,7 +195,7 @@ export const formatArray = (arr, options = {}) => {
     return result;
 };
 
-export const formatList = (arr, formatter = null) => {
+const formatList = (arr, formatter = null) => {
     if (!Array.isArray(arr)) return arr;
     
     if (formatter && typeof formatter === 'function') {
@@ -206,7 +206,7 @@ export const formatList = (arr, formatter = null) => {
 };
 
 // 对象格式化
-export const formatObject = (obj, options = {}) => {
+const formatObject = (obj, options = {}) => {
     if (typeof obj !== 'object' || obj === null) return obj;
     
     const {
@@ -222,7 +222,7 @@ export const formatObject = (obj, options = {}) => {
 };
 
 // 颜色格式化
-export const formatColor = (color, format = 'hex') => {
+const formatColor = (color, format = 'hex') => {
     if (typeof color !== 'string') return color;
 
     // 简单的颜色格式转换
@@ -238,7 +238,7 @@ export const formatColor = (color, format = 'hex') => {
 };
 
 // 数据表格格式化
-export const formatTableData = (data, columns) => {
+const formatTableData = (data, columns) => {
     if (!Array.isArray(data)) return data;
     
     return data.map(row => {
@@ -260,7 +260,7 @@ export const formatTableData = (data, columns) => {
 };
 
 // URL格式化
-export const formatUrl = (url, params = {}) => {
+const formatUrl = (url, params = {}) => {
     if (typeof url !== 'string') return url;
     
     try {
@@ -279,7 +279,7 @@ export const formatUrl = (url, params = {}) => {
 };
 
 // 电话号码格式化
-export const formatPhoneNumber = (phone, format = 'xxx-xxxx-xxxx') => {
+const formatPhoneNumber = (phone, format = 'xxx-xxxx-xxxx') => {
     if (typeof phone !== 'string') return phone;
     
     const cleaned = phone.replace(/\D/g, '');
@@ -292,7 +292,7 @@ export const formatPhoneNumber = (phone, format = 'xxx-xxxx-xxxx') => {
 };
 
 // 身份证号格式化
-export const formatIdCard = (idCard) => {
+const formatIdCard = (idCard) => {
     if (typeof idCard !== 'string') return idCard;
     
     const cleaned = idCard.replace(/\s/g, '');
@@ -305,7 +305,7 @@ export const formatIdCard = (idCard) => {
 };
 
 // 银行卡号格式化
-export const formatBankCard = (cardNumber) => {
+const formatBankCard = (cardNumber) => {
     if (typeof cardNumber !== 'string') return cardNumber;
     
     const cleaned = cardNumber.replace(/\s/g, '');
@@ -314,7 +314,7 @@ export const formatBankCard = (cardNumber) => {
 };
 
 // HTML转义
-export const escapeHtml = (str) => {
+const escapeHtml = (str) => {
     if (typeof str !== 'string') return str;
     
     const htmlEscapes = {
@@ -328,7 +328,7 @@ export const escapeHtml = (str) => {
     return str.replace(/[&<>"']/g, char => htmlEscapes[char]);
 };
 
-export const unescapeHtml = (str) => {
+const unescapeHtml = (str) => {
     if (typeof str !== 'string') return str;
     
     const htmlUnescapes = {
@@ -343,7 +343,7 @@ export const unescapeHtml = (str) => {
 };
 
 // 创建自定义格式化器
-export const createFormatter = (formatFn, defaultOptions = {}) => {
+const createFormatter = (formatFn, defaultOptions = {}) => {
     return (value, options = {}) => {
         const finalOptions = { ...defaultOptions, ...options };
         return formatFn(value, finalOptions);
@@ -351,7 +351,7 @@ export const createFormatter = (formatFn, defaultOptions = {}) => {
 };
 
 // 格式化器组合
-export const composeFormatters = (...formatters) => {
+const composeFormatters = (...formatters) => {
     return (value) => {
         return formatters.reduce((result, formatter) => {
             return typeof formatter === 'function' ? formatter(result) : result;
@@ -359,8 +359,8 @@ export const composeFormatters = (...formatters) => {
     };
 };
 
-// 默认导出
-export default {
+// 全局导出
+const formatters = {
     // 数字格式化
     formatNumber, formatCurrency, formatPercentage, formatFileSize,
     
@@ -384,3 +384,11 @@ export default {
     // 工具函数
     createFormatter, composeFormatters
 };
+
+// 导出到全局
+window.formatters = formatters;
+
+// 为了向后兼容，也导出各个函数
+Object.assign(window, formatters);
+
+console.log('🎨 格式化工具模块已加载');

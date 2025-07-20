@@ -4,15 +4,15 @@
  */
 
 // 基础类型验证
-export const isString = (value) => typeof value === 'string';
-export const isNumber = (value) => typeof value === 'number' && !isNaN(value);
-export const isBoolean = (value) => typeof value === 'boolean';
-export const isArray = (value) => Array.isArray(value);
-export const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
-export const isFunction = (value) => typeof value === 'function';
-export const isNull = (value) => value === null;
-export const isUndefined = (value) => value === undefined;
-export const isEmpty = (value) => {
+const isString = (value) => typeof value === 'string';
+const isNumber = (value) => typeof value === 'number' && !isNaN(value);
+const isBoolean = (value) => typeof value === 'boolean';
+const isArray = (value) => Array.isArray(value);
+const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const isFunction = (value) => typeof value === 'function';
+const isNull = (value) => value === null;
+const isUndefined = (value) => value === undefined;
+const isEmpty = (value) => {
     if (value === null || value === undefined) return true;
     if (typeof value === 'string') return value.trim() === '';
     if (Array.isArray(value)) return value.length === 0;
@@ -21,18 +21,18 @@ export const isEmpty = (value) => {
 };
 
 // 数值验证
-export const isInteger = (value) => Number.isInteger(value);
-export const isPositive = (value) => isNumber(value) && value > 0;
-export const isNegative = (value) => isNumber(value) && value < 0;
-export const isInRange = (value, min, max) => isNumber(value) && value >= min && value <= max;
+const isInteger = (value) => Number.isInteger(value);
+const isPositive = (value) => isNumber(value) && value > 0;
+const isNegative = (value) => isNumber(value) && value < 0;
+const isInRange = (value, min, max) => isNumber(value) && value >= min && value <= max;
 
 // 字符串验证
-export const isEmail = (value) => {
+const isEmail = (value) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return isString(value) && emailRegex.test(value);
 };
 
-export const isUrl = (value) => {
+const isUrl = (value) => {
     try {
         new URL(value);
         return true;
@@ -41,58 +41,58 @@ export const isUrl = (value) => {
     }
 };
 
-export const isPhoneNumber = (value) => {
+const isPhoneNumber = (value) => {
     const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
     return isString(value) && phoneRegex.test(value.replace(/[\s\-\(\)]/g, ''));
 };
 
-export const hasMinLength = (value, minLength) => {
+const hasMinLength = (value, minLength) => {
     return isString(value) && value.length >= minLength;
 };
 
-export const hasMaxLength = (value, maxLength) => {
+const hasMaxLength = (value, maxLength) => {
     return isString(value) && value.length <= maxLength;
 };
 
-export const matchesPattern = (value, pattern) => {
+const matchesPattern = (value, pattern) => {
     const regex = new RegExp(pattern);
     return isString(value) && regex.test(value);
 };
 
 // 数组验证
-export const hasMinItems = (value, minItems) => {
+const hasMinItems = (value, minItems) => {
     return isArray(value) && value.length >= minItems;
 };
 
-export const hasMaxItems = (value, maxItems) => {
+const hasMaxItems = (value, maxItems) => {
     return isArray(value) && value.length <= maxItems;
 };
 
-export const allItemsMatch = (value, validator) => {
+const allItemsMatch = (value, validator) => {
     return isArray(value) && value.every(validator);
 };
 
 // 对象验证
-export const hasProperty = (obj, property) => {
+const hasProperty = (obj, property) => {
     return isObject(obj) && obj.hasOwnProperty(property);
 };
 
-export const hasProperties = (obj, properties) => {
+const hasProperties = (obj, properties) => {
     return isObject(obj) && properties.every(prop => obj.hasOwnProperty(prop));
 };
 
 // 文件验证
-export const isValidFileType = (file, allowedTypes) => {
+const isValidFileType = (file, allowedTypes) => {
     if (!file || !file.type) return false;
     return allowedTypes.includes(file.type);
 };
 
-export const isValidFileSize = (file, maxSize) => {
+const isValidFileSize = (file, maxSize) => {
     if (!file || !file.size) return false;
     return file.size <= maxSize;
 };
 
-export const isExcelFile = (file) => {
+const isExcelFile = (file) => {
     const excelTypes = [
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -101,7 +101,7 @@ export const isExcelFile = (file) => {
 };
 
 // 数据格式验证
-export const isValidJSON = (value) => {
+const isValidJSON = (value) => {
     try {
         JSON.parse(value);
         return true;
@@ -110,18 +110,18 @@ export const isValidJSON = (value) => {
     }
 };
 
-export const isValidDate = (value) => {
+const isValidDate = (value) => {
     const date = new Date(value);
     return date instanceof Date && !isNaN(date);
 };
 
-export const isValidColor = (value) => {
+const isValidColor = (value) => {
     const colorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
     return isString(value) && (colorRegex.test(value) || CSS.supports('color', value));
 };
 
 // 复合验证器
-export const createValidator = (rules) => {
+const createValidator = (rules) => {
     return (value) => {
         for (const rule of rules) {
             if (typeof rule === 'function') {
@@ -137,7 +137,7 @@ export const createValidator = (rules) => {
     };
 };
 
-export const createObjectValidator = (schema) => {
+const createObjectValidator = (schema) => {
     return (obj) => {
         if (!isObject(obj)) return false;
         
@@ -164,7 +164,7 @@ export const createObjectValidator = (schema) => {
 };
 
 // 异步验证器
-export const createAsyncValidator = (asyncValidatorFn) => {
+const createAsyncValidator = (asyncValidatorFn) => {
     return async (value) => {
         try {
             return await asyncValidatorFn(value);
@@ -176,7 +176,7 @@ export const createAsyncValidator = (asyncValidatorFn) => {
 };
 
 // 验证结果类
-export class ValidationResult {
+class ValidationResult {
     constructor(isValid = true, errors = []) {
         this.isValid = isValid;
         this.errors = errors;
@@ -201,7 +201,7 @@ export class ValidationResult {
 }
 
 // 表单验证器
-export class FormValidator {
+class FormValidator {
     constructor(schema) {
         this.schema = schema;
     }
@@ -277,7 +277,7 @@ export class FormValidator {
 }
 
 // 常用验证规则预设
-export const commonRules = {
+const commonRules = {
     required: (value) => !isEmpty(value),
     email: isEmail,
     url: isUrl,
@@ -292,8 +292,8 @@ export const commonRules = {
     fileSize: (maxSize) => (file) => isValidFileSize(file, maxSize)
 };
 
-// 默认导出
-export default {
+// 全局导出
+const VALIDATORS = {
     // 基础验证
     isString, isNumber, isBoolean, isArray, isObject, isFunction,
     isNull, isUndefined, isEmpty,
@@ -325,3 +325,13 @@ export default {
     // 常用规则
     commonRules
 };
+
+// 导出到全局
+window.VALIDATORS = VALIDATORS;
+window.ValidationResult = ValidationResult;
+window.FormValidator = FormValidator;
+
+// 为了向后兼容，也导出各个验证函数
+Object.assign(window, VALIDATORS);
+
+console.log('✅ 验证工具模块已加载');
