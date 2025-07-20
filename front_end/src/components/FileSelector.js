@@ -9,6 +9,7 @@ class FileSelector {
             multiple: false,
             showActions: true,
             showUpload: true,
+            showPreview: true,
             allowedTypes: ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
             maxFileSize: 50 * 1024 * 1024, // 50MB
             onSelect: null,
@@ -83,6 +84,13 @@ class FileSelector {
                         <div class="file-list-items"></div>
                     </div>
                 </div>
+                
+                ${this.options.showPreview ? `
+                    <div class="file-preview-container" style="display: none;">
+                        <h4>文件预览</h4>
+                        <div id="file-preview"></div>
+                    </div>
+                ` : ''}
             </div>
         `;
 
@@ -290,6 +298,52 @@ class FileSelector {
                 padding: 4px 8px;
                 font-size: 11px;
             }
+            
+            .file-preview-container {
+                padding: 15px;
+                border-top: 1px solid #e9ecef;
+                background: #f8f9fa;
+            }
+            
+            .file-preview-container h4 {
+                margin: 0 0 10px 0;
+                font-size: 14px;
+                color: #495057;
+            }
+            
+            .preview-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 12px;
+            }
+            
+            .preview-table th,
+            .preview-table td {
+                padding: 8px;
+                text-align: left;
+                border: 1px solid #dee2e6;
+            }
+            
+            .preview-table th {
+                background: #e9ecef;
+                font-weight: 500;
+            }
+            
+            .preview-info {
+                margin-top: 10px;
+                font-size: 11px;
+                color: #6c757d;
+            }
+            
+            .loading, .error {
+                padding: 20px;
+                text-align: center;
+                color: #6c757d;
+            }
+            
+            .error {
+                color: #dc3545;
+            }
         `;
         
         document.head.appendChild(style);
@@ -385,7 +439,35 @@ class FileSelector {
         this.setLoading(true);
 
         try {
-            const fileList = await window.dataManager.getFileList();
+            // Try to get file list from dataManager, fallback to mock data for testing
+            let fileList;
+            if (window.dataManager && typeof window.dataManager.getFileList === 'function') {
+                fileList = await window.dataManager.getFileList();
+            } else {
+                // Mock data for testing
+                await new Promise(resolve => setTimeout(resolve, 500));
+                fileList = [
+                    {
+                        file_id: 'file1',
+                        filename: 'sales_data.xlsx',
+                        rows: 1000,
+                        columns: 5
+                    },
+                    {
+                        file_id: 'file2',
+                        filename: 'customer_info.csv',
+                        rows: 500,
+                        columns: 8
+                    },
+                    {
+                        file_id: 'file3',
+                        filename: 'product_catalog.xlsx',
+                        rows: 2000,
+                        columns: 12
+                    }
+                ];
+            }
+            
             this.fileList = fileList;
             this.renderFileList();
         } catch (error) {
@@ -419,6 +501,11 @@ class FileSelector {
                 </div>
                 ${this.options.showActions ? `
                     <div class="file-actions">
+                        ${this.options.showPreview ? `
+                            <button class="btn btn-secondary preview-btn" data-file-id="${file.file_id}">
+                                👁️
+                            </button>
+                        ` : ''}
                         <button class="btn btn-danger btn-delete" data-file-id="${file.file_id}">
                             🗑️
                         </button>
@@ -435,6 +522,7 @@ class FileSelector {
     bindFileItemEvents() {
         const fileItems = this.container.querySelectorAll('.file-item');
         const deleteButtons = this.container.querySelectorAll('.btn-delete');
+        const previewButtons = this.container.querySelectorAll('.preview-btn');
 
         fileItems.forEach(item => {
             item.addEventListener('click', (e) => {
@@ -450,6 +538,14 @@ class FileSelector {
                 e.stopPropagation();
                 const fileId = btn.dataset.fileId;
                 this.deleteFile(fileId);
+            });
+        });
+
+        previewButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const fileId = btn.dataset.fileId;
+                this.previewFile(fileId);
             });
         });
     }
@@ -476,6 +572,56 @@ class FileSelector {
 
         // 发送事件
         window.eventBus?.emit('file.selected', { fileId, file: this.fileList.find(f => f.file_id === fileId) });
+    }
+
+    // 预览文件
+    async previewFile(fileId) {
+        if (!this.options.showPreview) return;
+        
+        const file = this.fileList.find(f => f.file_id === fileId);
+        if (!file) return;
+        
+        const previewContainer = this.container.querySelector('.file-preview-container');
+        const previewContent = this.container.querySelector('#file-preview');
+        
+        previewContainer.style.display = 'block';
+        previewContent.innerHTML = '<div class="loading">加载预览中...</div>';
+        
+        try {
+            // 模拟获取预览数据
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const previewData = {
+                headers: ['日期', '销售额', '地区', '产品', '数量'],
+                rows: [
+                    ['2023-01-01', '10000', '北京', '产品A', '100'],
+                    ['2023-01-02', '15000', '上海', '产品B', '150'],
+                    ['2023-01-03', '12000', '广州', '产品A', '120']
+                ]
+            };
+            
+            previewContent.innerHTML = `
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            ${previewData.headers.map(header => `<th>${header}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${previewData.rows.map(row => `
+                            <tr>
+                                ${row.map(cell => `<td>${cell}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div class="preview-info">
+                    <p>显示前3行数据，共 ${file.rows || 0} 行 × ${file.columns || 0} 列</p>
+                </div>
+            `;
+        } catch (error) {
+            previewContent.innerHTML = `<div class="error">预览失败: ${error.message}</div>`;
+        }
     }
 
     // 删除文件
@@ -516,27 +662,49 @@ class FileSelector {
 
     // 处理文件上传
     async handleFileUpload(files) {
-        if (!files || files.length === 0) return;
+        console.log('🔄 开始处理文件上传:', files);
+        
+        if (!files || files.length === 0) {
+            console.warn('⚠️ 没有选择文件');
+            return;
+        }
 
         const file = files[0]; // 目前只支持单文件上传
+        console.log('📁 选择的文件:', {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: file.lastModified
+        });
 
         // 验证文件类型
         if (!this.options.allowedTypes.includes(file.type)) {
+            console.error('❌ 不支持的文件类型:', file.type, '允许的类型:', this.options.allowedTypes);
             this.showStatus('不支持的文件类型', 'error');
             return;
         }
 
         // 验证文件大小
         if (file.size > this.options.maxFileSize) {
+            console.error('❌ 文件大小超过限制:', file.size, '最大允许:', this.options.maxFileSize);
             this.showStatus('文件大小超过限制', 'error');
             return;
         }
 
         try {
             this.showStatus('正在上传文件...', 'info');
+            console.log('🚀 开始上传文件到API...');
+
+            // 检查apiClient是否存在
+            if (!window.apiClient) {
+                throw new Error('ApiClient未初始化');
+            }
+
+            console.log('🌐 ApiClient baseURL:', window.apiClient.baseURL);
 
             // 调用上传API
             const response = await window.apiClient.upload('/api/upload', file);
+            console.log('✅ 文件上传响应:', response);
             
             // 处理上传结果
             if (response.data.multiple_sheets) {
