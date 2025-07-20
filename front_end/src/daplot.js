@@ -51,76 +51,105 @@ async function initializeDaPlot() {
 
         console.log('✅ 浏览器兼容性检查通过');
 
-        // 2. 优先加载性能优化模块
-        await loadScript('/src/utils/performance.js').catch(error => {
-            console.warn('⚠️ 性能优化模块加载失败:', error);
-        });
+        // 2. 优先加载性能优化模块（如果尚未加载）
+        if (!window.performanceOptimizer) {
+            await loadScript('src/utils/performance.js').catch(error => {
+                console.warn('⚠️ 性能优化模块加载失败:', error);
+            });
+        } else {
+            console.log('✅ 性能优化模块已存在，跳过加载');
+        }
 
         // 3. 分阶段加载核心模块
         const essentialModules = [
-            '/src/utils/constants.js',
-            '/src/utils/helpers.js',
-            '/src/core/EventBus.js',
-            '/src/core/AppState.js'
+            'src/utils/constants.js',
+            'src/utils/helpers.js',
+            'src/core/EventBus.js',
+            'src/core/AppState.js'
         ];
 
         const secondaryModules = [
-            '/src/utils/validators.js', 
-            '/src/utils/formatters.js',
-            '/src/core/ConfigManager.js',
-            '/src/core/ApiClient.js',
-            '/src/core/DataManager.js'
+            'src/utils/validators.js', 
+            'src/utils/formatters.js',
+            'src/core/ConfigManager.js',
+            'src/core/ApiClient.js',
+            'src/core/DataManager.js'
         ];
 
         const advancedModules = [
-            '/src/core/ChartEngine.js',
-            '/src/core/ModuleLoader.js'
+            'src/core/ChartEngine.js',
+            'src/core/ModuleLoader.js'
         ];
 
         console.log('📦 开始分阶段加载核心模块...');
         
-        // 第一阶段：加载必需模块
-        console.log('🔄 阶段1: 加载必需模块...');
-        await Promise.all(essentialModules.map(module => {
-            const scriptExists = document.querySelector(`script[src="${module}"]`);
-            if (scriptExists) {
-                return Promise.resolve();
+        // 第一阶段：检查必需模块是否已加载
+        console.log('🔄 阶段1: 检查必需模块...');
+        
+        // 检查模块是否已经通过HTML加载
+        const moduleChecks = {
+            'constants': () => window.CONSTANTS !== undefined,
+            'helpers': () => window.helpers !== undefined,
+            'EventBus': () => window.EventBus !== undefined,
+            'AppState': () => window.AppState !== undefined
+        };
+        
+        // 等待模块加载完成
+        let attempts = 0;
+        const maxAttempts = 50; // 5秒超时
+        
+        while (attempts < maxAttempts) {
+            const allLoaded = Object.values(moduleChecks).every(check => check());
+            if (allLoaded) {
+                console.log('✅ 必需模块检查通过');
+                break;
             }
-            return loadScript(module).catch(error => {
-                console.warn(`⚠️ 必需模块加载失败: ${module}`, error);
-                return Promise.resolve();
-            });
-        }));
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (attempts >= maxAttempts) {
+            console.warn('⚠️ 部分必需模块可能未正确加载');
+        }
 
-        // 第二阶段：延迟加载次要模块
-        setTimeout(async () => {
-            console.log('🔄 阶段2: 加载次要模块...');
-            await Promise.all(secondaryModules.map(module => {
-                const scriptExists = document.querySelector(`script[src="${module}"]`);
-                if (scriptExists) {
-                    return Promise.resolve();
-                }
-                return loadScript(module).catch(error => {
-                    console.warn(`⚠️ 次要模块加载失败: ${module}`, error);
-                    return Promise.resolve();
-                });
-            }));
-        }, 100);
+        // 第二阶段：检查次要模块
+        console.log('🔄 阶段2: 检查次要模块...');
+        const secondaryChecks = {
+            'validators': () => window.validators !== undefined,
+            'formatters': () => window.formatters !== undefined,
+            'ConfigManager': () => window.ConfigManager !== undefined,
+            'ApiClient': () => window.ApiClient !== undefined,
+            'DataManager': () => window.DataManager !== undefined
+        };
+        
+        attempts = 0;
+        while (attempts < maxAttempts) {
+            const allLoaded = Object.values(secondaryChecks).every(check => check());
+            if (allLoaded) {
+                console.log('✅ 次要模块检查通过');
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
 
-        // 第三阶段：按需加载高级模块
-        setTimeout(async () => {
-            console.log('🔄 阶段3: 加载高级模块...');
-            await Promise.all(advancedModules.map(module => {
-                const scriptExists = document.querySelector(`script[src="${module}"]`);
-                if (scriptExists) {
-                    return Promise.resolve();
-                }
-                return loadScript(module).catch(error => {
-                    console.warn(`⚠️ 高级模块加载失败: ${module}`, error);
-                    return Promise.resolve();
-                });
-            }));
-        }, 500);
+        // 第三阶段：检查高级模块
+        console.log('🔄 阶段3: 检查高级模块...');
+        const advancedChecks = {
+            'ChartEngine': () => window.ChartEngine !== undefined,
+            'ModuleLoader': () => window.ModuleLoader !== undefined
+        };
+        
+        attempts = 0;
+        while (attempts < maxAttempts) {
+            const allLoaded = Object.values(advancedChecks).every(check => check());
+            if (allLoaded) {
+                console.log('✅ 高级模块检查通过');
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
 
         console.log('✅ 核心模块加载完成');
 
@@ -169,29 +198,44 @@ async function fallbackInitialization() {
     console.log('🔄 使用备用初始化方式...');
     
     // 手动初始化核心组件
-    if (typeof ConfigManager !== 'undefined' && !window.configManager) {
-        window.configManager = new ConfigManager();
-    }
-    
-    if (typeof EventBus !== 'undefined' && !window.eventBus) {
-        window.eventBus = new EventBus();
-    }
-    
-    if (typeof ApiClient !== 'undefined' && !window.apiClient) {
-        const baseURL = window.configManager?.get('api.baseUrl') || 'http://localhost:8001';
-        window.apiClient = new ApiClient(baseURL);
-    }
-    
-    if (typeof AppState !== 'undefined' && !window.appState) {
-        window.appState = new AppState();
-    }
-    
-    if (typeof DataManager !== 'undefined' && !window.dataManager) {
-        window.dataManager = new DataManager();
-    }
-    
-    if (typeof ChartEngine !== 'undefined' && !window.chartEngine) {
-        window.chartEngine = new ChartEngine();
+    try {
+        if (typeof EventBus !== 'undefined' && !window.eventBus) {
+            window.eventBus = new EventBus();
+            console.log('✅ EventBus 初始化完成');
+        }
+        
+        if (typeof AppState !== 'undefined' && !window.appState) {
+            window.appState = new AppState();
+            console.log('✅ AppState 初始化完成');
+        }
+        
+        if (typeof ConfigManager !== 'undefined' && !window.configManager) {
+            window.configManager = new ConfigManager();
+            console.log('✅ ConfigManager 初始化完成');
+        }
+        
+        // ApiClient配置
+        if (window.apiClient) {
+            const baseURL = window.appState?.getState('settings')?.apiBaseUrl || 'http://localhost:8001';
+            window.apiClient.baseURL = baseURL;
+            console.log('✅ ApiClient 配置完成, baseURL:', baseURL);
+        }
+        
+        if (typeof DataManager !== 'undefined' && !window.dataManager) {
+            window.dataManager = new DataManager();
+            console.log('✅ DataManager 初始化完成');
+        }
+        
+        if (typeof ChartEngine !== 'undefined' && !window.chartEngine) {
+            window.chartEngine = new ChartEngine();
+            console.log('✅ ChartEngine 初始化完成');
+        }
+        
+        console.log('✅ 备用初始化完成');
+        
+    } catch (error) {
+        console.error('❌ 备用初始化失败:', error);
+        throw error;
     }
 }
 
