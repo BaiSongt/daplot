@@ -6,10 +6,10 @@
     <title>DaPlot - 数据操作</title>
     
     <!-- 新的模块化架构 -->
-    <script src="src/utils/constants.js"></script>
-    <script src="src/utils/helpers.js"></script>
-    <script src="src/utils/validators.js"></script>
-    <script src="src/utils/formatters.js"></script>
+    <script src="src/utils/constants.js?v=2"></script>
+    <script src="src/utils/helpers.js?v=2"></script>
+    <script src="src/utils/validators.js?v=2"></script>
+    <script src="src/utils/formatters.js?v=2"></script>
     <script src="src/core/ConfigManager.js"></script>
     <script src="src/core/EventBus.js"></script>
     <script src="src/core/ApiClient.js"></script>
@@ -22,11 +22,11 @@
     <script src="src/components/FileSelector.js"></script>
     <script src="src/daplot.js"></script>
     
-    <!-- Luckysheet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css" />
-    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/plugins/plugins.css" />
-    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/css/luckysheet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css" />
+    <!-- 本地Luckysheet CSS (如果可用) -->
+    <link rel="stylesheet" href="assets/libs/luckysheet/plugins/css/pluginsCss.css" onerror="console.warn('Luckysheet CSS not found, using fallback')" />
+    <link rel="stylesheet" href="assets/libs/luckysheet/plugins/plugins.css" onerror="console.warn('Luckysheet CSS not found')" />
+    <link rel="stylesheet" href="assets/libs/luckysheet/css/luckysheet.css" onerror="console.warn('Luckysheet CSS not found')" />
+    <link rel="stylesheet" href="assets/libs/luckysheet/assets/iconfont/iconfont.css" onerror="console.warn('Luckysheet CSS not found')" />
     
     <style>
         * {
@@ -539,9 +539,9 @@ idebar.collapsed {
         </div>
     </div>
 
-    <!-- Luckysheet JS -->
-    <script src="https://unpkg.com/luckysheet@2.1.13/dist/plugins/js/plugin.js"></script>
-    <script src="https://unpkg.com/luckysheet@2.1.13/dist/luckysheet.umd.js"></script>  
+    <!-- 本地Luckysheet JS (如果可用) -->
+    <script src="assets/libs/luckysheet/plugins/js/plugin.js" onerror="console.warn('Luckysheet plugin.js not found, using fallback')"></script>
+    <script src="assets/libs/luckysheet/luckysheet.umd.js" onerror="console.warn('Luckysheet main JS not found, using fallback')"></script>  
   <script>
         // 全局变量
         let fileSelector = null;

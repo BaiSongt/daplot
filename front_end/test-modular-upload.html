@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块化文件上传测试</title>
+</head>
+
+<body>
+    <h1>模块化文件上传测试</h1>
+
+    <!-- 加载必要的模块 -->
+    <script src="src/utils/constants.js?v=3"></script>
+    <script src="src/utils/helpers.js?v=3"></script>
+    <script src="src/utils/validators.js?v=3"></script>
+    <script src="src/core/ApiClient.js?v=3"></script>
+
+    <div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <button onclick="testModularUpload()">模块化上传测试</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        async function testModularUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('result');
+
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = '<p style="color: red;">请选择文件</p>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            console.log('选择的文件:', file);
+            console.log('ApiClient是否存在:', !!window.apiClient);
+            console.log('ApiClient baseURL:', window.apiClient?.baseURL);
+
+            try {
+                resultDiv.innerHTML = '<p>正在使用模块化方式上传...</p>';
+
+                if (!window.apiClient) {
+                    throw new Error('ApiClient未初始化');
+                }
+
+                const response = await window.apiClient.upload('/api/upload', file);
+                console.log('模块化上传结果:', response);
+
+                resultDiv.innerHTML = `
+                    <h3>模块化上传成功!</h3>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                `;
+
+            } catch (error) {
+                console.error('模块化上传失败:', error);
+                resultDiv.innerHTML = `<p style="color: red;">模块化上传失败: ${error.message}</p>`;
+            }
+        }
+
+        // 页面加载完成后检查模块状态
+        window.addEventListener('load', () => {
+            console.log('=== 模块状态检查 ===');
+            console.log('CONSTANTS:', !!window.CONSTANTS);
+            console.log('ApiClient类:', !!window.ApiClient);
+            console.log('apiClient实例:', !!window.apiClient);
+            console.log('apiClient baseURL:', window.apiClient?.baseURL);
+            console.log('VALIDATORS:', !!window.VALIDATORS);
+        });
+    </script>
+</body>
+
+</html>
