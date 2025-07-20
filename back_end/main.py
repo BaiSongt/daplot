@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
@@ -87,20 +87,77 @@ class DirectPredictionPayload(BaseModel):
 def read_root():
     return {"message": "Welcome to DaPlot API"}
 
+@app.post("/api/upload-debug")
+async def upload_debug(request: Request):
+    """调试上传请求"""
+    logger.info("🔍 收到调试上传请求")
+    
+    # 获取请求头
+    headers = dict(request.headers)
+    logger.info(f"📋 请求头: {headers}")
+    
+    # 获取Content-Type
+    content_type = request.headers.get("content-type", "")
+    logger.info(f"📋 Content-Type: {content_type}")
+    
+    # 尝试读取原始请求体
+    try:
+        body = await request.body()
+        logger.info(f"📦 请求体大小: {len(body)} bytes")
+        logger.info(f"📦 请求体前100字节: {body[:100]}")
+    except Exception as e:
+        logger.error(f"❌ 读取请求体失败: {e}")
+    
+    return {"status": "debug", "content_type": content_type, "body_size": len(body) if 'body' in locals() else 0}
+
+@app.post("/api/upload-simple")
+async def upload_simple(file: UploadFile):
+    """简化的文件上传端点"""
+    logger.info("🔍 收到简化上传请求")
+    logger.info(f"📁 文件名: {file.filename}")
+    logger.info(f"📋 文件类型: {file.content_type}")
+    
+    try:
+        # 读取文件内容
+        content = await file.read()
+        logger.info(f"📦 文件大小: {len(content)} bytes")
+        
+        return {
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "size": len(content),
+            "status": "success"
+        }
+    except Exception as e:
+        logger.error(f"❌ 处理文件失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/upload")
 async def upload_excel_file(file: UploadFile = File(...)):
     """
     Handles the upload of an Excel file, processes it, and returns a preview.
     Supports multiple sheets and returns information about all sheets.
     """
-    logger.info(f"📁 收到文件上传请求: {file.filename}")
-    logger.info(f"📊 文件大小: {file.size if hasattr(file, 'size') else '未知'} bytes")
-    logger.info(f"📋 文件类型: {file.content_type}")
-
-    # Check if the file is an Excel file
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        logger.error(f"❌ 无效文件类型: {file.filename}")
-        raise HTTPException(status_code=400, detail="Invalid file type. Please upload an Excel file.")
+    try:
+        logger.info(f"📁 收到文件上传请求")
+        logger.info(f"📁 文件名: {file.filename}")
+        logger.info(f"📊 文件大小: {file.size if hasattr(file, 'size') else '未知'} bytes")
+        logger.info(f"📋 文件类型: {file.content_type}")
+        
+        # 检查文件是否为空
+        if not file.filename:
+            logger.error("❌ 文件名为空")
+            raise HTTPException(status_code=400, detail="No file provided or filename is empty.")
+        
+        # Check if the file is an Excel file
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            logger.error(f"❌ 无效文件类型: {file.filename}")
+            raise HTTPException(status_code=400, detail="Invalid file type. Please upload an Excel file.")
+            
+    except Exception as validation_error:
+        logger.error(f"❌ 文件上传验证失败: {str(validation_error)}")
+        logger.error(f"❌ 错误类型: {type(validation_error).__name__}")
+        raise HTTPException(status_code=422, detail=f"File validation failed: {str(validation_error)}")
 
     try:
         logger.info("🔄 开始读取Excel文件...")
