@@ -1,38 +1,172 @@
 # Python-generated files
 __pycache__/
-*.py[oc]
+*.py[cod]
+*$py.class
+*.so
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 wheels/
-*.egg-info
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
 # Virtual environments
-.venv
+.venv/
+venv/
+ENV/
+env/
+.env/
+
+# Python testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
 dev-debug.log
-# Dependency directories
+
+# Node.js dependencies
 node_modules/
-# Environment variables
-.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output
+.jest-cache/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache
+
 # Editor directories and files
-.idea
-.vscode
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
 # OS specific
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.tmp
+*.temp
+
+# Backup files
+*.backup
+*.bak
+backup/
+archive/
+
+# Data files (keep examples)
+*.xlsx
+*.xls
+*.csv
+!*example*
+!*sample*
+!*test*
+
+# Upload directories
+uploads/
+temp/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Compiled CSS and JS (if using build tools)
+*.min.css
+*.min.js
+
+# Package manager lock files (keep package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/
+*.iml
+
+# Documentation build
+docs/_build/
+site/
+
+# Temporary files
+.tmp/
+tmp/
+
+# Security
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+
+# Performance monitoring
+.lighthouseci/
 
 # Task files
 # tasks.json
 # tasks/ 
 
-.kiro/
+# Keep Kiro configuration
+# .kiro/
