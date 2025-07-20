@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试 - 可视化页面重构</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .test-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 可视化页面重构测试</h1>
+        <p>此页面用于测试重构后的 visualization.html 是否正常工作</p>
+        
+        <div id="test-results"></div>
+        
+        <div style="margin: 20px 0;">
+            <button class="btn" onclick="runTests()">🚀 运行测试</button>
+            <button class="btn" onclick="openVisualizationPage()">📈 打开可视化页面</button>
+            <button class="btn" onclick="checkModules()">🔍 检查模块</button>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>📋 测试结果</h2>
+        <div id="detailed-results"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>🖼️ 页面预览</h2>
+        <iframe id="preview-frame" src="visualization.html" style="display: none;"></iframe>
+        <button class="btn" onclick="togglePreview()">显示/隐藏预览</button>
+    </div>
+
+    <script>
+        let testResults = [];
+
+        // 运行所有测试
+        async function runTests() {
+            const resultsContainer = document.getElementById('test-results');
+            const detailedContainer = document.getElementById('detailed-results');
+            
+            resultsContainer.innerHTML = '<div class="test-info">🔄 正在运行测试...</div>';
+            testResults = [];
+
+            try {
+                // 测试1: 检查文件是否存在
+                await testFileExists();
+                
+                // 测试2: 检查模块化脚本引用
+                await testModularScripts();
+                
+                // 测试3: 检查旧脚本是否已移除
+                await testOldScriptsRemoved();
+                
+                // 测试4: 检查页面结构
+                await testPageStructure();
+                
+                // 测试5: 检查组件容器
+                await testComponentContainers();
+
+                // 显示测试结果
+                displayResults(resultsContainer, detailedContainer);
+
+            } catch (error) {
+                resultsContainer.innerHTML = `<div class="test-error">❌ 测试执行失败: ${error.message}</div>`;
+            }
+        }
+
+        // 测试文件是否存在
+        async function testFileExists() {
+            try {
+                const response = await fetch('visualization.html');
+                if (response.ok) {
+                    addTestResult('✅ 文件存在检查', '通过', 'visualization.html 文件存在且可访问');
+                } else {
+                    addTestResult('❌ 文件存在检查', '失败', `HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                addTestResult('❌ 文件存在检查', '失败', error.message);
+            }
+        }
+
+        // 测试模块化脚本引用
+        async function testModularScripts() {
+            try {
+                const response = await fetch('visualization.html');
+                const html = await response.text();
+                
+                const requiredScripts = [
+                    'src/utils/constants.js',
+                    'src/utils/helpers.js',
+                    'src/utils/validators.js',
+                    'src/utils/formatters.js',
+                    'src/core/ConfigManager.js',
+                    'src/core/EventBus.js',
+                    'src/core/ApiClient.js',
+                    'src/core/AppState.js',
+                    'src/core/DataManager.js',
+                    'src/core/ChartEngine.js',
+                    'src/components/LoadingSpinner.js',
+                    'src/components/StatusMessage.js',
+                    'src/components/ErrorBoundary.js',
+                    'src/components/FileSelector.js',
+                    'src/components/DataFilter.js',
+                    'src/components/ChartConfig.js',
+                    'src/daplot.js'
+                ];
+
+                const missingScripts = requiredScripts.filter(script => !html.includes(script));
+                
+                if (missingScripts.length === 0) {
+                    addTestResult('✅ 模块化脚本检查', '通过', '所有必需的模块化脚本都已引用');
+                } else {
+                    addTestResult('❌ 模块化脚本检查', '失败', `缺少脚本: ${missingScripts.join(', ')}`);
+                }
+            } catch (error) {
+                addTestResult('❌ 模块化脚本检查', '失败', error.message);
+            }
+        }
+
+        // 测试旧脚本是否已移除
+        async function testOldScriptsRemoved() {
+            try {
+                const response = await fetch('visualization.html');
+                const html = await response.text();
+                
+                const oldScripts = [
+                    'assets/js/lib-loader.js',
+                    'assets/js/data-persistence.js',
+                    'assets/js/page-bridge.js',
+                    'assets/js/page-state-manager.js'
+                ];
+
+                const remainingOldScripts = oldScripts.filter(script => html.includes(script));
+                
+                if (remainingOldScripts.length === 0) {
+                    addTestResult('✅ 旧脚本移除检查', '通过', '所有旧的脚本依赖都已移除');
+                } else {
+                    addTestResult('❌ 旧脚本移除检查', '失败', `仍存在旧脚本: ${remainingOldScripts.join(', ')}`);
+                }
+            } catch (error) {
+                addTestResult('❌ 旧脚本移除检查', '失败', error.message);
+            }
+        }
+
+        // 测试页面结构
+        async function testPageStructure() {
+            try {
+                const response = await fetch('visualization.html');
+                const html = await response.text();
+                
+                const requiredElements = [
+                    'file-selector-container',
+                    'data-filter-container',
+                    'chart-config-container',
+                    'chart-container'
+                ];
+
+                const missingElements = requiredElements.filter(id => !html.includes(`id="${id}"`));
+                
+                if (missingElements.length === 0) {
+                    addTestResult('✅ 页面结构检查', '通过', '所有必需的页面元素都存在');
+                } else {
+                    addTestResult('❌ 页面结构检查', '失败', `缺少元素: ${missingElements.join(', ')}`);
+                }
+            } catch (error) {
+                addTestResult('❌ 页面结构检查', '失败', error.message);
+            }
+        }
+
+        // 测试组件容器
+        async function testComponentContainers() {
+            try {
+                const response = await fetch('visualization.html');
+                const html = await response.text();
+                
+                const componentContainers = [
+                    'file-selector-container',
+                    'data-filter-container', 
+                    'chart-config-container'
+                ];
+
+                const hasAllContainers = componentContainers.every(container => 
+                    html.includes(`id="${container}"`)
+                );
+                
+                if (hasAllContainers) {
+                    addTestResult('✅ 组件容器检查', '通过', '所有组件容器都已正确设置');
+                } else {
+                    addTestResult('❌ 组件容器检查', '失败', '部分组件容器缺失');
+                }
+            } catch (error) {
+                addTestResult('❌ 组件容器检查', '失败', error.message);
+            }
+        }
+
+        // 添加测试结果
+        function addTestResult(name, status, details) {
+            testResults.push({ name, status, details, timestamp: new Date() });
+        }
+
+        // 显示测试结果
+        function displayResults(resultsContainer, detailedContainer) {
+            const passedTests = testResults.filter(r => r.status === '通过').length;
+            const totalTests = testResults.length;
+            
+            // 总体结果
+            const overallStatus = passedTests === totalTests ? 'success' : 'error';
+            const overallMessage = `测试完成: ${passedTests}/${totalTests} 通过`;
+            
+            resultsContainer.innerHTML = `
+                <div class="test-${overallStatus}">
+                    ${overallStatus === 'success' ? '🎉' : '⚠️'} ${overallMessage}
+                </div>
+            `;
+
+            // 详细结果
+            detailedContainer.innerHTML = testResults.map(result => `
+                <div class="test-result test-${result.status === '通过' ? 'success' : 'error'}">
+                    <strong>${result.name}</strong>: ${result.status}<br>
+                    <small>${result.details}</small><br>
+                    <small style="opacity: 0.7;">时间: ${result.timestamp.toLocaleTimeString()}</small>
+                </div>
+            `).join('');
+        }
+
+        // 检查模块
+        async function checkModules() {
+            const detailedContainer = document.getElementById('detailed-results');
+            
+            try {
+                // 检查各个模块文件是否存在
+                const modules = [
+                    'src/utils/constants.js',
+                    'src/utils/helpers.js', 
+                    'src/core/AppState.js',
+                    'src/core/DataManager.js',
+                    'src/core/ChartEngine.js',
+                    'src/components/FileSelector.js',
+                    'src/components/DataFilter.js',
+                    'src/components/ChartConfig.js'
+                ];
+
+                const moduleResults = [];
+                
+                for (const module of modules) {
+                    try {
+                        const response = await fetch(module);
+                        const status = response.ok ? '✅ 存在' : '❌ 不存在';
+                        moduleResults.push(`<div>${module}: ${status}</div>`);
+                    } catch (error) {
+                        moduleResults.push(`<div>${module}: ❌ 错误 - ${error.message}</div>`);
+                    }
+                }
+
+                detailedContainer.innerHTML = `
+                    <div class="test-info">
+                        <h3>📦 模块检查结果</h3>
+                        ${moduleResults.join('')}
+                    </div>
+                `;
+
+            } catch (error) {
+                detailedContainer.innerHTML = `
+                    <div class="test-error">
+                        模块检查失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 打开可视化页面
+        function openVisualizationPage() {
+            window.open('visualization.html', '_blank');
+        }
+
+        // 切换预览显示
+        function togglePreview() {
+            const frame = document.getElementById('preview-frame');
+            frame.style.display = frame.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 页面加载完成后自动运行测试
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runTests, 1000);
+        });
+    </script>
+</body>
+</html>

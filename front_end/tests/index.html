@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot 测试中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+        }
+
+        .test-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .test-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .test-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .test-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .quick-actions {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .quick-actions h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .quick-actions .btn {
+            margin: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .status-ready {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-new {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .breadcrumb {
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .breadcrumb a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../index.html">🏠 首页</a> / 🧪 测试中心
+        </div>
+
+        <div class="header">
+            <h1>🧪 DaPlot 测试中心</h1>
+            <p>全面的功能测试和质量验证平台</p>
+        </div>
+
+        <div class="test-grid">
+            <!-- 综合测试 -->
+            <div class="test-card">
+                <div class="test-icon">🎯</div>
+                <div class="test-title">综合页面测试</div>
+                <div class="status-indicator status-ready">✅ 推荐</div>
+                <div class="test-description">
+                    测试所有重构页面的功能完整性，包括模块加载、组件集成和架构验证
+                </div>
+                <div class="test-actions">
+                    <a href="test-all-refactored-pages.html" class="btn btn-primary">🚀 开始测试</a>
+                </div>
+            </div>
+
+            <!-- 可视化测试 -->
+            <div class="test-card">
+                <div class="test-icon">📈</div>
+                <div class="test-title">可视化页面测试</div>
+                <div class="status-indicator status-ready">✅ 可用</div>
+                <div class="test-description">
+                    专门测试可视化页面的重构效果，验证图表引擎和组件集成
+                </div>
+                <div class="test-actions">
+                    <a href="test-visualization-refactor.html" class="btn btn-primary">📊 测试可视化</a>
+                </div>
+            </div>
+
+            <!-- 组件测试 -->
+            <div class="test-card">
+                <div class="test-icon">🧩</div>
+                <div class="test-title">组件功能测试</div>
+                <div class="status-indicator status-ready">✅ 可用</div>
+                <div class="test-description">
+                    测试各个UI组件的功能和交互，包括文件选择器、数据筛选器等
+                </div>
+                <div class="test-actions">
+                    <a href="test-components.html" class="btn btn-primary">🔧 测试组件</a>
+                </div>
+            </div>
+
+            <!-- 模块测试 -->
+            <div class="test-card">
+                <div class="test-icon">📦</div>
+                <div class="test-title">模块加载测试</div>
+                <div class="status-indicator status-ready">✅ 可用</div>
+                <div class="test-description">
+                    验证核心模块的加载和初始化，检查模块间的依赖关系
+                </div>
+                <div class="test-actions">
+                    <a href="test-modules.html" class="btn btn-primary">⚙️ 测试模块</a>
+                </div>
+            </div>
+
+            <!-- 页面集成测试 -->
+            <div class="test-card">
+                <div class="test-icon">🔗</div>
+                <div class="test-title">页面集成测试</div>
+                <div class="status-indicator status-ready">✅ 可用</div>
+                <div class="test-description">
+                    测试所有页面的导航和状态同步，验证页面间的数据传递
+                </div>
+                <div class="test-actions">
+                    <a href="test-all-pages.html" class="btn btn-primary">🌐 测试集成</a>
+                </div>
+            </div>
+
+            <!-- 可视化功能测试 -->
+            <div class="test-card">
+                <div class="test-icon">📊</div>
+                <div class="test-title">图表功能测试</div>
+                <div class="status-indicator status-ready">✅ 可用</div>
+                <div class="test-description">
+                    深度测试图表生成、交互和导出功能，验证Plotly集成效果
+                </div>
+                <div class="test-actions">
+                    <a href="test-visualization.html" class="btn btn-primary">📈 测试图表</a>
+                </div>
+            </div>
+
+            <!-- 性能测试 -->
+            <div class="test-card">
+                <div class="test-icon">⚡</div>
+                <div class="test-title">性能测试和优化</div>
+                <div class="status-indicator status-ready">✅ 新增</div>
+                <div class="test-description">
+                    全面的性能测试工具，包括加载时间、内存使用、缓存效率等指标监控
+                </div>
+                <div class="test-actions">
+                    <a href="test-performance.html" class="btn btn-primary">⚡ 性能测试</a>
+                    <a href="performance-dashboard.html" class="btn btn-success">📊 监控仪表板</a>
+                </div>
+            </div>
+
+            <!-- 单元测试 -->
+            <div class="test-card">
+                <div class="test-icon">🧪</div>
+                <div class="test-title">单元测试套件</div>
+                <div class="status-indicator status-ready">✅ 新增</div>
+                <div class="test-description">
+                    完整的单元测试框架，测试各个模块和组件的功能正确性
+                </div>
+                <div class="test-actions">
+                    <a href="unit-tests.html" class="btn btn-primary">🧪 单元测试</a>
+                </div>
+            </div>
+
+            <!-- 端到端测试 -->
+            <div class="test-card">
+                <div class="test-icon">🔄</div>
+                <div class="test-title">端到端测试</div>
+                <div class="status-indicator status-ready">✅ 新增</div>
+                <div class="test-description">
+                    完整的用户流程测试，验证从数据上传到结果导出的整个工作流
+                </div>
+                <div class="test-actions">
+                    <a href="e2e-tests.html" class="btn btn-primary">🔄 端到端测试</a>
+                </div>
+            </div>
+
+            <!-- 调试测试 -->
+            <div class="test-card">
+                <div class="test-icon">🐛</div>
+                <div class="test-title">调试和修复测试</div>
+                <div class="status-indicator status-new">🔧 调试</div>
+                <div class="test-description">
+                    用于问题调试和修复验证的测试页面，包含详细的错误信息
+                </div>
+                <div class="test-actions">
+                    <a href="test_debug.html" class="btn btn-secondary">🔍 调试测试</a>
+                    <a href="test_fixes.html" class="btn btn-secondary">🛠️ 修复测试</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <h2>🚀 快速操作</h2>
+            <a href="test-all-refactored-pages.html" class="btn btn-success">运行全部测试</a>
+            <a href="performance-dashboard.html" class="btn btn-primary">性能监控</a>
+            <a href="../index.html" class="btn btn-primary">返回主页</a>
+            <a href="../docs/" class="btn btn-secondary">查看文档</a>
+            <button class="btn btn-secondary" onclick="runQuickCheck()">快速检查</button>
+            <button class="btn btn-secondary" onclick="runPerformanceCheck()">性能检查</button>
+        </div>
+    </div>
+
+    <script>
+        // 快速检查功能
+        async function runQuickCheck() {
+            const checkResults = [];
+            
+            // 检查主要页面
+            const pages = [
+                '../index.html',
+                '../data_integrated.html',
+                '../visualization.html',
+                '../prediction.html'
+            ];
+            
+            let successCount = 0;
+            
+            for (const page of pages) {
+                try {
+                    const response = await fetch(page);
+                    if (response.ok) {
+                        successCount++;
+                        checkResults.push(`✅ ${page.split('/').pop()}: 可访问`);
+                    } else {
+                        checkResults.push(`❌ ${page.split('/').pop()}: HTTP ${response.status}`);
+                    }
+                } catch (error) {
+                    checkResults.push(`❌ ${page.split('/').pop()}: 网络错误`);
+                }
+            }
+            
+            // 检查核心模块
+            const modules = [
+                '../src/daplot.js',
+                '../src/core/AppState.js',
+                '../src/core/DataManager.js',
+                '../src/components/FileSelector.js'
+            ];
+            
+            let moduleCount = 0;
+            
+            for (const module of modules) {
+                try {
+                    const response = await fetch(module);
+                    if (response.ok) {
+                        moduleCount++;
+                    }
+                } catch (error) {
+                    // 模块检查失败
+                }
+            }
+            
+            // 显示结果
+            const resultMessage = `
+快速检查结果:
+📄 页面状态: ${successCount}/${pages.length} 可访问
+📦 模块状态: ${moduleCount}/${modules.length} 可用
+${checkResults.join('\n')}
+            `;
+            
+            alert(resultMessage);
+        }
+
+        // 性能检查功能
+        async function runPerformanceCheck() {
+            const checkResults = [];
+            
+            // 检查页面加载性能
+            if (window.performance && window.performance.timing) {
+                const timing = window.performance.timing;
+                const loadTime = timing.loadEventEnd - timing.navigationStart;
+                const status = loadTime < 3000 ? '✅' : loadTime < 5000 ? '⚠️' : '❌';
+                checkResults.push(`${status} 页面加载时间: ${loadTime}ms`);
+            }
+            
+            // 检查内存使用
+            if (window.performance && window.performance.memory) {
+                const memory = window.performance.memory;
+                const usedMB = memory.usedJSHeapSize / 1024 / 1024;
+                const status = usedMB < 50 ? '✅' : usedMB < 100 ? '⚠️' : '❌';
+                checkResults.push(`${status} 内存使用: ${usedMB.toFixed(1)}MB`);
+            }
+            
+            // 检查缓存状态
+            let cacheStatus = '❌ 缓存系统未加载';
+            try {
+                const response = await fetch('../src/utils/cache.js');
+                if (response.ok) {
+                    cacheStatus = '✅ 缓存系统可用';
+                }
+            } catch (error) {
+                cacheStatus = '❌ 缓存系统加载失败';
+            }
+            checkResults.push(cacheStatus);
+            
+            // 检查性能优化模块
+            let perfStatus = '❌ 性能优化模块未加载';
+            try {
+                const response = await fetch('../src/utils/performance.js');
+                if (response.ok) {
+                    perfStatus = '✅ 性能优化模块可用';
+                }
+            } catch (error) {
+                perfStatus = '❌ 性能优化模块加载失败';
+            }
+            checkResults.push(perfStatus);
+            
+            // 显示结果
+            const resultMessage = `
+性能检查结果:
+${checkResults.join('\n')}
+
+💡 建议:
+- 页面加载时间应小于3秒
+- 内存使用应小于50MB
+- 确保性能优化模块正常加载
+            `;
+            
+            alert(resultMessage);
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🧪 DaPlot 测试中心已加载');
+            console.log('📊 可用测试:', document.querySelectorAll('.test-card').length, '个');
+            console.log('⚡ 性能优化功能已集成');
+        });
+    </script>
+</body>
+</html>

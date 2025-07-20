@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot 性能测试</title>
+    
+    <!-- 性能优化模块 -->
+    <script src="../src/utils/performance.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+        }
+
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .results {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .status-good {
+            color: #28a745;
+        }
+
+        .status-warning {
+            color: #ffc107;
+        }
+
+        .status-danger {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ DaPlot 性能测试中心</h1>
+            <p>全面的性能监控、测试和优化工具</p>
+        </div>
+
+        <div class="test-grid">
+            <!-- 性能监控 -->
+            <div class="test-card">
+                <div class="test-title">📊 性能监控</div>
+                <button class="btn" onclick="showPerformanceReport()">查看性能报告</button>
+                <button class="btn btn-warning" onclick="showOptimizationSuggestions()">优化建议</button>
+                <button class="btn btn-success" onclick="startRealTimeMonitoring()">实时监控</button>
+                <div id="performance-results" class="results" style="display: none;"></div>
+            </div>
+
+            <!-- 模块加载测试 -->
+            <div class="test-card">
+                <div class="test-title">📦 模块加载测试</div>
+                <button class="btn" onclick="testModuleLoading()">测试模块加载</button>
+                <button class="btn" onclick="testLazyLoading()">测试懒加载</button>
+                <button class="btn btn-danger" onclick="clearModuleCache()">清除缓存</button>
+                <div id="module-results" class="results" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 性能测试函数
+        function showPerformanceReport() {
+            const results = document.getElementById('performance-results');
+            const report = window.performanceOptimizer.getPerformanceReport();
+            
+            results.innerHTML = `
+                <h4>📊 性能报告</h4>
+                <div class="metric">
+                    <span>生成时间:</span>
+                    <span>${report.timestamp}</span>
+                </div>
+                <div class="metric">
+                    <span>缓存项目数:</span>
+                    <span>${report.cacheStats.size}</span>
+                </div>
+                <div class="metric">
+                    <span>内存记录数:</span>
+                    <span>${report.memoryUsage.length}</span>
+                </div>
+                <h5>模块加载时间:</h5>
+                ${Object.entries(report.moduleLoadTimes).map(([module, time]) => 
+                    `<div class="metric">
+                        <span>${module}:</span>
+                        <span class="${time > 1000 ? 'status-danger' : time > 500 ? 'status-warning' : 'status-good'}">${time.toFixed(2)}ms</span>
+                    </div>`
+                ).join('')}
+            `;
+            results.style.display = 'block';
+        }
+
+        function showOptimizationSuggestions() {
+            const results = document.getElementById('performance-results');
+            const suggestions = window.performanceOptimizer.getOptimizationSuggestions();
+            
+            results.innerHTML = `
+                <h4>💡 优化建议</h4>
+                ${suggestions.length === 0 ? 
+                    '<div class="status-good">✅ 暂无优化建议，性能良好！</div>' :
+                    suggestions.map(s => 
+                        `<div class="metric">
+                            <div>
+                                <strong class="status-${s.severity === 'high' ? 'danger' : 'warning'}">[${s.severity.toUpperCase()}]</strong>
+                                ${s.message}<br>
+                                <small>建议: ${s.suggestion}</small>
+                            </div>
+                        </div>`
+                    ).join('')
+                }
+            `;
+            results.style.display = 'block';
+        }
+
+        function testModuleLoading() {
+            const results = document.getElementById('module-results');
+            results.innerHTML = '<div>🔄 正在测试模块加载...</div>';
+            results.style.display = 'block';
+            
+            const modules = [
+                '../src/utils/constants.js',
+                '../src/utils/helpers.js',
+                '../src/core/AppState.js'
+            ];
+            
+            Promise.all(modules.map(module => 
+                window.performanceOptimizer.lazyLoadModule(module)
+            )).then(() => {
+                const report = window.performanceOptimizer.getPerformanceReport();
+                results.innerHTML = `
+                    <h4>📦 模块加载测试结果</h4>
+                    ${Object.entries(report.moduleLoadTimes).map(([module, time]) => 
+                        `<div class="metric">
+                            <span>${module.split('/').pop()}:</span>
+                            <span class="${time > 100 ? 'status-warning' : 'status-good'}">${time.toFixed(2)}ms</span>
+                        </div>`
+                    ).join('')}
+                `;
+            }).catch(error => {
+                results.innerHTML = `<div class="status-danger">❌ 测试失败: ${error.message}</div>`;
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('⚡ 性能测试页面已加载');
+            
+            // 自动显示初始性能报告
+            setTimeout(showPerformanceReport, 1000);
+        });
+    </script>
+</body>
+</html>

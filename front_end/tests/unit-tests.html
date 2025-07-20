@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaPlot 单元测试</title>
+    
+    <!-- 测试框架 -->
+    <script src="unit-test-framework.js"></script>
+    
+    <!-- 被测试的模块 -->
+    <script src="../src/utils/constants.js"></script>
+    <script src="../src/utils/helpers.js"></script>
+    <script src="../src/utils/validators.js"></script>
+    <script src="../src/utils/formatters.js"></script>
+    <script src="../src/utils/cache.js"></script>
+    <script src="../src/utils/performance.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-controls {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .test-output {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        .stat-passed {
+            color: #28a745;
+        }
+
+        .stat-failed {
+            color: #dc3545;
+        }
+
+        .stat-total {
+            color: #007bff;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            background: #28a745;
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 DaPlot 单元测试</h1>
+            <p>全面的模块和组件单元测试套件</p>
+        </div>
+
+        <div class="test-controls">
+            <h3>测试控制</h3>
+            <button class="btn btn-success" onclick="runAllTests()">🚀 运行所有测试</button>
+            <button class="btn" onclick="runUtilsTests()">🔧 工具函数测试</button>
+            <button class="btn" onclick="runCacheTests()">💾 缓存测试</button>
+            <button class="btn" onclick="runPerformanceTests()">⚡ 性能测试</button>
+            <button class="btn btn-warning" onclick="clearResults()">🧹 清除结果</button>
+            <button class="btn btn-danger" onclick="runFailureTests()">❌ 失败测试</button>
+        </div>
+
+        <div class="results-container">
+            <h3>测试结果</h3>
+            
+            <div class="stats-grid" id="stats-grid" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-value stat-total" id="total-tests">0</div>
+                    <div class="stat-label">总测试数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value stat-passed" id="passed-tests">0</div>
+                    <div class="stat-label">通过</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value stat-failed" id="failed-tests">0</div>
+                    <div class="stat-label">失败</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pass-rate">0%</div>
+                    <div class="stat-label">通过率</div>
+                </div>
+            </div>
+
+            <div class="progress-bar" id="progress-bar" style="display: none;">
+                <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+            </div>
+
+            <div class="test-output" id="test-output">
+                点击上方按钮开始运行测试...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 重定向console.log到测试输出
+        const originalLog = console.log;
+        const originalError = console.error;
+        const testOutput = document.getElementById('test-output');
+
+        function logToOutput(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'warn' ? '⚠️' : 'ℹ️';
+            testOutput.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            testOutput.scrollTop = testOutput.scrollHeight;
+        }
+
+        console.log = (...args) => {
+            originalLog(...args);
+            logToOutput(args.join(' '));
+        };
+
+        console.error = (...args) => {
+            originalError(...args);
+            logToOutput(args.join(' '), 'error');
+        };
+
+        // 工具函数测试
+        function defineUtilsTests() {
+            describe('工具函数测试', () => {
+                describe('helpers.js', () => {
+                    it('应该正确格式化文件大小', () => {
+                        if (typeof formatFileSize !== 'undefined') {
+                            expect(formatFileSize(1024)).toBe('1.00 KB');
+                            expect(formatFileSize(1048576)).toBe('1.00 MB');
+                        }
+                    });
+
+                    it('应该正确生成UUID', () => {
+                        if (typeof generateUUID !== 'undefined') {
+                            const uuid = generateUUID();
+                            expect(uuid).toHaveProperty('length');
+                            expect(uuid.length).toBe(36);
+                        }
+                    });
+                });
+
+                describe('validators.js', () => {
+                    it('应该正确验证邮箱格式', () => {
+                        if (typeof validateEmail !== 'undefined') {
+                            expect(validateEmail('test@example.com')).toBeTruthy();
+                            expect(validateEmail('invalid-email')).toBeFalsy();
+                        }
+                    });
+
+                    it('应该正确验证文件类型', () => {
+                        if (typeof validateFileType !== 'undefined') {
+                            expect(validateFileType('test.xlsx', ['.xlsx', '.xls'])).toBeTruthy();
+                            expect(validateFileType('test.txt', ['.xlsx', '.xls'])).toBeFalsy();
+                        }
+                    });
+                });
+
+                describe('formatters.js', () => {
+                    it('应该正确格式化日期', () => {
+                        if (typeof formatDate !== 'undefined') {
+                            const date = new Date('2024-01-01');
+                            const formatted = formatDate(date);
+                            expect(formatted).toContain('2024');
+                        }
+                    });
+
+                    it('应该正确格式化数字', () => {
+                        if (typeof formatNumber !== 'undefined') {
+                            expect(formatNumber(1234.567, 2)).toBe('1,234.57');
+                        }
+                    });
+                });
+            });
+        }
+
+        // 缓存系统测试
+        function defineCacheTests() {
+            describe('缓存系统测试', () => {
+                let testCache;
+
+                beforeEach(() => {
+                    if (typeof CacheManager !== 'undefined') {
+                        testCache = new CacheManager({ maxSize: 5, defaultTTL: 1000 });
+                    }
+                });
+
+                it('应该能够设置和获取缓存', () => {
+                    if (testCache) {
+                        testCache.set('test-key', 'test-value');
+                        expect(testCache.get('test-key')).toBe('test-value');
+                    }
+                });
+
+                it('应该正确处理缓存过期', async () => {
+                    if (testCache) {
+                        testCache.set('expire-key', 'expire-value', 100);
+                        expect(testCache.get('expire-key')).toBe('expire-value');
+                        
+                        await new Promise(resolve => setTimeout(resolve, 150));
+                        expect(testCache.get('expire-key')).toBe(null);
+                    }
+                });
+
+                it('应该正确执行LRU清理', () => {
+                    if (testCache) {
+                        // 填满缓存
+                        for (let i = 0; i < 5; i++) {
+                            testCache.set(`key-${i}`, `value-${i}`);
+                        }
+                        
+                        // 添加第6个项目，应该触发LRU清理
+                        testCache.set('key-6', 'value-6');
+                        expect(testCache.size()).toBe(5);
+                    }
+                });
+
+                it('应该提供正确的统计信息', () => {
+                    if (testCache) {
+                        testCache.set('stats-key', 'stats-value');
+                        testCache.get('stats-key');
+                        testCache.get('non-existent-key');
+                        
+                        const stats = testCache.getStats();
+                        expect(stats.hits).toBe(1);
+                        expect(stats.misses).toBe(1);
+                    }
+                });
+            });
+        }
+
+        // 性能优化测试
+        function definePerformanceTests() {
+            describe('性能优化测试', () => {
+                it('应该能够创建性能优化器实例', () => {
+                    if (typeof PerformanceOptimizer !== 'undefined') {
+                        const optimizer = new PerformanceOptimizer();
+                        expect(optimizer).toBeInstanceOf(PerformanceOptimizer);
+                    }
+                });
+
+                it('防抖函数应该正常工作', async () => {
+                    if (typeof window.debounce !== 'undefined') {
+                        let callCount = 0;
+                        const debouncedFn = window.debounce(() => callCount++, 100);
+                        
+                        debouncedFn();
+                        debouncedFn();
+                        debouncedFn();
+                        
+                        expect(callCount).toBe(0);
+                        
+                        await new Promise(resolve => setTimeout(resolve, 150));
+                        expect(callCount).toBe(1);
+                    }
+                });
+
+                it('节流函数应该正常工作', () => {
+                    if (typeof window.throttle !== 'undefined') {
+                        let callCount = 0;
+                        const throttledFn = window.throttle(() => callCount++, 100);
+                        
+                        throttledFn();
+                        throttledFn();
+                        throttledFn();
+                        
+                        expect(callCount).toBe(1);
+                    }
+                });
+
+                it('应该能够进行性能基准测试', () => {
+                    if (window.performanceOptimizer) {
+                        const result = window.performanceOptimizer.benchmark('test', () => {
+                            return Math.random();
+                        }, 10);
+                        
+                        expect(result).toHaveProperty('name');
+                        expect(result).toHaveProperty('average');
+                        expect(result.name).toBe('test');
+                    }
+                });
+            });
+        }
+
+        // DOM测试
+        function defineDOMTests() {
+            describe('DOM操作测试', () => {
+                it('应该能够创建测试元素', () => {
+                    const element = createTestElement('div', { id: 'test-element' });
+                    expect(element.tagName).toBe('DIV');
+                    expect(element.id).toBe('test-element');
+                    expect(document.getElementById('test-element')).toBe(element);
+                });
+
+                it('应该能够处理事件', () => {
+                    const element = createTestElement('button');
+                    let clicked = false;
+                    
+                    element.addEventListener('click', () => {
+                        clicked = true;
+                    });
+                    
+                    element.click();
+                    expect(clicked).toBeTruthy();
+                });
+            });
+        }
+
+        // 失败测试（用于测试框架本身）
+        function defineFailureTests() {
+            describe('失败测试示例', () => {
+                it('这个测试应该失败', () => {
+                    expect(true).toBe(false);
+                });
+
+                it('这个测试会抛出错误', () => {
+                    throw new Error('故意抛出的错误');
+                });
+
+                it('异步测试失败', async () => {
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                    expect(1).toBe(2);
+                });
+            });
+        }
+
+        // 运行所有测试
+        async function runAllTests() {
+            clearResults();
+            console.log('🚀 开始运行所有单元测试...');
+            
+            defineUtilsTests();
+            defineCacheTests();
+            definePerformanceTests();
+            defineDOMTests();
+            
+            const results = await runTests();
+            updateStats(results);
+        }
+
+        // 运行工具函数测试
+        async function runUtilsTests() {
+            clearResults();
+            console.log('🔧 运行工具函数测试...');
+            
+            defineUtilsTests();
+            const results = await runTests();
+            updateStats(results);
+        }
+
+        // 运行缓存测试
+        async function runCacheTests() {
+            clearResults();
+            console.log('💾 运行缓存测试...');
+            
+            defineCacheTests();
+            const results = await runTests();
+            updateStats(results);
+        }
+
+        // 运行性能测试
+        async function runPerformanceTests() {
+            clearResults();
+            console.log('⚡ 运行性能测试...');
+            
+            definePerformanceTests();
+            const results = await runTests();
+            updateStats(results);
+        }
+
+        // 运行失败测试
+        async function runFailureTests() {
+            clearResults();
+            console.log('❌ 运行失败测试示例...');
+            
+            defineFailureTests();
+            const results = await runTests();
+            updateStats(results);
+        }
+
+        // 更新统计信息
+        function updateStats(results) {
+            document.getElementById('total-tests').textContent = results.total;
+            document.getElementById('passed-tests').textContent = results.passed;
+            document.getElementById('failed-tests').textContent = results.failed;
+            document.getElementById('pass-rate').textContent = `${results.passRate}%`;
+            
+            const progressFill = document.getElementById('progress-fill');
+            progressFill.style.width = `${results.passRate}%`;
+            
+            if (results.passRate < 70) {
+                progressFill.style.background = '#dc3545';
+            } else if (results.passRate < 90) {
+                progressFill.style.background = '#ffc107';
+            } else {
+                progressFill.style.background = '#28a745';
+            }
+            
+            document.getElementById('stats-grid').style.display = 'grid';
+            document.getElementById('progress-bar').style.display = 'block';
+        }
+
+        // 清除结果
+        function clearResults() {
+            testOutput.textContent = '';
+            document.getElementById('stats-grid').style.display = 'none';
+            document.getElementById('progress-bar').style.display = 'none';
+            
+            // 重置测试框架
+            if (window.testFramework) {
+                window.testFramework.tests = [];
+                window.testFramework.suites.clear();
+                window.testFramework.results = {
+                    passed: 0,
+                    failed: 0,
+                    skipped: 0,
+                    total: 0
+                };
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🧪 单元测试页面已加载');
+            console.log('📋 可用测试套件: 工具函数、缓存系统、性能优化、DOM操作');
+        });
+    </script>
+</body>
+</html>
