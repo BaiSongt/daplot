@@ -34,3 +34,5 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+front_end/.jest-cache/*
+front_end/coverage/*
