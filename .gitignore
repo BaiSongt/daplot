@@ -212,8 +212,7 @@ test-uploads/
 
 # Task files
 # tasks.json
-# tasks/ 
-
+# tasks/
 # Keep Kiro configuration
 # .kiro/
 
