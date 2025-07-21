@@ -5,28 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DaPlot - 数据操作</title>
     
-    <!-- 新的模块化架构 -->
-    <script src="src/utils/constants.js?v=2"></script>
-    <script src="src/utils/helpers.js?v=2"></script>
-    <script src="src/utils/validators.js?v=2"></script>
-    <script src="src/utils/formatters.js?v=2"></script>
-    <script src="src/core/ConfigManager.js"></script>
-    <script src="src/core/EventBus.js"></script>
-    <script src="src/core/ApiClient.js"></script>
-    <script src="src/core/AppState.js"></script>
-    <script src="src/core/DataManager.js"></script>
-    <script src="src/components/LoadingSpinner.js"></script>
-    <script src="src/components/StatusMessage.js"></script>
-    <script src="src/components/ErrorBoundary.js"></script>
-    <script src="src/components/Modal.js"></script>
-    <script src="src/components/FileSelector.js"></script>
-    <script src="src/daplot.js"></script>
+    <!-- 新的模块化架构 - 只加载主入口，其他模块由daplot.js动态加载 -->
+    <script src="src/daplot.js?v=3"></script>
     
-    <!-- 本地Luckysheet CSS (如果可用) -->
-    <link rel="stylesheet" href="assets/libs/luckysheet/plugins/css/pluginsCss.css" onerror="console.warn('Luckysheet CSS not found, using fallback')" />
-    <link rel="stylesheet" href="assets/libs/luckysheet/plugins/plugins.css" onerror="console.warn('Luckysheet CSS not found')" />
-    <link rel="stylesheet" href="assets/libs/luckysheet/css/luckysheet.css" onerror="console.warn('Luckysheet CSS not found')" />
-    <link rel="stylesheet" href="assets/libs/luckysheet/assets/iconfont/iconfont.css" onerror="console.warn('Luckysheet CSS not found')" />
+    <!-- Luckysheet CSS - 优先使用本地，失败时回退到CDN -->
+    <link rel="stylesheet" href="assets/libs/luckysheet/plugins/css/pluginsCss.css" onerror="this.href='https://unpkg.com/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css'" />
+    <link rel="stylesheet" href="assets/libs/luckysheet/plugins/plugins.css" onerror="this.href='https://unpkg.com/luckysheet@2.1.13/dist/plugins/plugins.css'" />
+    <link rel="stylesheet" href="assets/libs/luckysheet/css/luckysheet.css" onerror="this.href='https://unpkg.com/luckysheet@2.1.13/dist/css/luckysheet.css'" />
+    <link rel="stylesheet" href="assets/libs/luckysheet/assets/iconfont/iconfont.css" onerror="this.href='https://unpkg.com/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css'" />
     
     <style>
         * {
@@ -539,9 +525,38 @@ idebar.collapsed {
         </div>
     </div>
 
-    <!-- 本地Luckysheet JS (如果可用) -->
-    <script src="assets/libs/luckysheet/plugins/js/plugin.js" onerror="console.warn('Luckysheet plugin.js not found, using fallback')"></script>
-    <script src="assets/libs/luckysheet/luckysheet.umd.js" onerror="console.warn('Luckysheet main JS not found, using fallback')"></script>  
+    <!-- Luckysheet JS - 优先使用本地，失败时动态加载CDN -->
+    <script>
+        // 动态加载Luckysheet
+        async function loadLuckysheet() {
+            try {
+                // 尝试加载本地版本
+                await loadScript('assets/libs/luckysheet/plugins/js/plugin.js');
+                await loadScript('assets/libs/luckysheet/luckysheet.umd.js');
+                console.log('✅ Luckysheet本地版本加载成功');
+            } catch (error) {
+                console.warn('⚠️ 本地Luckysheet加载失败，使用CDN版本');
+                // 回退到CDN
+                await loadScript('https://unpkg.com/luckysheet@2.1.13/dist/plugins/js/plugin.js');
+                await loadScript('https://unpkg.com/luckysheet@2.1.13/dist/luckysheet.umd.js');
+                console.log('✅ Luckysheet CDN版本加载成功');
+            }
+        }
+        
+        // 加载脚本的辅助函数
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        // 页面加载完成后加载Luckysheet
+        document.addEventListener('DOMContentLoaded', loadLuckysheet);
+    </script>  
   <script>
         // 全局变量
         let fileSelector = null;

@@ -81,77 +81,32 @@ async function initializeDaPlot() {
             'src/core/ModuleLoader.js'
         ];
 
+        const componentModules = [
+            'src/components/LoadingSpinner.js',
+            'src/components/StatusMessage.js',
+            'src/components/ErrorBoundary.js',
+            'src/components/Modal.js',
+            'src/components/FileSelector.js',
+            'src/components/DataFilter.js',
+            'src/components/ChartConfig.js'
+        ];
+
         console.log('📦 开始分阶段加载核心模块...');
         
-        // 第一阶段：检查必需模块是否已加载
-        console.log('🔄 阶段1: 检查必需模块...');
+        // 动态加载所有必要的模块
+        console.log('🔄 阶段1: 加载基础模块...');
+        await loadModulesSequentially(essentialModules);
         
-        // 检查模块是否已经通过HTML加载
-        const moduleChecks = {
-            'constants': () => window.CONSTANTS !== undefined,
-            'helpers': () => window.helpers !== undefined,
-            'EventBus': () => window.EventBus !== undefined,
-            'AppState': () => window.AppState !== undefined
-        };
+        console.log('🔄 阶段2: 加载次要模块...');
+        await loadModulesSequentially(secondaryModules);
         
-        // 等待模块加载完成
-        let attempts = 0;
-        const maxAttempts = 50; // 5秒超时
+        console.log('🔄 阶段3: 加载高级模块...');
+        await loadModulesSequentially(advancedModules);
         
-        while (attempts < maxAttempts) {
-            const allLoaded = Object.values(moduleChecks).every(check => check());
-            if (allLoaded) {
-                console.log('✅ 必需模块检查通过');
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
+        console.log('🔄 阶段4: 加载组件模块...');
+        await loadModulesSequentially(componentModules);
         
-        if (attempts >= maxAttempts) {
-            console.warn('⚠️ 部分必需模块可能未正确加载');
-        }
-
-        // 第二阶段：检查次要模块
-        console.log('🔄 阶段2: 检查次要模块...');
-        const secondaryChecks = {
-            'validators': () => window.validators !== undefined,
-            'formatters': () => window.formatters !== undefined,
-            'ConfigManager': () => window.ConfigManager !== undefined,
-            'ApiClient': () => window.ApiClient !== undefined,
-            'DataManager': () => window.DataManager !== undefined
-        };
-        
-        attempts = 0;
-        while (attempts < maxAttempts) {
-            const allLoaded = Object.values(secondaryChecks).every(check => check());
-            if (allLoaded) {
-                console.log('✅ 次要模块检查通过');
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-
-        // 第三阶段：检查高级模块
-        console.log('🔄 阶段3: 检查高级模块...');
-        const advancedChecks = {
-            'ChartEngine': () => window.ChartEngine !== undefined,
-            'ModuleLoader': () => window.ModuleLoader !== undefined
-        };
-        
-        attempts = 0;
-        while (attempts < maxAttempts) {
-            const allLoaded = Object.values(advancedChecks).every(check => check());
-            if (allLoaded) {
-                console.log('✅ 高级模块检查通过');
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-
-        console.log('✅ 核心模块加载完成');
+        console.log('✅ 所有模块加载完成');
 
         // 3. 等待一小段时间确保所有模块都已执行
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -190,6 +145,45 @@ async function initializeDaPlot() {
         showInitializationError(error);
         
         return false;
+    }
+}
+
+// 顺序加载模块（检查是否已存在）
+async function loadModulesSequentially(modules) {
+    const moduleChecks = {
+        'src/utils/constants.js': () => window.CONSTANTS !== undefined,
+        'src/utils/helpers.js': () => window.debounce !== undefined,
+        'src/utils/validators.js': () => window.VALIDATORS !== undefined,
+        'src/utils/formatters.js': () => window.formatNumber !== undefined,
+        'src/core/EventBus.js': () => window.EventBus !== undefined,
+        'src/core/AppState.js': () => window.AppState !== undefined,
+        'src/core/ConfigManager.js': () => window.ConfigManager !== undefined,
+        'src/core/ApiClient.js': () => window.ApiClient !== undefined,
+        'src/core/DataManager.js': () => window.DataManager !== undefined,
+        'src/core/ChartEngine.js': () => window.ChartEngine !== undefined,
+        'src/core/ModuleLoader.js': () => window.ModuleLoader !== undefined,
+        'src/components/LoadingSpinner.js': () => window.LoadingSpinner !== undefined,
+        'src/components/StatusMessage.js': () => window.StatusMessage !== undefined,
+        'src/components/ErrorBoundary.js': () => window.ErrorBoundary !== undefined,
+        'src/components/Modal.js': () => window.Modal !== undefined,
+        'src/components/FileSelector.js': () => window.FileSelector !== undefined,
+        'src/components/DataFilter.js': () => window.DataFilter !== undefined,
+        'src/components/ChartConfig.js': () => window.ChartConfig !== undefined
+    };
+
+    for (const module of modules) {
+        try {
+            const checkFn = moduleChecks[module];
+            if (checkFn && checkFn()) {
+                console.log(`✅ 模块已存在，跳过加载: ${module}`);
+                continue;
+            }
+            
+            await loadScript(module);
+            console.log(`✅ 模块加载成功: ${module}`);
+        } catch (error) {
+            console.warn(`⚠️ 模块加载失败: ${module}`, error);
+        }
     }
 }
 

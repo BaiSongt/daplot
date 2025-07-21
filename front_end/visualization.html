@@ -8,24 +8,8 @@
     <!-- 本地Plotly.js库 -->
     <script src="assets/libs/plotly.min.js"></script>
     
-    <!-- 新的模块化架构 -->
-    <script src="src/utils/constants.js?v=2"></script>
-    <script src="src/utils/helpers.js?v=2"></script>
-    <script src="src/utils/validators.js?v=2"></script>
-    <script src="src/utils/formatters.js?v=2"></script>
-    <script src="src/core/ConfigManager.js"></script>
-    <script src="src/core/EventBus.js"></script>
-    <script src="src/core/ApiClient.js"></script>
-    <script src="src/core/AppState.js"></script>
-    <script src="src/core/DataManager.js"></script>
-    <script src="src/core/ChartEngine.js"></script>
-    <script src="src/components/LoadingSpinner.js"></script>
-    <script src="src/components/StatusMessage.js"></script>
-    <script src="src/components/ErrorBoundary.js"></script>
-    <script src="src/components/FileSelector.js"></script>
-    <script src="src/components/DataFilter.js"></script>
-    <script src="src/components/ChartConfig.js"></script>
-    <script src="src/daplot.js"></script>
+    <!-- 新的模块化架构 - 只加载主入口，其他模块由daplot.js动态加载 -->
+    <script src="src/daplot.js?v=3"></script>
     
     <style>
         * {
@@ -313,9 +297,6 @@
 
                 <!-- 文件选择器组件容器 -->
                 <div id="file-selector-container"></div>
-
-                <!-- 数据筛选器组件容器 -->
-                <div id="data-filter-container"></div>
             </div>
         </div>
 
@@ -324,6 +305,9 @@
             <div class="main-content">
                 <!-- 控制面板 -->
                 <div class="controls-panel">
+                    <!-- 数据筛选器组件容器 -->
+                    <div id="data-filter-container"></div>
+                    
                     <!-- 图表配置组件容器 -->
                     <div id="chart-config-container"></div>
                 </div>

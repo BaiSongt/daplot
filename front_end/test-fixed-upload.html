@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修复后的文件上传测试</title>
+</head>
+<body>
+    <h1>修复后的文件上传测试</h1>
+    
+    <!-- 只加载主入口，其他模块由daplot.js动态加载 -->
+    <script src="src/daplot.js?v=4"></script>
+    
+    <div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <button onclick="testUpload()">测试上传</button>
+    </div>
+    
+    <div id="result"></div>
+    <div id="file-selector-container"></div>
+    
+    <script>
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = '<p style="color: red;">请选择文件</p>';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            try {
+                resultDiv.innerHTML = '<p>正在上传...</p>';
+                
+                // 等待DaPlot初始化完成
+                if (!window.apiClient) {
+                    await new Promise(resolve => {
+                        const checkInit = () => {
+                            if (window.apiClient) {
+                                resolve();
+                            } else {
+                                setTimeout(checkInit, 100);
+                            }
+                        };
+                        checkInit();
+                    });
+                }
+                
+                console.log('ApiClient状态:', !!window.apiClient);
+                console.log('ApiClient baseURL:', window.apiClient?.baseURL);
+                
+                const response = await window.apiClient.upload('/api/upload', file);
+                console.log('上传结果:', response);
+                
+                resultDiv.innerHTML = `
+                    <h3>上传成功!</h3>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                `;
+                
+                // 测试FileSelector组件
+                if (window.FileSelector) {
+                    const fileSelector = new FileSelector({
+                        container: 'file-selector-container',
+                        showUpload: true,
+                        onSelect: (file, fileId) => {
+                            console.log('文件选择:', file, fileId);
+                        }
+                    });
+                }
+                
+            } catch (error) {
+                console.error('上传失败:', error);
+                resultDiv.innerHTML = `<p style="color: red;">上传失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 监听DaPlot初始化完成事件
+        window.addEventListener('load', () => {
+            if (window.eventBus) {
+                window.eventBus.on('daplot.initialized', () => {
+                    console.log('✅ DaPlot初始化完成');
+                    document.getElementById('result').innerHTML = '<p style="color: green;">DaPlot已初始化，可以开始测试</p>';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
