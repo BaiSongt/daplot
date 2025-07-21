@@ -70,9 +70,9 @@ def find_available_port(start_port, max_attempts=10):
 def check_frontend_dependencies(frontend_dir):
     """检查前端依赖文件是否存在"""
     required_files = [
-        'lib-loader.js',
-        'data-persistence.js',
-        'page-bridge.js'
+        'assets/js/lib-loader.js',
+        'assets/js/data-persistence.js',
+        'assets/js/page-bridge.js'
     ]
 
     missing_files = []
